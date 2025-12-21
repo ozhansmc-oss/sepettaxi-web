@@ -1,107 +1,27 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>SepetTaxi – Canlı Takip</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<style>
-body{margin:0;font-family:Arial}
-#topbar{background:#111;color:#fff;padding:10px;font-size:14px}
-.badge{padding:4px 8px;border-radius:7px;margin-left:6px;font-size:12px}
-.pending{background:#7f8c8d}
-.accepted{background:#27ae60}
-.completed{background:#2980b9}
-.error{background:#c0392b}
-#map{height:88vh}
-</style>
+<meta charset="UTF-8"/>
+<title>Canlı Takip</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 </head>
 <body>
-
-<div id="topbar">
-  🚕 Canlı Takip
-  <span id="status" class="badge pending">bağlanıyor…</span>
-</div>
-<div id="map"></div>
-
+<div id="map" style="height:100vh"></div>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzFQSArFEb9l94C3aF6q3254xe3ncBsMhxfn4ezodaJg4oRXeNcImn-LiJ_hAtrsUdb/exec";
-const jobId = new URLSearchParams(location.search).get("job_id");
-
-const map = L.map("map").setView([40.19,29.06],13);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
-const pickupIcon = L.icon({
-  iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
-  iconSize:[28,28], iconAnchor:[14,28]
-});
-const dropIcon = L.icon({
-  iconUrl:"https://cdn-icons-png.flaticon.com/512/149/149059.png",
-  iconSize:[28,28], iconAnchor:[14,28]
-});
-const driverIcon = L.icon({
-  iconUrl:"https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
-  iconSize:[32,32], iconAnchor:[16,16]
-});
-
-let pickupMarker, dropMarker, driverMarker, lastPos=null;
-
-function setStatus(text, cls){
-  const el = document.getElementById("status");
-  el.innerText = text;
-  el.className = "badge " + cls;
-}
-
-function smoothMove(marker, from, to){
-  const steps = 20;
-  let i = 0;
-  const dLat = (to[0]-from[0])/steps;
-  const dLng = (to[1]-from[1])/steps;
-  const t = setInterval(()=>{
-    i++;
-    marker.setLatLng([from[0]+dLat*i, from[1]+dLng*i]);
-    if(i>=steps) clearInterval(t);
-  }, 50);
-}
-
-function loadJob(){
-  fetch(API_URL + "?action=getJob&job_id=" + encodeURIComponent(jobId))
-    .then(r=>r.json())
-    .then(j=>{
-      if(!j || !j.status){
-        setStatus("job yok","error");
-        return;
-      }
-
-      setStatus(j.status, j.status);
-
-      if(j.pickup_lat && !pickupMarker){
-        pickupMarker = L.marker([j.pickup_lat, j.pickup_lng], {icon: pickupIcon})
-          .addTo(map).bindPopup("Başlangıç");
-      }
-      if(j.dropoff_lat && !dropMarker){
-        dropMarker = L.marker([j.dropoff_lat, j.dropoff_lng], {icon: dropIcon})
-          .addTo(map).bindPopup("Varış");
-      }
-
-      if(j.driver_lat){
-        const p = [Number(j.driver_lat), Number(j.driver_lng)];
-        if(!driverMarker){
-          driverMarker = L.marker(p, {icon: driverIcon}).addTo(map).bindPopup("Taxi");
-          map.fitBounds([pickupMarker?.getLatLng(), dropMarker?.getLatLng(), p].filter(Boolean));
-        }else if(lastPos){
-          smoothMove(driverMarker, lastPos, p);
-        }
-        lastPos = p;
-      }
-    })
-    .catch(()=> setStatus("bağlantı koptu","error"));
-}
-
-loadJob();
-setInterval(loadJob, 3000);
+const API_URL="PASTE_APPS_SCRIPT_URL_HERE";
+const params=new URLSearchParams(location.search);
+const job_id=params.get("job_id");
+const map=L.map('map').setView([40.195,29.060],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let marker=L.marker([40.195,29.060]).addTo(map);
+setInterval(()=>{
+ fetch(API_URL+"?action=getJob&id="+job_id)
+ .then(r=>r.json())
+ .then(j=>{
+  if(j.driver_lat)marker.setLatLng([j.driver_lat,j.driver_lng]);
+ });
+},5000);
 </script>
-
 </body>
 </html>
