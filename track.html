@@ -7,24 +7,18 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <style>
-body{margin:0;font-family:Arial;background:#f4f4f4}
+body{margin:0;font-family:Arial}
 #topbar{
-  padding:10px;
-  background:#111;
-  color:#fff;
-  font-size:14px;
+  background:#111;color:#fff;padding:10px;font-size:14px
 }
-#map{height:85vh}
 .badge{
-  padding:4px 8px;
-  border-radius:6px;
-  margin-left:6px;
-  font-size:12px;
+  padding:4px 8px;border-radius:6px;margin-left:6px;font-size:12px
 }
 .pending{background:#7f8c8d}
 .accepted{background:#27ae60}
 .completed{background:#2980b9}
-.error{background:#c0392b}
+#error{background:#c0392b}
+#map{height:85vh}
 </style>
 </head>
 
@@ -39,110 +33,86 @@ body{margin:0;font-family:Arial;background:#f4f4f4}
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-/* ================== AYAR ================== */
+/* ===== AYAR ===== */
 const API_URL = "https://script.google.com/macros/s/AKfycbx8el5RvTxWIWZfAIdvhm8q8AYOejPPYRmzFbIoD5mCMUVhT-p2XCH3ixm-gXl23jKv/exec";
 const jobId = new URLSearchParams(location.search).get("job_id");
 
-/* ================== HARİTA ================== */
-const map = L.map("map").setView([40.19,29.06], 13);
+/* ===== HARİTA ===== */
+const map = L.map("map").setView([40.19,29.06],13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
 const pickupIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-  iconSize: [28,28],
-  iconAnchor: [14,28]
+  iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
+  iconSize:[28,28],iconAnchor:[14,28]
 });
-
 const dropIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/149/149059.png",
-  iconSize: [28,28],
-  iconAnchor: [14,28]
+  iconUrl:"https://cdn-icons-png.flaticon.com/512/149/149059.png",
+  iconSize:[28,28],iconAnchor:[14,28]
 });
-
 const driverIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
-  iconSize: [32,32],
-  iconAnchor: [16,16]
+  iconUrl:"https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
+  iconSize:[32,32],iconAnchor:[16,16]
 });
 
-let driverMarker, pickupMarker, dropMarker;
-let lastPos = null;
+let pickupMarker, dropMarker, driverMarker, lastPos=null;
 
-/* ================== STATUS ================== */
-function setStatus(text, cls){
-  const s = document.getElementById("status");
-  s.innerText = text;
-  s.className = "badge " + cls;
+/* ===== STATUS ===== */
+function setStatus(text,cls){
+  const s=document.getElementById("status");
+  s.innerText=text;
+  s.className="badge "+cls;
 }
 
-/* ================== ANİMASYON ================== */
-function smoothMove(marker, from, to){
-  const steps = 20;
-  let i = 0;
-  const latStep = (to[0]-from[0]) / steps;
-  const lngStep = (to[1]-from[1]) / steps;
-
-  const interval = setInterval(()=>{
+/* ===== ANİMASYON ===== */
+function smoothMove(marker,from,to){
+  const steps=20;
+  let i=0;
+  const dLat=(to[0]-from[0])/steps;
+  const dLng=(to[1]-from[1])/steps;
+  const t=setInterval(()=>{
     i++;
-    marker.setLatLng([from[0]+latStep*i, from[1]+lngStep*i]);
-    if(i>=steps) clearInterval(interval);
-  }, 50);
+    marker.setLatLng([from[0]+dLat*i,from[1]+dLng*i]);
+    if(i>=steps) clearInterval(t);
+  },50);
 }
 
-/* ================== JOB OKU ================== */
+/* ===== JOB OKU ===== */
 function loadJob(){
   fetch(API_URL+"?action=getJob&job_id="+jobId)
     .then(r=>r.json())
     .then(j=>{
-      if(!j || !j.status){
-        setStatus("Job bulunamadı","error");
-        return;
-      }
+      if(!j.status){ setStatus("Job yok","error"); return; }
 
-      setStatus(j.status, j.status);
+      setStatus(j.status,j.status);
 
-      /* Pickup */
       if(j.pickup_lat && !pickupMarker){
-        pickupMarker = L.marker(
-          [j.pickup_lat, j.pickup_lng],
-          {icon:pickupIcon}
-        ).addTo(map).bindPopup("Başlangıç");
+        pickupMarker=L.marker([j.pickup_lat,j.pickup_lng],{icon:pickupIcon})
+          .addTo(map).bindPopup("Başlangıç");
       }
 
-      /* Dropoff */
       if(j.dropoff_lat && !dropMarker){
-        dropMarker = L.marker(
-          [j.dropoff_lat, j.dropoff_lng],
-          {icon:dropIcon}
-        ).addTo(map).bindPopup("Varış");
+        dropMarker=L.marker([j.dropoff_lat,j.dropoff_lng],{icon:dropIcon})
+          .addTo(map).bindPopup("Varış");
       }
 
-      /* Driver */
       if(j.driver_lat){
-        const newPos = [j.driver_lat, j.driver_lng];
-
+        const p=[j.driver_lat,j.driver_lng];
         if(!driverMarker){
-          driverMarker = L.marker(newPos,{icon:driverIcon})
-            .addTo(map)
-            .bindPopup("Sürücü");
+          driverMarker=L.marker(p,{icon:driverIcon}).addTo(map);
           map.fitBounds(
-            [pickupMarker?.getLatLng(), dropMarker?.getLatLng(), newPos].filter(Boolean)
+            [pickupMarker?.getLatLng(),dropMarker?.getLatLng(),p].filter(Boolean)
           );
         }else if(lastPos){
-          smoothMove(driverMarker, lastPos, newPos);
+          smoothMove(driverMarker,lastPos,p);
         }
-
-        lastPos = newPos;
+        lastPos=p;
       }
     })
-    .catch(()=>{
-      setStatus("Bağlantı koptu","error");
-    });
+    .catch(()=>setStatus("Bağlantı koptu","error"));
 }
 
-/* ================== LOOP ================== */
 loadJob();
-setInterval(loadJob, 3000);
+setInterval(loadJob,3000);
 </script>
 
 </body>
