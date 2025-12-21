@@ -1,106 +1,115 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
 <title>SepetTaxi – Sürücü</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body{margin:0;font-family:Arial;background:#0b1220;color:#fff}
-header{padding:14px;background:#111c33;font-weight:700}
-.wrap{padding:14px}
-.card{background:#111c33;border-radius:14px;padding:12px;margin-bottom:12px}
-input,button{padding:10px;border-radius:10px;border:none}
-button{cursor:pointer;font-weight:700}
-.btn{background:#2563eb;color:#fff}
-.ok{background:#22c55e;color:#062}
-.small{font-size:13px;color:#9ca3af}
+body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:15px; }
+h2 { margin-top:0; }
+.card { background:#fff; padding:12px; margin-bottom:10px; border-radius:8px; }
+button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; }
+.accept { background:#27ae60; color:#fff; }
+.gps { background:#2980b9; color:#fff; margin-top:6px; }
+.debug { font-size:12px; color:#555; margin-top:6px; }
 </style>
 </head>
+
 <body>
 
-<header>🚕 Sürücü Paneli</header>
+<h2>🚕 Sürücü – İş Havuzu</h2>
 
-<div class="wrap">
-
-<div class="card">
-  <div class="small">Telefon</div>
-  <input id="phone" placeholder="0532..." />
-  <button class="btn" onclick="loadJobs()">Giriş</button>
-</div>
-
+<div id="status">Bağlanıyor…</div>
 <div id="jobs"></div>
 
-</div>
-
 <script>
+/* ===============================
+   AYAR
+================================ */
 const API_URL = "https://script.google.com/macros/s/AKfycbzj7yAEHRbMus-F0Un-PH_9ogviUOLLplHPXR6NfWZ1c-vqHwInuOj8i5_wL8vMURqR/exec";
-let driverPhone = "";
-let activeJobId = null;
-let gpsTimer = null;
+const DRIVER_ID = "DRV-001";
 
-async function api(data){
-  const r = await fetch(API_URL,{method:"POST",body:JSON.stringify(data)});
-  return r.json();
+/* ===============================
+   JOB LİSTELE
+================================ */
+function loadJobs(){
+  fetch(API_URL + "?action=listJobs")
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("status").innerText = "Bağlandı ✔";
+      renderJobs(data.jobs || []);
+    })
+    .catch(err => {
+      document.getElementById("status").innerText = "Bağlantı HATASI ❌";
+      console.error(err);
+    });
 }
 
-async function loadJobs(){
-  driverPhone = document.getElementById("phone").value.trim();
-  if(!driverPhone){ alert("Telefon gir"); return; }
-
-  const res = await api({action:"listJobs"});
+function renderJobs(jobs){
   const box = document.getElementById("jobs");
   box.innerHTML = "";
 
-  if(!res.length){
-    box.innerHTML = "<div class='small'>Bekleyen iş yok</div>";
+  if(jobs.length === 0){
+    box.innerHTML = "<div class='card'>Bekleyen iş yok</div>";
     return;
   }
 
-  res.forEach(j=>{
-    const d = document.createElement("div");
-    d.className = "card";
-    d.innerHTML = `
-      <b>${j.job_id}</b><br>
-      Net Fiyat: ${j.price} TL<br>
-      Mesafe: ${j.distance} km<br><br>
-      <button class="ok">Kabul Et</button>
+  jobs.forEach(j => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <b>Job:</b> ${j.job_id}<br>
+      <b>Fiyat:</b> ${j.price}<br>
+      <button class="accept" onclick="acceptJob('${j.job_id}')">Kabul Et</button>
+      <div class="debug">status=${j.status}</div>
     `;
-    d.querySelector("button").onclick = ()=>acceptJob(j.job_id);
-    box.appendChild(d);
+    box.appendChild(div);
   });
 }
 
-async function acceptJob(job_id){
-  const res = await api({
-    action:"acceptJob",
-    job_id:job_id,
-    driver_phone:driverPhone
+/* ===============================
+   JOB KABUL
+================================ */
+function acceptJob(jobId){
+  fetch(API_URL, {
+    method:"POST",
+    body:JSON.stringify({
+      action:"acceptJob",
+      job_id:jobId,
+      driver_id:DRIVER_ID
+    })
+  })
+  .then(r => r.json())
+  .then(res => {
+    alert("İş kabul edildi");
+    startGPS(jobId);
+    loadJobs();
   });
-
-  if(!res.ok){ alert("Kabul edilemedi"); return; }
-
-  activeJobId = job_id;
-  alert("Kabul edildi.\nTakip Linki:\n"+res.track_url);
-  startGps();
-  loadJobs();
 }
 
-function startGps(){
-  if(gpsTimer) clearInterval(gpsTimer);
-  if(!navigator.geolocation) return;
-
-  gpsTimer = setInterval(()=>{
-    navigator.geolocation.getCurrentPosition(pos=>{
-      api({
+/* ===============================
+   GPS GÖNDER
+================================ */
+function startGPS(jobId){
+  navigator.geolocation.watchPosition(pos => {
+    fetch(API_URL, {
+      method:"POST",
+      body:JSON.stringify({
         action:"updateDriverLocation",
-        job_id:activeJobId,
-        driver_lat:pos.coords.latitude,
-        driver_lng:pos.coords.longitude,
-        driver_id:driverPhone
-      });
+        job_id:jobId,
+        lat:pos.coords.latitude,
+        lng:pos.coords.longitude
+      })
     });
-  },5000);
+  });
 }
+
+/* ===============================
+   BAŞLAT
+================================ */
+loadJobs();
 </script>
+
 </body>
 </html>
