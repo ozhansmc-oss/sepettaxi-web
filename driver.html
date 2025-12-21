@@ -1,188 +1,105 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SepetTaxi – Sürücü</title>
 <style>
-  body{margin:0;font-family:Arial;background:#0b1220;color:#fff}
-  header{padding:12px 14px;background:#111c33;font-weight:bold}
-  .wrap{padding:14px}
-  .card{background:#111c33;border-radius:12px;padding:12px;margin-bottom:12px}
-  input{width:100%;padding:10px;border-radius:10px;border:none;margin-top:6px}
-  button{padding:10px 12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
-  .btn{background:#2563eb;color:#fff}
-  .ok{background:#22c55e;color:#001}
-  .muted{color:#9ca3af;font-size:13px}
-  .job{border:1px solid #1f2937;border-radius:12px;padding:10px;margin-top:10px}
-  pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;max-height:240px;overflow:auto}
+body{margin:0;font-family:Arial;background:#0b1220;color:#fff}
+header{padding:14px;background:#111c33;font-weight:700}
+.wrap{padding:14px}
+.card{background:#111c33;border-radius:14px;padding:12px;margin-bottom:12px}
+input,button{padding:10px;border-radius:10px;border:none}
+button{cursor:pointer;font-weight:700}
+.btn{background:#2563eb;color:#fff}
+.ok{background:#22c55e;color:#062}
+.small{font-size:13px;color:#9ca3af}
 </style>
 </head>
 <body>
+
 <header>🚕 Sürücü Paneli</header>
 
 <div class="wrap">
-  <div class="card">
-    <div class="muted">Apps Script API</div>
-    <div id="apiTxt" class="muted"></div>
-  </div>
 
-  <div class="card" id="loginCard">
-    <div><b>Giriş</b></div>
-    <input id="phone" placeholder="Telefon (05xxxxxxxxx)" />
-    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn" onclick="login()">Giriş</button>
-      <button class="btn" onclick="testApi()">API Test (Raw)</button>
-    </div>
-    <div id="msg" class="muted" style="margin-top:10px"></div>
-  </div>
+<div class="card">
+  <div class="small">Telefon</div>
+  <input id="phone" placeholder="0532..." />
+  <button class="btn" onclick="loadJobs()">Giriş</button>
+</div>
 
-  <div class="card" id="panelCard" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <div><b>Bekleyen Taksi İşleri</b> <span class="muted">(status=pending)</span></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn" onclick="refreshJobs()">Yenile</button>
-        <button class="btn" onclick="toggleDebug()">Debug Aç/Kapat</button>
-      </div>
-    </div>
-    <div id="jobs"></div>
+<div id="jobs"></div>
 
-    <div id="debugBox" style="display:none;margin-top:12px">
-      <div class="muted">Son API Yanıtı (Raw)</div>
-      <pre id="raw"></pre>
-      <div class="muted" style="margin-top:10px">Parse Edilen (JSON)</div>
-      <pre id="parsed"></pre>
-    </div>
-  </div>
 </div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbzj7yAEHRbMus-F0Un-PH_9ogviUOLLplHPXR6NfWZ1c-vqHwInuOj8i5_wL8vMURqR/exec";
-document.getElementById("apiTxt").innerText = API_URL;
-
 let driverPhone = "";
-let debugOn = false;
+let activeJobId = null;
+let gpsTimer = null;
 
-function setMsg(t){ document.getElementById("msg").innerText = t || ""; }
-
-function toggleDebug(){
-  debugOn = !debugOn;
-  document.getElementById("debugBox").style.display = debugOn ? "block" : "none";
+async function api(data){
+  const r = await fetch(API_URL,{method:"POST",body:JSON.stringify(data)});
+  return r.json();
 }
 
-async function postJSON(payload){
-  const res = await fetch(API_URL, {
-    method: "POST",
-    // Apps Script bazen JSON header’da CORS takılır; bu yüzden header koymuyoruz
-    body: JSON.stringify(payload)
-  });
-  const text = await res.text();   // önce raw al
-  return { text };
-}
+async function loadJobs(){
+  driverPhone = document.getElementById("phone").value.trim();
+  if(!driverPhone){ alert("Telefon gir"); return; }
 
-async function testApi(){
-  try{
-    setMsg("API test ediliyor...");
-    const { text } = await postJSON({ action:"listJobs" });
-    document.getElementById("raw").textContent = text;
-    setMsg("API yanıtı alındı. (Raw aşağıda)");
-    toggleDebug(); // debug aç
-  }catch(e){
-    setMsg("API test hatası: " + e.message);
-  }
-}
-
-function login(){
-  const p = document.getElementById("phone").value.trim();
-  if(p.length !== 11){ alert("Telefon 11 hane olmalı (05xxxxxxxxx)"); return; }
-  driverPhone = p;
-  document.getElementById("loginCard").style.display = "none";
-  document.getElementById("panelCard").style.display = "block";
-  refreshJobs();
-}
-
-function safeParse(text){
-  try{
-    const j = JSON.parse(text);
-    return { ok:true, data:j };
-  }catch(e){
-    return { ok:false, err:e.message };
-  }
-}
-
-function renderJobs(list){
+  const res = await api({action:"listJobs"});
   const box = document.getElementById("jobs");
   box.innerHTML = "";
 
-  if(!Array.isArray(list) || list.length === 0){
-    box.innerHTML = `<div class="muted">Bekleyen iş bulunamadı. (status=pending + service=taxi)</div>`;
+  if(!res.length){
+    box.innerHTML = "<div class='small'>Bekleyen iş yok</div>";
     return;
   }
 
-  list.forEach(j=>{
-    const jobId = j.job_id || j.jobId || j.id || "-";
-    const price = j.net_price ?? j.price ?? "-";
-    const dist  = j.distance_km ?? j.distance ?? "-";
-
-    const el = document.createElement("div");
-    el.className = "job";
-    el.innerHTML = `
-      <div><b>JOB:</b> ${jobId}</div>
-      <div><b>Net Fiyat:</b> ${price} TL</div>
-      <div class="muted">Mesafe: ${dist}</div>
-      <div style="margin-top:10px">
-        <button class="ok" onclick="acceptJob('${jobId}')">Kabul Et</button>
-      </div>
+  res.forEach(j=>{
+    const d = document.createElement("div");
+    d.className = "card";
+    d.innerHTML = `
+      <b>${j.job_id}</b><br>
+      Net Fiyat: ${j.price} TL<br>
+      Mesafe: ${j.distance} km<br><br>
+      <button class="ok">Kabul Et</button>
     `;
-    box.appendChild(el);
+    d.querySelector("button").onclick = ()=>acceptJob(j.job_id);
+    box.appendChild(d);
   });
 }
 
-async function refreshJobs(){
-  try{
-    const { text } = await postJSON({ action:"listJobs" });
+async function acceptJob(job_id){
+  const res = await api({
+    action:"acceptJob",
+    job_id:job_id,
+    driver_phone:driverPhone
+  });
 
-    // debug alanlarına yaz
-    document.getElementById("raw").textContent = text;
+  if(!res.ok){ alert("Kabul edilemedi"); return; }
 
-    const parsed = safeParse(text);
-    if(!parsed.ok){
-      document.getElementById("parsed").textContent = "JSON parse edilemedi: " + parsed.err;
-      // raw dönen şey HTML veya "OK" olabilir -> backend listJobs yok demektir
-      renderJobs([]);
-      if(!debugOn) toggleDebug();
-      return;
-    }
-
-    document.getElementById("parsed").textContent = JSON.stringify(parsed.data, null, 2);
-
-    // Beklenen: JSON array
-    // Filtre: sadece taxi + pending
-    const arr = Array.isArray(parsed.data) ? parsed.data : (parsed.data.jobs || []);
-    const filtered = arr.filter(j => {
-      const svc = (j.service_type || j.service || "").toString().toLowerCase();
-      const st  = (j.status || "").toString().toLowerCase().trim();
-      return svc === "taxi" && st === "pending";
-    });
-
-    renderJobs(filtered);
-
-  }catch(e){
-    document.getElementById("raw").textContent = "";
-    document.getElementById("parsed").textContent = "";
-    setMsg("Yenileme hatası: " + e.message);
-  }
+  activeJobId = job_id;
+  alert("Kabul edildi.\nTakip Linki:\n"+res.track_url);
+  startGps();
+  loadJobs();
 }
 
-async function acceptJob(job_id){
-  if(!job_id || job_id === "-"){ alert("job_id yok"); return; }
-  try{
-    const { text } = await postJSON({ action:"acceptJob", job_id, driver_phone: driverPhone });
-    alert("Kabul isteği gönderildi: " + text);
-    refreshJobs();
-  }catch(e){
-    alert("Kabul hatası: " + e.message);
-  }
+function startGps(){
+  if(gpsTimer) clearInterval(gpsTimer);
+  if(!navigator.geolocation) return;
+
+  gpsTimer = setInterval(()=>{
+    navigator.geolocation.getCurrentPosition(pos=>{
+      api({
+        action:"updateDriverLocation",
+        job_id:activeJobId,
+        driver_lat:pos.coords.latitude,
+        driver_lng:pos.coords.longitude,
+        driver_id:driverPhone
+      });
+    });
+  },5000);
 }
 </script>
 </body>
