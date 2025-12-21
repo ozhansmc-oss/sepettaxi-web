@@ -1,114 +1,462 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
+<title>SepetTaxi – Müşteri</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SepetTaxi – Taksi Çağır</title>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <style>
-body{margin:0;font-family:Arial;background:#0b1220;color:#fff}
-header{padding:12px;background:#111c33;font-weight:bold}
-.card{margin:12px;padding:12px;background:#111c33;border-radius:10px}
-button{padding:10px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-weight:bold}
-input{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:none}
-#map{height:50vh;border-radius:10px}
+body{font-family:Arial;background:#f4f4f4;margin:0}
+header{background:#111;color:#fff;padding:12px}
+.container{padding:12px;max-width:720px;margin:auto}
+.card{background:#fff;padding:12px;border-radius:10px;margin-bottom:10px}
+input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0}
+button{padding:10px 12px;border:none;border-radius:8px;cursor:pointer;background:#27ae60;color:#fff;width:100%}
+.small{font-size:12px;color:#666}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+#map{height:45vh;border-radius:10px;overflow:hidden}
+.badge{display:inline-block;padding:4px 8px;border-radius:7px;font-size:12px}
+.pending{background:#7f8c8d;color:#fff}
+.accepted{background:#27ae60;color:#fff}
 </style>
 </head>
-
 <body>
-<header>🚕 SepetTaxi – Taksi</header>
 
-<div class="card">
-  <h3>Kayıt</h3>
-  <input id="name" placeholder="Ad Soyad">
-  <input id="phone" placeholder="Telefon (05xxxxxxxxx)">
-  <button onclick="saveUser()">Kaydet</button>
+<header>SepetTaxi</header>
+<div class="container">
+
+  <!-- STEP 1: REGISTER -->
+  <div class="card" id="step1">
+    <b>1) Kayıt</b>
+    <input id="name" placeholder="Ad Soyad">
+    <input id="phone" placeholder="Telefon (05xxxxxxxxx)" inputmode="numeric" maxlength="11">
+    <button onclick="register()">Kayıt Ol / Giriş Yap</button>
+    <div class="small" id="regMsg"></div>
+  </div>
+
+  <!-- STEP 2: TAXI -->
+  <div class="card" id="step2" style="display:none;">
+    <b>2) Taxi</b>
+    <div class="small">Haritada tıklayarak önce <b>Başlangıç</b>, sonra <b>Varış</b> seç.</div>
+    <div id="map"></div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <div class="small">Mesafe</div>
+        <b id="distance">-</b>
+      </div>
+      <div>
+        <div class="small">Net Fiyat</div>
+        <b id="price">-</b>
+      </div>
+    </div>
+    <button style="margin-top:10px;" onclick="confirmTaxi()">Taxi Çağır</button>
+    <div class="small" id="jobMsg"></div>
+  </div>
+
+  <!-- STEP 3: WAITING -->
+  <div class="card" id="step3" style="display:none;">
+    <b>3) Sürücü aranıyor…</b>
+    <div style="margin-top:8px;">
+      Durum: <span id="jobStatus" class="badge pending">pending</span>
+    </div>
+    <div class="small" style="margin-top:6px;">Sürücü kabul edince canlı harita otomatik açılacak.</div>
+  </div>
+
 </div>
 
-<div class="card">
-  <h3>Konum</h3>
-  <button onclick="getGPS()">📍 GPS Alış</button>
-  <button onclick="pickMode='pickup'">🟢 Haritadan Alış</button>
-  <button onclick="pickMode='dropoff'">🔴 Haritadan Varış</button>
-  <div id="map"></div>
-</div>
-
-<div class="card">
-  <h3>Ücret</h3>
-  Mesafe: <span id="km">-</span> km<br>
-  Net Fiyat: <b><span id="price">-</span> TL</b><br><br>
-  <button onclick="calc()">Net Fiyat Hesapla</button>
-</div>
-
-<div class="card">
-  <button onclick="createJob()">🚕 Taksi Çağır</button>
-  <div id="status"></div>
-</div>
-
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-const API="https://script.google.com/macros/s/AKfycbx8el5RvTxWIWZfAIdvhm8q8AYOejPPYRmzFbIoD5mCMUVhT-p2XCH3ixm-gXl23jKv/exec";
-let map=L.map('map').setView([40.195,29.060],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+const API_URL = "<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>SepetTaxi – Müşteri</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<style>
+body{font-family:Arial;background:#f4f4f4;margin:0}
+header{background:#111;color:#fff;padding:12px}
+.container{padding:12px;max-width:720px;margin:auto}
+.card{background:#fff;padding:12px;border-radius:10px;margin-bottom:10px}
+input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0}
+button{padding:10px 12px;border:none;border-radius:8px;cursor:pointer;background:#27ae60;color:#fff;width:100%}
+.small{font-size:12px;color:#666}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+#map{height:45vh;border-radius:10px;overflow:hidden}
+.badge{display:inline-block;padding:4px 8px;border-radius:7px;font-size:12px}
+.pending{background:#7f8c8d;color:#fff}
+.accepted{background:#27ae60;color:#fff}
+</style>
+</head>
+<body>
 
-let pickup=null, dropoff=null, pickMode=null, km=0, price=0;
+<header>SepetTaxi</header>
+<div class="container">
 
-map.on('click',e=>{
- if(!pickMode) return;
- if(pickMode==='pickup'){pickup=e.latlng;L.marker(e.latlng).addTo(map).bindPopup("Alış").openPopup();}
- if(pickMode==='dropoff'){dropoff=e.latlng;L.marker(e.latlng).addTo(map).bindPopup("Varış").openPopup();}
- pickMode=null;
-});
+  <!-- STEP 1: REGISTER -->
+  <div class="card" id="step1">
+    <b>1) Kayıt</b>
+    <input id="name" placeholder="Ad Soyad">
+    <input id="phone" placeholder="Telefon (05xxxxxxxxx)" inputmode="numeric" maxlength="11">
+    <button onclick="register()">Kayıt Ol / Giriş Yap</button>
+    <div class="small" id="regMsg"></div>
+  </div>
 
-function getGPS(){
- navigator.geolocation.getCurrentPosition(p=>{
-  pickup={lat:p.coords.latitude,lng:p.coords.longitude};
-  L.marker([pickup.lat,pickup.lng]).addTo(map).bindPopup("Alış (GPS)").openPopup();
- });
-}
+  <!-- STEP 2: TAXI -->
+  <div class="card" id="step2" style="display:none;">
+    <b>2) Taxi</b>
+    <div class="small">Haritada tıklayarak önce <b>Başlangıç</b>, sonra <b>Varış</b> seç.</div>
+    <div id="map"></div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <div class="small">Mesafe</div>
+        <b id="distance">-</b>
+      </div>
+      <div>
+        <div class="small">Net Fiyat</div>
+        <b id="price">-</b>
+      </div>
+    </div>
+    <button style="margin-top:10px;" onclick="confirmTaxi()">Taxi Çağır</button>
+    <div class="small" id="jobMsg"></div>
+  </div>
 
-function dist(a,b){
- const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lng-a.lng)*Math.PI/180;
- const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
- return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
+  <!-- STEP 3: WAITING -->
+  <div class="card" id="step3" style="display:none;">
+    <b>3) Sürücü aranıyor…</b>
+    <div style="margin-top:8px;">
+      Durum: <span id="jobStatus" class="badge pending">pending</span>
+    </div>
+    <div class="small" style="margin-top:6px;">Sürücü kabul edince canlı harita otomatik açılacak.</div>
+  </div>
 
-function calc(){
- if(!pickup||!dropoff){alert("Konum seç");return;}
- km=dist(pickup,dropoff);
- price=Math.round(60+km*18);
- document.getElementById("km").innerText=km.toFixed(2);
- document.getElementById("price").innerText=price;
-}
+</div>
 
-function saveUser(){
- localStorage.setItem("user",JSON.stringify({
-  name:name.value, phone:phone.value
- }));
- alert("Kaydedildi");
-}
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzFQSArFEb9l94C3aF6q3254xe3ncBsMhxfn4ezodaJg4oRXeNcImn-LiJ_hAtrsUdb/exec";
 
-function createJob(){
- const u=JSON.parse(localStorage.getItem("user"));
- if(!u||!price){alert("Eksik");return;}
- fetch(API,{
-  method:"POST",
-  body:JSON.stringify({
-   action:"createJob",
-   service_type:"taxi",
-   customer_type:"individual",
-   user_name:u.name,
-   user_phone:u.phone,
-   pickup_lat:pickup.lat,
-   pickup_lng:pickup.lng,
-   dropoff_lat:dropoff.lat,
-   dropoff_lng:dropoff.lng,
-   net_price:price
+/* ===== state ===== */
+let user = null;
+let pickup = null, dropoff = null;
+let pickupMarker = null, dropoffMarker = null;
+let jobId = null;
+let pollTimer = null;
+
+function register(){
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+
+  if(!name || !phone || phone.length !== 11 || !phone.startsWith("0")){
+    document.getElementById("regMsg").innerText = "Ad ve 11 haneli telefon zorunludur.";
+    return;
+  }
+
+  fetch(API_URL, {
+    method:"POST",
+    body: JSON.stringify({ action:"registerUser", name, phone })
   })
- }).then(()=>status.innerText="JOB oluşturuldu");
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){
+      document.getElementById("regMsg").innerText = "Kayıt hatası: "+d.error;
+      return;
+    }
+    user = d;
+    document.getElementById("regMsg").innerText = "Kayıt tamam: " + d.user_id;
+    document.getElementById("step1").style.display="none";
+    document.getElementById("step2").style.display="block";
+    initMap();
+  })
+  .catch(()=> document.getElementById("regMsg").innerText="Bağlantı hatası");
+}
+
+/* ===== map + pricing ===== */
+let map = null;
+
+function initMap(){
+  if(map) return;
+  map = L.map("map").setView([40.19,29.06], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+  map.on("click", (e)=>{
+    if(!pickup){
+      pickup = e.latlng;
+      pickupMarker = L.marker(pickup).addTo(map).bindPopup("Başlangıç").openPopup();
+      return;
+    }
+    if(!dropoff){
+      dropoff = e.latlng;
+      dropoffMarker = L.marker(dropoff).addTo(map).bindPopup("Varış").openPopup();
+      calcPrice();
+      return;
+    }
+    // third click resets
+    resetRoute();
+  });
+}
+
+function resetRoute(){
+  pickup = null; dropoff = null;
+  if(pickupMarker) map.removeLayer(pickupMarker);
+  if(dropoffMarker) map.removeLayer(dropoffMarker);
+  pickupMarker = null; dropoffMarker = null;
+  document.getElementById("distance").innerText="-";
+  document.getElementById("price").innerText="-";
+}
+
+function haversineKm(a,b){
+  const R = 6371;
+  const dLat = (b.lat-a.lat) * Math.PI/180;
+  const dLng = (b.lng-a.lng) * Math.PI/180;
+  const s1 = Math.sin(dLat/2)**2;
+  const s2 = Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s1+s2));
+}
+
+// simple pricing (editable)
+function calcPrice(){
+  const km = haversineKm(pickup, dropoff);
+  const base = 60;      // açılış
+  const perKm = 18;     // km
+  const price = Math.round(base + km*perKm);
+
+  document.getElementById("distance").innerText = km.toFixed(2) + " km";
+  document.getElementById("price").innerText = price + " TL";
+}
+
+function confirmTaxi(){
+  if(!user || !pickup || !dropoff){
+    document.getElementById("jobMsg").innerText = "Önce başlangıç ve varış seç.";
+    return;
+  }
+
+  const km = haversineKm(pickup, dropoff);
+  const base = 60;
+  const perKm = 18;
+  const price = Math.round(base + km*perKm);
+
+  fetch(API_URL, {
+    method:"POST",
+    body: JSON.stringify({
+      action:"createJob",
+      user_id: user.user_id,
+      user_name: user.name,
+      user_phone: user.phone,
+      pickup_lat: pickup.lat,
+      pickup_lng: pickup.lng,
+      pickup_address: "Pickup (map)",
+      dropoff_lat: dropoff.lat,
+      dropoff_lng: dropoff.lng,
+      dropoff_address: "Dropoff (map)",
+      distance_km: Number(km.toFixed(2)),
+      price: price
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){
+      document.getElementById("jobMsg").innerText = "Job hatası: " + d.error;
+      return;
+    }
+    jobId = d.job_id;
+    document.getElementById("step2").style.display="none";
+    document.getElementById("step3").style.display="block";
+    setJobStatus("pending");
+    startPolling();
+  })
+  .catch(()=> document.getElementById("jobMsg").innerText="Bağlantı hatası");
+}
+
+function setJobStatus(status){
+  const el = document.getElementById("jobStatus");
+  el.innerText = status;
+  el.className = "badge " + (status === "accepted" ? "accepted" : "pending");
+}
+
+function startPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+
+  pollTimer = setInterval(()=>{
+    fetch(API_URL + "?action=getJob&job_id=" + jobId)
+      .then(r=>r.json())
+      .then(j=>{
+        if(!j.status) return;
+        setJobStatus(j.status);
+
+        if(j.status === "accepted"){
+          clearInterval(pollTimer);
+          // ✅ accepted olunca otomatik track aç
+          window.location.href = "track.html?job_id=" + encodeURIComponent(jobId);
+        }
+      });
+  }, 3000);
 }
 </script>
+
+</body>
+</html>
+";
+
+/* ===== state ===== */
+let user = null;
+let pickup = null, dropoff = null;
+let pickupMarker = null, dropoffMarker = null;
+let jobId = null;
+let pollTimer = null;
+
+function register(){
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+
+  if(!name || !phone || phone.length !== 11 || !phone.startsWith("0")){
+    document.getElementById("regMsg").innerText = "Ad ve 11 haneli telefon zorunludur.";
+    return;
+  }
+
+  fetch(API_URL, {
+    method:"POST",
+    body: JSON.stringify({ action:"registerUser", name, phone })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){
+      document.getElementById("regMsg").innerText = "Kayıt hatası: "+d.error;
+      return;
+    }
+    user = d;
+    document.getElementById("regMsg").innerText = "Kayıt tamam: " + d.user_id;
+    document.getElementById("step1").style.display="none";
+    document.getElementById("step2").style.display="block";
+    initMap();
+  })
+  .catch(()=> document.getElementById("regMsg").innerText="Bağlantı hatası");
+}
+
+/* ===== map + pricing ===== */
+let map = null;
+
+function initMap(){
+  if(map) return;
+  map = L.map("map").setView([40.19,29.06], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+  map.on("click", (e)=>{
+    if(!pickup){
+      pickup = e.latlng;
+      pickupMarker = L.marker(pickup).addTo(map).bindPopup("Başlangıç").openPopup();
+      return;
+    }
+    if(!dropoff){
+      dropoff = e.latlng;
+      dropoffMarker = L.marker(dropoff).addTo(map).bindPopup("Varış").openPopup();
+      calcPrice();
+      return;
+    }
+    // third click resets
+    resetRoute();
+  });
+}
+
+function resetRoute(){
+  pickup = null; dropoff = null;
+  if(pickupMarker) map.removeLayer(pickupMarker);
+  if(dropoffMarker) map.removeLayer(dropoffMarker);
+  pickupMarker = null; dropoffMarker = null;
+  document.getElementById("distance").innerText="-";
+  document.getElementById("price").innerText="-";
+}
+
+function haversineKm(a,b){
+  const R = 6371;
+  const dLat = (b.lat-a.lat) * Math.PI/180;
+  const dLng = (b.lng-a.lng) * Math.PI/180;
+  const s1 = Math.sin(dLat/2)**2;
+  const s2 = Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s1+s2));
+}
+
+// simple pricing (editable)
+function calcPrice(){
+  const km = haversineKm(pickup, dropoff);
+  const base = 60;      // açılış
+  const perKm = 18;     // km
+  const price = Math.round(base + km*perKm);
+
+  document.getElementById("distance").innerText = km.toFixed(2) + " km";
+  document.getElementById("price").innerText = price + " TL";
+}
+
+function confirmTaxi(){
+  if(!user || !pickup || !dropoff){
+    document.getElementById("jobMsg").innerText = "Önce başlangıç ve varış seç.";
+    return;
+  }
+
+  const km = haversineKm(pickup, dropoff);
+  const base = 60;
+  const perKm = 18;
+  const price = Math.round(base + km*perKm);
+
+  fetch(API_URL, {
+    method:"POST",
+    body: JSON.stringify({
+      action:"createJob",
+      user_id: user.user_id,
+      user_name: user.name,
+      user_phone: user.phone,
+      pickup_lat: pickup.lat,
+      pickup_lng: pickup.lng,
+      pickup_address: "Pickup (map)",
+      dropoff_lat: dropoff.lat,
+      dropoff_lng: dropoff.lng,
+      dropoff_address: "Dropoff (map)",
+      distance_km: Number(km.toFixed(2)),
+      price: price
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){
+      document.getElementById("jobMsg").innerText = "Job hatası: " + d.error;
+      return;
+    }
+    jobId = d.job_id;
+    document.getElementById("step2").style.display="none";
+    document.getElementById("step3").style.display="block";
+    setJobStatus("pending");
+    startPolling();
+  })
+  .catch(()=> document.getElementById("jobMsg").innerText="Bağlantı hatası");
+}
+
+function setJobStatus(status){
+  const el = document.getElementById("jobStatus");
+  el.innerText = status;
+  el.className = "badge " + (status === "accepted" ? "accepted" : "pending");
+}
+
+function startPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+
+  pollTimer = setInterval(()=>{
+    fetch(API_URL + "?action=getJob&job_id=" + jobId)
+      .then(r=>r.json())
+      .then(j=>{
+        if(!j.status) return;
+        setJobStatus(j.status);
+
+        if(j.status === "accepted"){
+          clearInterval(pollTimer);
+          // ✅ accepted olunca otomatik track aç
+          window.location.href = "track.html?job_id=" + encodeURIComponent(jobId);
+        }
+      });
+  }, 3000);
+}
+</script>
+
 </body>
 </html>
