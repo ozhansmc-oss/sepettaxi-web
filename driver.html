@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SepetTaxi – Sürücü</title>
+<style>
+body{margin:0;font-family:Arial;background:#0b1220;color:#fff}
+header{padding:12px;background:#111c33;font-weight:bold}
+.card{margin:12px;padding:12px;background:#111c33;border-radius:10px}
+button{padding:10px;border:none;border-radius:8px;font-weight:bold}
+.ok{background:#22c55e}
+.no{background:#ef4444}
+</style>
+</head>
+<body>
+
+<header>🚕 Sürücü Paneli</header>
+
+<div class="card">
+<input id="phone" placeholder="Telefon">
+<button onclick="login()">Giriş</button>
+</div>
+
+<div class="card" id="jobs"></div>
+
+<script>
+const API="https://script.google.com/macros/s/AKfycbzj7yAEHRbMus-F0Un-PH_9ogviUOLLplHPXR6NfWZ1c-vqHwInuOj8i5_wL8vMURqR/exec";
+let driver=null;
+
+function login(){
+ driver={phone:phone.value};
+ load();
+}
+
+function load(){
+ fetch(API,{method:"POST",body:JSON.stringify({action:"listJobs"})})
+ .then(r=>r.json()).then(jobs=>{
+  jobsDiv.innerHTML="";
+  jobs.forEach(j=>{
+   const d=document.createElement("div");
+   d.innerHTML=`<b>${j.net_price} TL</b><br>
+   <button class="ok" onclick="accept('${j.job_id}')">Kabul</button>`;
+   jobs.appendChild(d);
+  });
+ });
+}
+
+function accept(id){
+ fetch(API,{method:"POST",body:JSON.stringify({
+  action:"acceptJob",job_id:id,driver_phone:driver.phone
+ })}).then(()=>alert("Kabul edildi"));
+}
+</script>
+</body>
+</html>
