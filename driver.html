@@ -4,111 +4,65 @@
 <meta charset="UTF-8">
 <title>SepetTaxi – Sürücü</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
-body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:15px; }
-h2 { margin-top:0; }
-.card { background:#fff; padding:12px; margin-bottom:10px; border-radius:8px; }
-button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; }
-.accept { background:#27ae60; color:#fff; }
-.gps { background:#2980b9; color:#fff; margin-top:6px; }
-.debug { font-size:12px; color:#555; margin-top:6px; }
+body{font-family:Arial;background:#f4f4f4;padding:15px}
+.card{background:#fff;padding:12px;margin-bottom:10px;border-radius:8px}
+button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer}
+.accept{background:#27ae60;color:#fff}
+.complete{background:#e67e22;color:#fff;margin-left:6px}
 </style>
 </head>
-
 <body>
 
 <h2>🚕 Sürücü – İş Havuzu</h2>
-
 <div id="status">Bağlanıyor…</div>
 <div id="jobs"></div>
 
 <script>
-/* ===============================
-   AYAR
-================================ */
-const API_URL = "https://script.google.com/macros/s/AKfycbw_5YZ423wGwaZ6bu3F0a_oxrX_i_ycLS9-DQb0lRDcVCTOwvIGWFKpIPaWVAxVP9jx/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx8el5RvTxWIWZfAIdvhm8q8AYOejPPYRmzFbIoD5mCMUVhT-p2XCH3ixm-gXl23jKv/exec";
 const DRIVER_ID = "DRV-001";
 
-/* ===============================
-   JOB LİSTELE
-================================ */
-function loadJobs(){
-  fetch(API_URL + "?action=listJobs")
-    .then(r => r.json())
-    .then(data => {
-      document.getElementById("status").innerText = "Bağlandı ✔";
-      renderJobs(data.jobs || []);
-    })
-    .catch(err => {
-      document.getElementById("status").innerText = "Bağlantı HATASI ❌";
-      console.error(err);
-    });
-}
+fetch(API_URL + "?action=listJobs")
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById("status").innerText = "Bağlandı ✔";
+    render(d.jobs || []);
+  })
+  .catch(() => {
+    document.getElementById("status").innerText = "Bağlantı HATASI ❌";
+  });
 
-function renderJobs(jobs){
+function render(jobs){
   const box = document.getElementById("jobs");
   box.innerHTML = "";
-
-  if(jobs.length === 0){
+  if(!jobs.length){
     box.innerHTML = "<div class='card'>Bekleyen iş yok</div>";
     return;
   }
-
-  jobs.forEach(j => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <b>Job:</b> ${j.job_id}<br>
-      <b>Fiyat:</b> ${j.price}<br>
-      <button class="accept" onclick="acceptJob('${j.job_id}')">Kabul Et</button>
-      <div class="debug">status=${j.status}</div>
-    `;
-    box.appendChild(div);
+  jobs.forEach(j=>{
+    box.innerHTML += `
+      <div class="card">
+        <b>${j.job_id}</b><br>
+        <button class="accept" onclick="accept('${j.job_id}')">Kabul</button>
+        <button class="complete" onclick="completeJob('${j.job_id}')">Tamamla</button>
+      </div>`;
   });
 }
 
-/* ===============================
-   JOB KABUL
-================================ */
-function acceptJob(jobId){
-  fetch(API_URL, {
+function accept(id){
+  post({action:"acceptJob", job_id:id, driver_id:DRIVER_ID});
+}
+
+function completeJob(id){
+  post({action:"completeJob", job_id:id});
+}
+
+function post(data){
+  fetch(API_URL,{
     method:"POST",
-    body:JSON.stringify({
-      action:"acceptJob",
-      job_id:jobId,
-      driver_id:DRIVER_ID
-    })
-  })
-  .then(r => r.json())
-  .then(res => {
-    alert("İş kabul edildi");
-    startGPS(jobId);
-    loadJobs();
-  });
+    body:JSON.stringify(data)
+  }).then(()=>location.reload());
 }
-
-/* ===============================
-   GPS GÖNDER
-================================ */
-function startGPS(jobId){
-  navigator.geolocation.watchPosition(pos => {
-    fetch(API_URL, {
-      method:"POST",
-      body:JSON.stringify({
-        action:"updateDriverLocation",
-        job_id:jobId,
-        lat:pos.coords.latitude,
-        lng:pos.coords.longitude
-      })
-    });
-  });
-}
-
-/* ===============================
-   BAŞLAT
-================================ */
-loadJobs();
 </script>
 
 </body>
