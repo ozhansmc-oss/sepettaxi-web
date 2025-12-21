@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/><title>Admin</title></head>
+<body>
+<h2>Çağrılar</h2>
+<table border="1" id="tbl"></table>
+
+<script>
+const API_URL="PASTE_APPS_SCRIPT_URL_HERE";
+fetch(API_URL+"?action=getJobs")
+.then(r=>r.json())
+.then(data=>{
+ let t="<tr><th>ID</th><th>Service</th><th>Status</th></tr>";
+ data.forEach(j=>{
+  t+=`<tr><td>${j.job_id}</td><td>${j.service_type}</td><td>${j.status}</td></tr>`;
+ });
+ tbl.innerHTML=t;
+});
+</script>
+</body>
+</html>
