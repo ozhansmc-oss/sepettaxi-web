@@ -2,38 +2,147 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Canlı Takip</title>
+<title>SepetTaxi – Canlı Takip</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>#map{height:80vh}</style>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<style>
+body{margin:0;font-family:Arial;background:#f4f4f4}
+#topbar{
+  padding:10px;
+  background:#111;
+  color:#fff;
+  font-size:14px;
+}
+#map{height:85vh}
+.badge{
+  padding:4px 8px;
+  border-radius:6px;
+  margin-left:6px;
+  font-size:12px;
+}
+.pending{background:#7f8c8d}
+.accepted{background:#27ae60}
+.completed{background:#2980b9}
+.error{background:#c0392b}
+</style>
 </head>
+
 <body>
 
-<h3>🚕 Canlı Takip</h3>
+<div id="topbar">
+  🚕 Canlı Takip
+  <span id="status" class="badge pending">Bağlanıyor…</span>
+</div>
+
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
+/* ================== AYAR ================== */
 const API_URL = "https://script.google.com/macros/s/AKfycbx8el5RvTxWIWZfAIdvhm8q8AYOejPPYRmzFbIoD5mCMUVhT-p2XCH3ixm-gXl23jKv/exec";
 const jobId = new URLSearchParams(location.search).get("job_id");
 
-const map = L.map("map").setView([40.19,29.06],13);
+/* ================== HARİTA ================== */
+const map = L.map("map").setView([40.19,29.06], 13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-let marker;
 
-setInterval(()=>{
+const pickupIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+  iconSize: [28,28],
+  iconAnchor: [14,28]
+});
+
+const dropIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/149/149059.png",
+  iconSize: [28,28],
+  iconAnchor: [14,28]
+});
+
+const driverIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
+  iconSize: [32,32],
+  iconAnchor: [16,16]
+});
+
+let driverMarker, pickupMarker, dropMarker;
+let lastPos = null;
+
+/* ================== STATUS ================== */
+function setStatus(text, cls){
+  const s = document.getElementById("status");
+  s.innerText = text;
+  s.className = "badge " + cls;
+}
+
+/* ================== ANİMASYON ================== */
+function smoothMove(marker, from, to){
+  const steps = 20;
+  let i = 0;
+  const latStep = (to[0]-from[0]) / steps;
+  const lngStep = (to[1]-from[1]) / steps;
+
+  const interval = setInterval(()=>{
+    i++;
+    marker.setLatLng([from[0]+latStep*i, from[1]+lngStep*i]);
+    if(i>=steps) clearInterval(interval);
+  }, 50);
+}
+
+/* ================== JOB OKU ================== */
+function loadJob(){
   fetch(API_URL+"?action=getJob&job_id="+jobId)
     .then(r=>r.json())
     .then(j=>{
-      if(!j.driver_lat) return;
-      if(!marker){
-        marker = L.marker([j.driver_lat,j.driver_lng]).addTo(map);
-      }else{
-        marker.setLatLng([j.driver_lat,j.driver_lng]);
+      if(!j || !j.status){
+        setStatus("Job bulunamadı","error");
+        return;
       }
-      map.setView([j.driver_lat,j.driver_lng],15);
+
+      setStatus(j.status, j.status);
+
+      /* Pickup */
+      if(j.pickup_lat && !pickupMarker){
+        pickupMarker = L.marker(
+          [j.pickup_lat, j.pickup_lng],
+          {icon:pickupIcon}
+        ).addTo(map).bindPopup("Başlangıç");
+      }
+
+      /* Dropoff */
+      if(j.dropoff_lat && !dropMarker){
+        dropMarker = L.marker(
+          [j.dropoff_lat, j.dropoff_lng],
+          {icon:dropIcon}
+        ).addTo(map).bindPopup("Varış");
+      }
+
+      /* Driver */
+      if(j.driver_lat){
+        const newPos = [j.driver_lat, j.driver_lng];
+
+        if(!driverMarker){
+          driverMarker = L.marker(newPos,{icon:driverIcon})
+            .addTo(map)
+            .bindPopup("Sürücü");
+          map.fitBounds(
+            [pickupMarker?.getLatLng(), dropMarker?.getLatLng(), newPos].filter(Boolean)
+          );
+        }else if(lastPos){
+          smoothMove(driverMarker, lastPos, newPos);
+        }
+
+        lastPos = newPos;
+      }
+    })
+    .catch(()=>{
+      setStatus("Bağlantı koptu","error");
     });
-},3000);
+}
+
+/* ================== LOOP ================== */
+loadJob();
+setInterval(loadJob, 3000);
 </script>
 
 </body>
