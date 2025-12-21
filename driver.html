@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SepetTaxi – Sürücü Paneli (FAZ 2)</title>
+
+<style>
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#0b1220;color:#fff}
+header{padding:14px;background:#111c33;font-weight:bold}
+.container{padding:14px}
+.card{background:#111c33;border-radius:10px;padding:14px;margin-bottom:12px}
+button{padding:10px 14px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
+.btn{background:#2563eb;color:#fff}
+.btn2{background:#374151;color:#fff}
+.btnOk{background:#22c55e;color:#000}
+.btnNo{background:#ef4444;color:#fff}
+input{width:100%;padding:10px;border-radius:8px;border:none;margin-top:6px}
+.job{border:1px solid #1f2937;border-radius:8px;padding:10px;margin-top:8px}
+.small{font-size:13px;color:#9ca3af}
+</style>
+</head>
+
+<body>
+
+<header>🚕 SepetTaxi – Sürücü Paneli (FAZ 2)</header>
+
+<div class="container">
+
+<div class="card" id="loginBox">
+  <h3>Sürücü Girişi</h3>
+  <input id="phone" placeholder="Telefon (05xxxxxxxxx)">
+  <button class="btn" onclick="login()">Giriş Yap</button>
+</div>
+
+<div class="card" id="driverBox" style="display:none">
+  <h3>Sürücü Durumu</h3>
+  <button class="btnOk" onclick="setStatus('available')">🟢 Online</button>
+  <button class="btn2" onclick="setStatus('offline')">⚫ Offline</button>
+  <div class="small">Durum: <span id="statusTxt">offline</span></div>
+</div>
+
+<div class="card" id="jobsBox" style="display:none">
+  <h3>Bekleyen İşler</h3>
+  <div id="jobs"></div>
+</div>
+
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzj7yAEHRbMus-F0Un-PH_9ogviUOLLplHPXR6NfWZ1c-vqHwInuOj8i5_wL8vMURqR/exec";
+
+let driver=null, status="offline";
+
+function login(){
+  const phone=document.getElementById("phone").value;
+  if(phone.length!==11){ alert("Telefon hatalı"); return; }
+  driver={ phone };
+  document.getElementById("loginBox").style.display="none";
+  document.getElementById("driverBox").style.display="block";
+  document.getElementById("jobsBox").style.display="block";
+  pollJobs();
+}
+
+function setStatus(s){
+  status=s;
+  document.getElementById("statusTxt").innerText=s;
+}
+
+function pollJobs(){
+  if(!driver || status!=="available") return;
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({ action:"listJobs", status:"pending_driver" })
+  })
+  .then(r=>r.json())
+  .then(renderJobs)
+  .catch(()=>{});
+  setTimeout(pollJobs,5000);
+}
+
+function renderJobs(list){
+  const box=document.getElementById("jobs");
+  box.innerHTML="";
+  list.forEach(j=>{
+    const d=document.createElement("div");
+    d.className="job";
+    d.innerHTML=`
+      <b>🚕 Taksi</b><br>
+      Mesafe: ${j.distance_km} km<br>
+      <b>Net Fiyat: ${j.net_price} TL</b><br>
+      <button class="btnOk" onclick="acceptJob('${j.job_id}')">Kabul Et</button>
+      <button class="btnNo" onclick="rejectJob('${j.job_id}')">Reddet</button>
+    `;
+    box.appendChild(d);
+  });
+}
+
+function acceptJob(id){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"acceptJob",
+      job_id:id,
+      driver_phone:driver.phone
+    })
+  }).then(()=>{
+    alert("İş kabul edildi");
+  });
+}
+
+function rejectJob(id){
+  alert("Reddedildi (MVP)");
+}
+</script>
+
+</body>
+</html>
