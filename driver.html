@@ -1,151 +1,31 @@
 <!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="UTF-8">
-<title>SepetTaxi – Sürücü</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body{font-family:Arial;background:#f4f4f4;padding:15px}
-h2{margin-top:0}
-.card{background:#fff;padding:12px;margin-bottom:10px;border-radius:10px}
-.small{font-size:12px;color:#666}
-.row{display:flex;gap:10px;margin-top:8px}
-.row>div{flex:1}
-button{padding:9px 12px;border:none;border-radius:8px;cursor:pointer}
-.accept{background:#27ae60;color:#fff}
-.complete{background:#e67e22;color:#fff;margin-left:6px}
-</style>
-</head>
+<html>
+<head><meta charset="UTF-8"/><title>Driver</title></head>
 <body>
-
-<h2>🚕 Sürücü – İş Havuzu</h2>
-<div id="status">Bağlanıyor…</div>
+<h2>Uygun Çağrılar</h2>
 <div id="jobs"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzFQSArFEb9l94C3aF6q3254xe3ncBsMhxfn4ezodaJg4oRXeNcImn-LiJ_hAtrsUdb/exec";
-const DRIVER_ID = "DRV-001";
-
-let gpsTimer = null;
-let activeJobId = null;
-
-load();
-
-function load(){
-  fetch(API_URL + "?action=listJobs")
-    .then(r=>r.json())
-    .then(d=>{
-      document.getElementById("status").innerText="Bağlandı ✓";
-      render(d.jobs || []);
-    })
-    .catch(()=> document.getElementById("status").innerText="Bağlantı HATASI ❌");
-}
-
-function render(jobs){
-  const box = document.getElementById("jobs");
-  box.innerHTML = "";
-  if(!jobs.length){
-    box.innerHTML = "<div class='card'>Bekleyen iş yok</div>";
-    return;
-  }
-
-  // sadece pending gösterelim (accepted işleri ayrıca yönetebiliriz)
-  const pending = jobs.filter(j => j.status === "pending");
-  if(!pending.length){
-    box.innerHTML = "<div class='card'>Bekleyen iş yok</div>";
-    return;
-  }
-
-  pending.forEach(j=>{
-    box.innerHTML += `
-      <div class="card">
-        <b>${j.job_id}</b>
-        <div class="small">Hizmet: ${j.service} • Durum: ${j.status}</div>
-
-        <div class="row">
-          <div>
-            <div class="small">Mesafe</div>
-            <b>${j.distance_km || "-"} km</b>
-          </div>
-          <div>
-            <div class="small">Net Fiyat</div>
-            <b>${j.price || "-"} TL</b>
-          </div>
-        </div>
-
-        <div class="small" style="margin-top:8px;">
-          <b>Pickup:</b> ${j.pickup_address || "—"}<br>
-          <b>Dropoff:</b> ${j.dropoff_address || "—"}
-        </div>
-
-        <div style="margin-top:10px;">
-          <button class="accept" onclick="acceptJob('${j.job_id}')">Kabul</button>
-          <button class="complete" onclick="completeJob('${j.job_id}')">Tamamla</button>
-        </div>
-      </div>`;
-  });
-}
-
-function acceptJob(jobId){
-  // ✅ Konum iznini mutlaka kullanıcı tıklamasında iste
-  navigator.geolocation.getCurrentPosition(()=>{
-    fetch(API_URL,{
-      method:"POST",
-      body: JSON.stringify({
-        action:"acceptJob",
-        job_id: jobId,
-        driver_id: DRIVER_ID
-      })
-    })
-    .then(r=>r.json())
-    .then(d=>{
-      if(d.error){
-        alert("Kabul edilemedi: " + d.error);
-        return;
-      }
-      activeJobId = jobId;
-      startGPS(jobId);
-      load();
-    });
-  },()=>{
-    alert("Konum izni verilmeden iş kabul edilemez.");
-  });
-}
-
-function startGPS(jobId){
-  if(gpsTimer) clearInterval(gpsTimer);
-
-  gpsTimer = setInterval(()=>{
-    navigator.geolocation.getCurrentPosition(pos=>{
-      fetch(API_URL,{
-        method:"POST",
-        body: JSON.stringify({
-          action:"updateDriverLocation",
-          job_id: jobId,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
-        })
-      });
-    });
-  }, 3000);
-}
-
-function completeJob(jobId){
-  if(gpsTimer && activeJobId === jobId){
-    clearInterval(gpsTimer);
-    gpsTimer = null;
-    activeJobId = null;
-  }
-
-  fetch(API_URL,{
-    method:"POST",
-    body: JSON.stringify({
-      action:"completeJob",
-      job_id: jobId
-    })
-  }).then(()=> load());
+const API_URL="PASTE_APPS_SCRIPT_URL_HERE";
+fetch(API_URL+"?action=getJobs&status=pending")
+.then(r=>r.json())
+.then(js=>{
+ jobs.innerHTML="";
+ js.forEach(j=>{
+  jobs.innerHTML+=`
+   <div>
+    ${j.service_type} - ${j.job_id}
+    <button onclick="accept('${j.job_id}')">Kabul Et</button>
+   </div>`;
+ });
+});
+function accept(id){
+ fetch(API_URL,{
+  method:"POST",
+  body:JSON.stringify({action:"updateStatus",job_id:id,status:"accepted",driver_id:"DRV-001"})
+ });
+ alert("Kabul edildi");
 }
 </script>
-
 </body>
 </html>
