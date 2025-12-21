@@ -1,69 +1,70 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
 <title>SepetTaxi – Canlı Takip</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body{margin:0;font-family:Arial;background:#0b1220;color:#fff}
-header{padding:14px;background:#111c33;font-weight:700}
-#map{height:60vh}
-.wrap{padding:14px}
-.small{font-size:13px;color:#9ca3af}
+body { font-family: Arial; margin:0; padding:15px; background:#f4f4f4; }
+#map { width:100%; height:60vh; background:#ddd; border-radius:8px; }
+.status { margin:10px 0; font-size:14px; }
 </style>
 </head>
+
 <body>
 
-<header>📍 SepetTaxi – Canlı Takip</header>
+<h3>🚕 Canlı Takip</h3>
+<div class="status" id="status">Job aranıyor…</div>
 <div id="map"></div>
-<div class="wrap">
-  <div id="info" class="small">Yükleniyor…</div>
-</div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzj7yAEHRbMus-F0Un-PH_9ogviUOLLplHPXR6NfWZ1c-vqHwInuOj8i5_wL8vMURqR/exec";
-const jobId = new URLSearchParams(location.search).get("job_id");
+/* ===============================
+   AYAR
+================================ */
+const API_URL = "PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE";
+const jobId = new URLSearchParams(window.location.search).get("job_id");
 
-if(!jobId){
-  document.getElementById("info").innerText="HATA: job_id yok";
-  throw "";
-}
-
-let map = L.map("map").setView([40.195,29.060],13);
+const map = L.map("map").setView([40.195,29.060], 13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-let pM,dM,drvM;
+let driverMarker;
 
-async function api(d){
-  const r = await fetch(API_URL,{method:"POST",body:JSON.stringify(d)});
-  return r.json();
+/* ===============================
+   JOB OKU
+================================ */
+function loadJob(){
+  fetch(API_URL + "?action=getJob&job_id=" + jobId)
+    .then(r => r.json())
+    .then(j => {
+      if(!j || !j.driver_lat){
+        document.getElementById("status").innerText =
+          "Job bulundu ama sürücü konumu yok";
+        return;
+      }
+
+      document.getElementById("status").innerText =
+        "Sürücü yolda ✔ | status=" + j.status;
+
+      if(!driverMarker){
+        driverMarker = L.marker([j.driver_lat,j.driver_lng]).addTo(map);
+      } else {
+        driverMarker.setLatLng([j.driver_lat,j.driver_lng]);
+      }
+
+      map.setView([j.driver_lat,j.driver_lng],15);
+    })
+    .catch(() => {
+      document.getElementById("status").innerText =
+        "Job bulunamadı ❌";
+    });
 }
 
-function set(ref,lat,lng,label){
-  if(!ref) return L.marker([lat,lng]).addTo(map).bindPopup(label);
-  ref.setLatLng([lat,lng]); return ref;
-}
-
-async function load(){
-  const r = await api({action:"getJob",job_id:jobId});
-  if(!r.ok){ document.getElementById("info").innerText="Job yok"; return; }
-
-  const j = r.job;
-  document.getElementById("info").innerText =
-    `Fiyat: ${j.price} TL | Mesafe: ${j.distance} km | Durum: ${j.status}`;
-
-  pM = set(pM,j.pickup_lat,j.pickup_lng,"Alış");
-  dM = set(dM,j.dropoff_lat,j.dropoff_lng,"Varış");
-
-  if(r.driver_loc){
-    drvM = set(drvM,r.driver_loc.lat,r.driver_loc.lng,"Sürücü");
-  }
-}
-
-setInterval(load,3000);
-load();
+setInterval(loadJob, 3000);
 </script>
+
 </body>
 </html>
