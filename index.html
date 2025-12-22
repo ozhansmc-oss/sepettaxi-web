@@ -1,159 +1,140 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>SepetTaxi</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#0b0f17;color:#fff}
-.screen{display:none;min-height:100vh;padding:20px}
-.active{display:flex;flex-direction:column}
-.center{justify-content:center;align-items:center;text-align:center}
+html,body{height:100%;margin:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#0b0f17;color:#fff}
 
-h1{font-size:36px;margin:0}
-.small{color:#aaa;font-size:14px}
+.screen{display:none;height:100vh}
+.active{display:block}
+
+.center{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
 
 button{
   width:100%;
   padding:16px;
-  margin-top:16px;
-  border-radius:14px;
   border:none;
+  border-radius:14px;
   font-size:16px;
   cursor:pointer;
   background:#fff;
   color:#000;
 }
 
-.list-item{
-  padding:18px;
-  border-bottom:1px solid #222;
-  font-size:18px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  cursor:pointer;
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;background:#0b0f17;z-index:5
+}
+
+.footer{
+  position:fixed;left:0;right:0;bottom:0;height:110px;
+  background:#0b0f17;padding:12px;z-index:5
+}
+
+.cards{display:flex;gap:10px}
+.card{
+  flex:1;background:#161b2a;border-radius:14px;padding:14px;
+  text-align:center;cursor:pointer
 }
 
 input{
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border-radius:10px;
-  border:none;
-  font-size:15px;
+  width:100%;padding:14px;margin-top:10px;border-radius:10px;border:none
 }
 
 #map{
-  width:100%;
-  height:calc(100vh - 260px);
-  border-radius:12px;
-  margin-top:12px;
+  position:fixed;
+  top:56px;
+  bottom:110px;
+  left:0;
+  right:0;
+  z-index:1;
 }
 </style>
 </head>
 <body>
 
-<!-- 1. GİRİŞ -->
-<div id="screen1" class="screen active center">
+<!-- SCREEN 1 : GİRİŞ -->
+<div id="s1" class="screen active center">
   <h1>SepetTaxi</h1>
-  <p class="small">Taksi · Kurye · Transfer</p>
-  <button onclick="goTo(2)">Devam Et</button>
+  <div style="color:#aaa;margin:8px 0">Taksi · Kurye · Transfer</div>
+  <button onclick="go(2)" style="max-width:280px">Devam Et</button>
 </div>
 
-<!-- 2. HİZMET SEÇİMİ -->
-<div id="screen2" class="screen">
-  <h2>Hizmet Seç</h2>
-  <div class="list-item" onclick="selectService('taxi')">🚕 Taksi <span>›</span></div>
-  <div class="list-item" onclick="selectService('courier')">🛵 Kurye <span>›</span></div>
-  <div class="list-item" onclick="selectService('transfer')">✈️ Transfer <span>›</span></div>
-</div>
-
-<!-- 3. KAYIT -->
-<div id="screen3" class="screen">
-  <h2>Kayıt / Giriş</h2>
-  <button onclick="completeRegister()">📱 Telefon ile Devam Et</button>
-  <button onclick="completeRegister()">🔵 Google ile Devam Et</button>
-  <button onclick="completeRegister()">🍎 Apple ile Devam Et</button>
-</div>
-
-<!-- 4. ADRES + HARİTA -->
-<div id="screen4" class="screen">
-  <h2 id="serviceTitle"></h2>
-
-  <input id="from" placeholder="Nereden? (otomatik alınır)">
-  <input id="to" placeholder="Nereye? (haritadan seç)">
+<!-- SCREEN 2 : HARİTA + HİZMET -->
+<div id="s2" class="screen">
+  <div class="topbar">
+    <div>SepetTaxi</div>
+    <div id="userState">Misafir</div>
+  </div>
 
   <div id="map"></div>
 
-  <button onclick="goTo(5)">Devam Et</button>
+  <div class="footer">
+    <div style="margin-bottom:8px">Hizmet Seç</div>
+    <div class="cards">
+      <div class="card" onclick="selectService('taxi')">🚕 Taksi</div>
+      <div class="card" onclick="selectService('courier')">🛵 Kurye</div>
+      <div class="card" onclick="selectService('transfer')">✈️ Transfer</div>
+    </div>
+  </div>
 </div>
 
-<!-- 5. KVKK -->
-<div id="screen5" class="screen">
-  <label><input type="checkbox" id="kvkk"> KVKK Metni</label><br><br>
-  <label><input type="checkbox" id="sozlesme"> Kullanım Sözleşmesi</label>
-  <button onclick="checkAgreements()">Onayla</button>
+<!-- SCREEN 3 : KAYIT -->
+<div id="s3" class="screen center">
+  <h2>Kayıt / Giriş</h2>
+  <button onclick="register()">Telefon ile Devam Et</button>
 </div>
 
-<!-- 6. ÜCRET -->
-<div id="screen6" class="screen center">
-  <h2>245 TL</h2>
-  <p class="small" id="summary"></p>
-  <button onclick="goTo(7)">🚕 Çağır</button>
-</div>
-
-<!-- 7. SON -->
-<div id="screen7" class="screen center">
-  <h2>Çağrı Oluşturuldu</h2>
-  <p class="small">Sürücü aranıyor…</p>
+<!-- SCREEN 4 : ADRES -->
+<div id="s4" class="screen" style="padding:20px">
+  <h3 id="serviceTitle"></h3>
+  <input id="from" placeholder="Nereden (otomatik)" />
+  <input id="to" placeholder="Nereye (haritadan seç)" />
+  <button onclick="finish()" style="margin-top:16px">Devam Et</button>
 </div>
 
 <script>
-let selectedService=null;
+let current=1;
 let user=null;
-let map, markerFrom, markerTo;
+let service=null;
+let map, fromMarker, toMarker;
 
-function goTo(n){
+function go(n){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen'+n).classList.add('active');
-  if(n===4) setTimeout(initMap,300);
+  document.getElementById('s'+n).classList.add('active');
+  current=n;
+  if(n===2) setTimeout(initMap,300);
 }
 
 function selectService(s){
-  selectedService=s;
-  if(!user){
-    goTo(3);
-  }else{
-    openMap();
-  }
+  service=s;
+  if(!user) go(3);
+  else openAddress();
 }
 
-function completeRegister(){
+function register(){
   user={id:Date.now()};
-  openMap();
+  document.getElementById('userState').innerText="Kayıtlı";
+  openAddress();
 }
 
-function openMap(){
-  document.getElementById("serviceTitle").innerText =
-    selectedService==="taxi"?"Taksi":
-    selectedService==="courier"?"Kurye":"Transfer";
-  goTo(4);
+function openAddress(){
+  document.getElementById('serviceTitle').innerText=
+    service==='taxi'?'Taksi':service==='courier'?'Kurye':'Transfer';
+  go(4);
 }
 
-function checkAgreements(){
-  if(kvkk.checked && sozlesme.checked){
-    document.getElementById("summary").innerText =
-      (selectedService==="taxi"?"Taksi":"Hizmet")+" · 7.8 km";
-    goTo(6);
-  }else{
-    alert("Devam etmek için onaylar gerekli.");
-  }
+function finish(){
+  alert("Akış burada kilitli. Backend bir sonraki adım.");
 }
 
 function initMap(){
@@ -161,20 +142,21 @@ function initMap(){
   map=L.map('map').setView([40.195,29.06],13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
+  setTimeout(()=>map.invalidateSize(),300);
+
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(async pos=>{
       let lat=pos.coords.latitude,lng=pos.coords.longitude;
-      markerFrom=L.marker([lat,lng]).addTo(map).bindPopup("Bulunduğun Konum").openPopup();
+      fromMarker=L.marker([lat,lng]).addTo(map).bindPopup("Mevcut Konum").openPopup();
       map.setView([lat,lng],14);
-      from.value=await reverse(lat,lng);
+      document.getElementById('from').value=await reverse(lat,lng);
     });
   }
 
-  map.on("click",async e=>{
-    let lat=e.latlng.lat,lng=e.latlng.lng;
-    if(markerTo) map.removeLayer(markerTo);
-    markerTo=L.marker([lat,lng]).addTo(map);
-    to.value=await reverse(lat,lng);
+  map.on('click',async e=>{
+    if(toMarker) map.removeLayer(toMarker);
+    toMarker=L.marker(e.latlng).addTo(map);
+    document.getElementById('to').value=await reverse(e.latlng.lat,e.latlng.lng);
   });
 }
 
@@ -182,7 +164,7 @@ async function reverse(lat,lng){
   try{
     let r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
     let d=await r.json();
-    return d.display_name || lat+","+lng;
+    return d.display_name||lat+","+lng;
   }catch{
     return lat+","+lng;
   }
