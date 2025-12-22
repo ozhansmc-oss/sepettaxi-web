@@ -1,172 +1,198 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SepetTaxi – Admin</title>
 
 <style>
-body{margin:0;font-family:Arial;background:#f6f7f9}
-.header{background:#0f172a;color:#fff;padding:14px;font-weight:bold}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f6f8}
+header{background:#0f172a;color:#fff;padding:14px 16px;font-weight:bold}
 .container{padding:14px}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.box{background:#fff;border-radius:10px;padding:10px;text-align:center}
-.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-select,button,input{padding:8px;border-radius:6px;border:1px solid #ddd}
-button{cursor:pointer;background:#2563eb;color:#fff;border:none}
-button.gray{background:#6b7280}
-button.green{background:#059669}
-.jobs{display:grid;grid-template-columns:1fr;gap:12px}
 .card{background:#fff;border-radius:10px;padding:12px}
+.card h3{margin:0;font-size:14px;color:#334155}
+.card b{font-size:22px}
+.controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+select,button,input{padding:8px;border-radius:6px;border:1px solid #cbd5e1}
+button{background:#2563eb;color:#fff;border:none;cursor:pointer}
+button.secondary{background:#475569}
+.jobs{display:grid;grid-template-columns:1fr;gap:12px}
+.job{background:#fff;border-radius:10px;padding:12px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.badge{padding:4px 8px;border-radius:12px;font-size:12px}
+.badge{padding:4px 8px;border-radius:999px;font-size:12px;color:#000}
 .pending{background:#fde68a}
 .accepted{background:#bfdbfe}
 .on_the_way{background:#bbf7d0}
 .completed{background:#e5e7eb}
-.small{font-size:12px;color:#374151}
+.small{font-size:12px;color:#475569}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.link{color:#2563eb;text-decoration:none;font-size:12px}
 @media(min-width:900px){.jobs{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 
 <body>
 
-<div class="header">SepetTaxi – Admin (Operasyon & Ödeme)</div>
+<header>SepetTaxi – Admin (Operasyon & Ödeme)</header>
 
 <div class="container">
 
   <!-- ÖZET -->
   <div class="summary">
-    <div class="box"><b id="s_today">0</b><br>Bugün</div>
-    <div class="box"><b id="s_active">0</b><br>Aktif</div>
-    <div class="box"><b id="s_total">0</b><br>Toplam</div>
+    <div class="card"><h3>Bugün</h3><b id="s_today">0</b></div>
+    <div class="card"><h3>Aktif</h3><b id="s_active">0</b></div>
+    <div class="card"><h3>Toplam</h3><b id="s_total">0</b></div>
   </div>
 
-  <!-- FİLTRE -->
+  <!-- KONTROLLER -->
   <div class="controls">
-    <select id="filter" onchange="loadJobs()">
+    <select id="filter">
       <option value="">Tümü</option>
       <option value="pending">Bekliyor</option>
       <option value="accepted">Kabul</option>
       <option value="on_the_way">Yolda</option>
-      <option value="completed">Tamamlandı</option>
+      <option value="completed">Bitti</option>
     </select>
-    <button class="gray" onclick="loadJobs()">Yenile</button>
+    <button onclick="loadAll()">Yenile</button>
   </div>
 
+  <!-- JOBS -->
   <div id="jobs" class="jobs"></div>
+
 </div>
 
 <script>
 /* ================== AYAR ================== */
 const API_URL = "https://script.google.com/macros/s/AKfycbxGK3XXKVX-65ZfRCtGhMdIoOgV6RAx7tSldcBW3ugRzB7_T3Bv2DLsCazrpLgYPwg0/exec";
-
 /* ========================================= */
 
-function post(url,data){
-  return fetch(url,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify(data)
-  }).then(r=>r.json());
+function badgeClass(s){
+  if(s==="pending") return "badge pending";
+  if(s==="accepted") return "badge accepted";
+  if(s==="on_the_way") return "badge on_the_way";
+  if(s==="completed") return "badge completed";
+  return "badge";
 }
 
+function statusLabel(s){
+  if(s==="pending") return "Bekliyor";
+  if(s==="accepted") return "Kabul";
+  if(s==="on_the_way") return "Yolda";
+  if(s==="completed") return "Bitti";
+  return s;
+}
+
+/* ===== STATS ===== */
+function loadStats(){
+  fetch(API_URL + "?action=adminStats")
+    .then(r=>r.json())
+    .then(d=>{
+      document.getElementById("s_today").innerText  = d.today ?? 0;
+      document.getElementById("s_active").innerText = d.active ?? 0;
+      document.getElementById("s_total").innerText  = d.total ?? 0;
+    });
+}
+
+/* ===== JOBS ===== */
 function loadJobs(){
   const f = document.getElementById("filter").value;
-  fetch(OPS_API_URL + "?action=getJobs" + (f ? "&status="+f : ""))
+  fetch(API_URL + "?action=getJobs" + (f ? "&status="+f : ""))
     .then(r=>r.json())
     .then(list=>{
-      document.getElementById("jobs").innerHTML="";
-      updateSummary(list);
+      const el = document.getElementById("jobs");
+      el.innerHTML = "";
 
       list.forEach(j=>{
-        document.getElementById("jobs").innerHTML += `
-          <div class="card">
+        el.innerHTML += `
+          <div class="job">
             <div class="row">
               <div>
-                <b>${j.service_type}</b><br>
+                <b>${j.service_type || "-"}</b><br>
                 <span class="small">${j.job_id}</span>
               </div>
-              <span class="badge ${j.status}">${j.status}</span>
+              <span class="${badgeClass(j.status)}">${statusLabel(j.status)}</span>
             </div>
 
-            <div class="small" style="margin-top:4px">
+            <div class="small" style="margin-top:6px">
               Oluştu: ${j.created_at || "-"} |
               Kabul: ${j.accepted_at || "-"} |
+              Yolda: ${j.on_the_way_at || "-"} |
               Bitti: ${j.completed_at || "-"}
             </div>
 
             <div class="row" style="margin-top:8px">
-              <div class="small">Driver: ${j.driver_id || "-"}</div>
-              <div>
-                ${j.status!=="completed"
-                  ? `<button onclick="setStatus('${j.job_id}','completed')">Tamamlandı</button>`
-                  : `<span class="small">✔ Tamamlandı</span>`
-                }
+              <div class="actions">
+                <button class="secondary" onclick="setStatus('${j.job_id}','accepted')">Kabul</button>
+                <button class="secondary" onclick="setStatus('${j.job_id}','on_the_way')">Yolda</button>
+                <button onclick="setStatus('${j.job_id}','completed')">Bitti</button>
+                <a class="link" target="_blank" href="track.html?job_id=${j.job_id}">Canlı Takip</a>
               </div>
+              <div class="small">Driver: ${j.driver_id || "-"}</div>
             </div>
 
-            <!-- FAZ 5 – ÖDEME OLUŞTUR -->
-            ${j.status==="completed" ? `
-            <div class="row" style="margin-top:10px">
-              <button class="green"
-                onclick="createPaymentFromAdmin(
-                  '${j.job_id}',
-                  '${j.estimated_price || j.fixed_price || 0}'
-                )">
-                💰 Ödeme Oluştur
-              </button>
+            <div class="row" style="margin-top:8px">
+              <input placeholder="Driver ID" id="d_${j.job_id}">
+              <button onclick="assignDriver('${j.job_id}')">Ata</button>
             </div>
-            ` : ``}
+
+            <div class="row" style="margin-top:8px">
+              <input placeholder="Tutar ₺" id="p_${j.job_id}">
+              <select id="m_${j.job_id}">
+                <option value="cash">Nakit</option>
+                <option value="card">Kart</option>
+              </select>
+              <button onclick="payJob('${j.job_id}')">Paid</button>
+            </div>
           </div>
         `;
       });
     });
 }
 
+/* ===== ACTIONS ===== */
 function setStatus(jobId,status){
-  post(OPS_API_URL,{
-    action:"updateStatus",
-    job_id:jobId,
-    status:status
-  }).then(loadJobs);
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({action:"updateStatus",job_id:jobId,status})
+  }).then(loadAll);
 }
 
-/* ========= FAZ 5 – ADMIN → FINANCE ========= */
-function createPaymentFromAdmin(jobId,gross){
-  if(!gross || gross<=0){
-    return alert("Bu iş için brüt tutar yok");
-  }
-  if(!confirm("Bu iş için ödeme oluşturulsun mu?")) return;
-
-  post(FINANCE_API_URL,{
-    action:"createPayment",
-    job_id:jobId,
-    gross_amount:Number(gross),
-    payment_method:"cash"
-  })
-  .then(res=>{
-    if(res.status==="payment_created"){
-      alert("Ödeme oluşturuldu. Finance ekranında görünecek.");
-    }else{
-      alert("Hata: "+JSON.stringify(res));
-    }
-  });
+function assignDriver(jobId){
+  const d = document.getElementById("d_"+jobId).value;
+  if(!d) return alert("Driver ID gir");
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({action:"updateStatus",job_id:jobId,status:"accepted",driver_id:d})
+  }).then(loadAll);
 }
 
-function updateSummary(list){
-  document.getElementById("s_total").innerText = list.length;
-  document.getElementById("s_active").innerText =
-    list.filter(j=>["pending","accepted","on_the_way"].includes(j.status)).length;
-  document.getElementById("s_today").innerText =
-    list.filter(j=>j.created_at &&
-      new Date(j.created_at).toDateString()===new Date().toDateString()
-    ).length;
+function payJob(jobId){
+  const amount = document.getElementById("p_"+jobId).value;
+  const method = document.getElementById("m_"+jobId).value;
+  if(!amount) return alert("Tutar gir");
+
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"savePayment",
+      job_id:jobId,
+      driver_id:"",
+      amount,
+      method
+    })
+  }).then(()=>alert("Ödeme kaydedildi"));
+}
+
+function loadAll(){
+  loadStats();
+  loadJobs();
 }
 
 /* INIT */
-loadJobs();
-setInterval(loadJobs,30000);
+loadAll();
+setInterval(loadAll,30000);
 </script>
 
 </body>
