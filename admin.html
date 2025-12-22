@@ -1,21 +1,128 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"/><title>Admin</title></head>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SepetTaxi – Admin</title>
+
+<style>
+body{margin:0;font-family:Arial;background:#f6f7f9}
+.header{background:#0f172a;color:#fff;padding:14px}
+.container{padding:14px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+select,button{padding:10px;border-radius:6px;border:1px solid #ddd}
+.jobs{display:grid;grid-template-columns:1fr;gap:10px}
+.card{background:#fff;border-radius:10px;padding:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{padding:4px 8px;border-radius:12px;font-size:12px}
+.pending{background:#fde68a}
+.accepted{background:#bfdbfe}
+.on_the_way{background:#bbf7d0}
+.completed{background:#e5e7eb}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.small{font-size:12px;color:#374151}
+.link{color:#2563eb;text-decoration:none}
+@media(min-width:768px){.jobs{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+
 <body>
-<h2>Çağrılar</h2>
-<table border="1" id="tbl"></table>
+
+<div class="header">
+  <b>SepetTaxi – Admin (Operasyon)</b>
+</div>
+
+<div class="container">
+  <div class="controls">
+    <select id="filter" onchange="loadJobs()">
+      <option value="">All</option>
+      <option value="pending">Pending</option>
+      <option value="accepted">Accepted</option>
+      <option value="on_the_way">On the way</option>
+      <option value="completed">Completed</option>
+    </select>
+    <button onclick="loadJobs()">Yenile</button>
+  </div>
+
+  <div id="jobs" class="jobs"></div>
+</div>
 
 <script>
-const API_URL="https://script.google.com/macros/s/AKfycbxmjbl9o0881xyp8EV4IgKFI72GDpAw8GtT4OS-uOnMzkGloQn8C_C6A9q5mMIEsBSy/exec";
-fetch(API_URL+"?action=getJobs")
-.then(r=>r.json())
-.then(data=>{
- let t="<tr><th>ID</th><th>Service</th><th>Status</th></tr>";
- data.forEach(j=>{
-  t+=`<tr><td>${j.job_id}</td><td>${j.service_type}</td><td>${j.status}</td></tr>`;
- });
- tbl.innerHTML=t;
-});
+/* ================== AYAR ================== */
+const API_URL = "https://script.google.com/macros/s/AKfycbxmjbl9o0881xyp8EV4IgKFI72GDpAw8GtT4OS-uOnMzkGloQn8C_C6A9q5mMIEsBSy/exec";
+/* ========================================= */
+
+function badgeClass(s){
+  if(s==="pending") return "badge pending";
+  if(s==="accepted") return "badge accepted";
+  if(s==="on_the_way") return "badge on_the_way";
+  if(s==="completed") return "badge completed";
+  return "badge";
+}
+
+function nextStatus(s){
+  if(s==="pending") return "accepted";
+  if(s==="accepted") return "on_the_way";
+  if(s==="on_the_way") return "completed";
+  return null;
+}
+
+function loadJobs(){
+  const f = document.getElementById("filter").value;
+  const url = API_URL + "?action=getJobs" + (f ? "&status="+f : "");
+
+  fetch(url)
+    .then(r=>r.json())
+    .then(list=>{
+      const el = document.getElementById("jobs");
+      el.innerHTML = "";
+      if(!list.length){
+        el.innerHTML = "<div class='small'>Kayıt yok</div>";
+        return;
+      }
+
+      list.forEach(j=>{
+        const ns = nextStatus(j.status);
+        el.innerHTML += `
+          <div class="card">
+            <div class="row">
+              <div>
+                <b>${j.service_type}</b><br>
+                <span class="small">${j.job_id}</span>
+              </div>
+              <span class="${badgeClass(j.status)}">${j.status}</span>
+            </div>
+
+            <div class="row" style="margin-top:8px">
+              <div class="actions">
+                ${ns ? `<button onclick="setStatus('${j.job_id}','${ns}')">${ns.replaceAll('_',' ')}</button>` : ""}
+                <a class="link" target="_blank" href="track.html?job_id=${j.job_id}">Canlı Takip</a>
+              </div>
+              <div class="small">Driver: ${j.driver_id || "-"}</div>
+            </div>
+          </div>
+        `;
+      });
+    });
+}
+
+function setStatus(jobId,status){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"updateStatus",
+      job_id:jobId,
+      status:status
+    })
+  }).then(()=>loadJobs());
+}
+
+/* İlk yükleme */
+loadJobs();
+
+/* Otomatik yenile (30 sn) */
+setInterval(loadJobs,30000);
 </script>
+
 </body>
 </html>
