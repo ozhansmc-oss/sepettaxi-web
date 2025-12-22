@@ -5,80 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SepetTaxi – Driver</title>
 <style>
-body{font-family:Arial;background:#f6f7f9;padding:20px}
-.job{background:#fff;padding:15px;border-radius:8px;margin-bottom:10px}
-button{padding:10px;width:100%;cursor:pointer}
+body{font-family:Arial;background:#f6f7f9;margin:0;padding:20px}
+.card{background:#fff;padding:16px;border-radius:10px}
+button,input{padding:10px;width:100%;margin-top:10px}
+.status{margin-top:10px;font-size:14px}
 </style>
 </head>
 <body>
 
-<h2>Uygun Çağrılar</h2>
-<div id="jobs"></div>
+<div class="card">
+  <h3>Sürücü Paneli</h3>
+  <input id="job" placeholder="Job ID (örn: JOB-123)">
+  <button onclick="start()">Canlı Takibi Başlat</button>
+  <div id="s" class="status"></div>
+</div>
 
 <script>
-/* ================== AYAR ================== */
 const API_URL = "https://script.google.com/macros/s/AKfycbxmjbl9o0881xyp8EV4IgKFI72GDpAw8GtT4OS-uOnMzkGloQn8C_C6A9q5mMIEsBSy/exec";
-const DRIVER_ID = "DRV-001";
-/* ========================================= */
+let watchId = null;
 
-let activeJobId = null;
+function start(){
+  const jobId = document.getElementById("job").value;
+  if(!jobId) return alert("Job ID gir");
 
-/* Job listele */
-fetch(API_URL + "?action=getJobs&status=pending")
-  .then(r => r.json())
-  .then(data => {
-    if (!data.length) {
-      jobs.innerHTML = "Uygun çağrı yok";
-      return;
-    }
-
-    data.forEach(j => {
-      jobs.innerHTML += `
-        <div class="job">
-          <b>${j.service_type}</b> – ${j.job_id}<br><br>
-          <button onclick="acceptJob('${j.job_id}')">Kabul Et</button>
-        </div>`;
-    });
-  });
-
-/* Job kabul */
-function acceptJob(jobId) {
-  activeJobId = jobId;
-
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "updateStatus",
-      job_id: jobId,
-      status: "accepted",
-      driver_id: DRIVER_ID
-    })
-  });
-
-  startLiveLocation();
-  alert("Çağrı kabul edildi, konum gönderiliyor");
-}
-
-/* Canlı konum */
-function startLiveLocation() {
-  if (!navigator.geolocation) {
-    alert("Konum desteği yok");
+  if(!navigator.geolocation){
+    alert("Konum desteklenmiyor");
     return;
   }
 
-  setInterval(() => {
-    navigator.geolocation.getCurrentPosition(pos => {
-      fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "updateDriverLocation",
-          job_id: activeJobId,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
+  watchId = navigator.geolocation.watchPosition(
+    pos=>{
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      fetch(API_URL,{
+        method:"POST",
+        body:JSON.stringify({
+          action:"updateDriverLocation",
+          job_id:jobId,
+          lat:lat,
+          lng:lng
         })
       });
-    });
-  }, 5000);
+
+      document.getElementById("s").innerText =
+        "Konum gönderiliyor: "+lat.toFixed(5)+", "+lng.toFixed(5);
+    },
+    err=>{
+      alert("Konum hatası: "+err.message);
+    },
+    {
+      enableHighAccuracy:true,
+      maximumAge:0,
+      timeout:10000
+    }
+  );
 }
 </script>
 
