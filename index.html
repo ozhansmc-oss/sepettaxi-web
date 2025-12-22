@@ -1,152 +1,229 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SepetTaxi – Müşteri</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>SepetTaxi</title>
 
-  <!-- Leaflet (Harita) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     :root{
       --bg:#0b1220;
-      --card:#121a2b;
-      --card2:#0f1726;
-      --text:#e8eefc;
+      --panel:#111a2a;
+      --panel2:#0f1726;
+      --text:#eef3ff;
       --muted:#a9b6d8;
-      --line:rgba(255,255,255,.10);
-      --good:#34d399;
+      --line:rgba(255,255,255,.12);
+      --btn:#1b2a45;
+      --btn2:#223557;
+      --accent:#60a5fa;
+      --good:#22c55e;
       --warn:#fbbf24;
       --bad:#fb7185;
-
-      --taxi:#60a5fa;
-      --courier:#a78bfa;
-      --transfer:#22c55e;
-
-      --shadow: 0 12px 28px rgba(0,0,0,.35);
-      --radius: 16px;
+      --r:14px;
+      --shadow: 0 16px 34px rgba(0,0,0,.35);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 30% -10%, rgba(96,165,250,.22), transparent 55%),
-                  radial-gradient(900px 700px at 90% 10%, rgba(167,139,250,.20), transparent 55%),
-                  radial-gradient(900px 700px at 60% 110%, rgba(34,197,94,.16), transparent 55%),
-                  var(--bg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: var(--bg);
       color: var(--text);
-      overflow-x:hidden;
-    }
-    a{color:inherit}
-    .wrap{max-width:1120px; margin:0 auto; padding:16px;}
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px; padding:14px 14px;
-      border:1px solid var(--line);
-      background: linear-gradient(180deg, rgba(18,26,43,.88), rgba(18,26,43,.70));
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      position: sticky; top:10px; z-index:50;
-      backdrop-filter: blur(10px);
-    }
-    .brand{
-      display:flex; align-items:center; gap:10px;
-      min-width: 220px;
-    }
-    .logo{
-      width:40px; height:40px; border-radius: 12px;
-      background: linear-gradient(135deg, rgba(96,165,250,.95), rgba(167,139,250,.92));
-      display:grid; place-items:center;
-      box-shadow: 0 10px 18px rgba(0,0,0,.25);
-      border:1px solid rgba(255,255,255,.18);
-      font-weight:800;
-    }
-    .brand h1{font-size:16px; margin:0; line-height:1.1}
-    .brand p{margin:0; font-size:12px; color:var(--muted)}
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px; border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(15,23,38,.7);
-      font-size:12px; color:var(--muted);
-      white-space:nowrap;
-    }
-    .pill b{color:var(--text); font-weight:700}
-    .btn{
-      cursor:pointer;
-      border:1px solid var(--line);
-      background: rgba(15,23,38,.70);
-      color: var(--text);
-      padding:10px 12px;
-      border-radius: 12px;
-      font-weight:700;
-      transition: transform .08s ease, background .2s ease, border-color .2s ease;
-      display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      user-select:none;
-    }
-    .btn:hover{background: rgba(18,26,43,.95); border-color: rgba(255,255,255,.18)}
-    .btn:active{transform: translateY(1px)}
-    .btn.primary{
-      border-color: rgba(96,165,250,.35);
-      background: linear-gradient(135deg, rgba(96,165,250,.90), rgba(167,139,250,.75));
-    }
-    .btn.primary:hover{filter: brightness(1.05)}
-    .btn.good{
-      border-color: rgba(34,197,94,.35);
-      background: linear-gradient(135deg, rgba(34,197,94,.85), rgba(96,165,250,.55));
-    }
-    .btn.ghost{background: transparent}
-    .btn.small{padding:8px 10px; border-radius: 10px; font-size:12px}
-    .right{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
-    .grid{
-      display:grid; gap:14px; margin-top:14px;
-      grid-template-columns: 1fr;
+      overflow:hidden;
     }
 
-    /* Sections */
-    .section{
+    /* Screens */
+    .screen{position:fixed; inset:0; display:none;}
+    .screen.active{display:block;}
+
+    /* Screen 1: Landing (only banner + button) */
+    .landing{
+      display:flex; align-items:center; justify-content:center;
+      padding:18px;
+      background:
+        radial-gradient(900px 700px at 15% 10%, rgba(96,165,250,.20), transparent 55%),
+        radial-gradient(900px 700px at 85% 20%, rgba(34,197,94,.14), transparent 55%),
+        var(--bg);
+    }
+    .banner{
+      width:min(860px, 100%);
       border:1px solid var(--line);
-      background: linear-gradient(180deg, rgba(18,26,43,.82), rgba(15,23,38,.62));
-      border-radius: var(--radius);
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(17,26,42,.92), rgba(15,23,38,.72));
+      box-shadow: var(--shadow);
+      padding:22px;
+    }
+    .banner h1{margin:0 0 8px; font-size:22px; line-height:1.2}
+    .banner p{margin:0 0 16px; color:var(--muted); line-height:1.5}
+    .btn{
+      border:1px solid var(--line);
+      background: var(--btn);
+      color: var(--text);
+      padding:12px 14px;
+      border-radius: 12px;
+      font-weight:800;
+      cursor:pointer;
+      transition: background .15s ease, transform .06s ease, border-color .15s ease;
+    }
+    .btn:hover{background: var(--btn2); border-color: rgba(255,255,255,.18)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(96,165,250,.95), rgba(96,165,250,.50));
+      border-color: rgba(96,165,250,.45);
+    }
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn.good{
+      background: linear-gradient(135deg, rgba(34,197,94,.92), rgba(34,197,94,.55));
+      border-color: rgba(34,197,94,.45);
+    }
+    .btn.ghost{background: transparent}
+
+    /* Screen 2: Map + service cards (top map, bottom cards) */
+    .app{
+      display:flex;
+      flex-direction:column;
+      height:100%;
+    }
+    .topbar{
+      position:absolute;
+      top:10px; left:10px; right:10px;
+      z-index:500;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(15,23,38,.78);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 26px rgba(0,0,0,.30);
+    }
+    .brand{display:flex; gap:10px; align-items:center; min-width:180px;}
+    .logo{
+      width:34px; height:34px;
+      border-radius: 12px;
+      display:grid; place-items:center;
+      background: linear-gradient(135deg, rgba(96,165,250,.95), rgba(34,197,94,.55));
+      border:1px solid rgba(255,255,255,.18);
+      font-weight:900;
+    }
+    .brand b{font-size:14px}
+    .brand span{display:block; font-size:12px; color:var(--muted); margin-top:1px}
+    .status{
+      display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap;
+    }
+    .pill{
+      border:1px solid var(--line);
+      background: rgba(17,26,42,.65);
+      border-radius: 999px;
+      padding:7px 10px;
+      font-size:12px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .pill b{color:var(--text)}
+    .miniBtn{
+      padding:9px 10px;
+      border-radius: 12px;
+      font-weight:800;
+      font-size:12px;
+    }
+
+    #map{
+      flex: 1;
+      height:100%;
+      width:100%;
+    }
+
+    .addressBar{
+      position:absolute;
+      top:62px; left:10px; right:10px;
+      z-index:450;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(15,23,38,.70);
+      backdrop-filter: blur(10px);
+    }
+    .addrText{min-width:0}
+    .addrText b{display:block; font-size:12px}
+    .addrText span{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 70vw;
+    }
+
+    .bottom{
+      position:absolute;
+      left:0; right:0; bottom:0;
+      z-index:600;
+      padding:10px;
+      pointer-events:none;
+    }
+    .panel{
+      pointer-events:auto;
+      width:min(980px, calc(100% - 0px));
+      margin:0 auto;
+      border:1px solid var(--line);
+      background: rgba(15,23,38,.82);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
       box-shadow: var(--shadow);
       overflow:hidden;
     }
-    .sectionHead{
-      padding:16px;
-      border-bottom: 1px solid var(--line);
-      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+    .panelHead{
+      padding:12px 12px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
     }
-    .sectionHead h2{margin:0; font-size:16px}
-    .sectionHead p{margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.4}
-    .sectionBody{padding:16px}
+    .panelHead b{font-size:13px}
+    .panelHead span{font-size:12px; color:var(--muted)}
+    .panelBody{padding:12px}
+    .services{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+    }
+    .card{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(17,26,42,.60);
+      border-radius: 14px;
+      padding:12px;
+      cursor:pointer;
+      transition: background .15s ease, border-color .15s ease, transform .08s ease;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .card:hover{background: rgba(17,26,42,.88); border-color: rgba(255,255,255,.18)}
+    .card:active{transform: translateY(1px)}
+    .card .left{display:flex; gap:10px; align-items:center}
+    .ico{
+      width:36px; height:36px;
+      border-radius: 12px;
+      display:grid; place-items:center;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(96,165,250,.12);
+      font-weight:900;
+    }
+    .card b{font-size:13px}
+    .card small{display:block; color:var(--muted); font-size:11px; margin-top:2px}
+    .tag{font-size:11px; color:var(--muted); border:1px solid rgba(255,255,255,.12); padding:5px 8px; border-radius:999px}
+    .card.selected{border-color: rgba(96,165,250,.48); background: rgba(96,165,250,.10)}
+    .card.disabled{opacity:.45; cursor:not-allowed}
 
-    /* Landing */
-    .hero{
-      display:grid; gap:14px;
-      grid-template-columns: 1fr;
-      padding:20px;
-      background:
-        radial-gradient(800px 500px at 15% 20%, rgba(96,165,250,.20), transparent 55%),
-        radial-gradient(800px 500px at 90% 10%, rgba(167,139,250,.18), transparent 55%),
-        radial-gradient(700px 500px at 60% 110%, rgba(34,197,94,.15), transparent 55%),
-        rgba(15,23,38,.35);
-    }
-    .heroTitle{font-size:22px; margin:0}
-    .heroText{margin:8px 0 0; color:var(--muted); line-height:1.5}
-    .heroActions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
-
-    /* Forms */
-    .formRow{display:grid; gap:10px; grid-template-columns: 1fr}
-    .field{
-      display:flex; flex-direction:column; gap:6px;
-    }
+    /* Form section (appears after service selected) */
+    .formGrid{display:grid; gap:10px; grid-template-columns: 1fr 1fr}
+    .field{display:flex; flex-direction:column; gap:6px}
     label{font-size:12px; color:var(--muted)}
     input, select, textarea{
       width:100%;
-      padding:12px 12px;
+      padding:11px 12px;
       border-radius: 12px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(11,18,32,.55);
@@ -154,505 +231,384 @@
       outline:none;
     }
     input:focus, select:focus, textarea:focus{border-color: rgba(96,165,250,.55)}
-    .hint{font-size:12px; color:var(--muted)}
-    .checks{display:flex; flex-direction:column; gap:8px; margin-top:8px}
+    .hint{font-size:11px; color:var(--muted)}
+    .rowActions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    .summary{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:10px;
+    }
+    .sumBox{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(11,18,32,.40);
+      border-radius: 12px;
+      padding:10px 12px;
+      font-size:12px;
+      display:flex; justify-content:space-between; gap:10px;
+    }
+    .sumBox span{color:var(--muted)}
+    .divider{height:1px; background: rgba(255,255,255,.10); margin:12px 0}
+
+    /* Suggestions dropdown */
+    .suggestWrap{position:relative}
+    .suggest{
+      position:absolute; left:0; right:0; top:100%;
+      background: rgba(15,23,38,.95);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 12px;
+      margin-top:6px;
+      overflow:hidden;
+      z-index: 9999;
+      box-shadow: 0 18px 34px rgba(0,0,0,.35);
+      max-height: 220px;
+      display:none;
+    }
+    .suggest.show{display:block}
+    .suggest button{
+      width:100%;
+      text-align:left;
+      padding:10px 12px;
+      border:0;
+      background: transparent;
+      color: var(--text);
+      cursor:pointer;
+      font-size:12px;
+    }
+    .suggest button:hover{background: rgba(96,165,250,.12)}
+    .suggest .sub{display:block; color:var(--muted); font-size:11px; margin-top:2px}
+
+    /* Modal: Register/OTP */
+    .modalBack{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      z-index: 2000;
+      padding:16px;
+    }
+    .modalBack.show{display:flex; align-items:center; justify-content:center}
+    .modal{
+      width:min(520px, 100%);
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(15,23,38,.92);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding:12px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+    }
+    .modalHead b{font-size:13px}
+    .modalBody{padding:14px}
+    .checks{display:flex; flex-direction:column; gap:8px; margin-top:6px}
     .check{
       display:flex; gap:10px; align-items:flex-start;
-      padding:10px; border-radius: 12px;
       border:1px solid rgba(255,255,255,.10);
-      background: rgba(15,23,38,.50);
-    }
-    .check input{width:auto; margin-top:2px}
-    .check span{font-size:12px; color:var(--muted); line-height:1.4}
-
-    /* Service cards */
-    .cards{
-      display:grid; gap:12px;
-      grid-template-columns: 1fr;
-    }
-    .svc{
-      border:1px solid rgba(255,255,255,.12);
-      border-radius: 16px;
-      background: rgba(15,23,38,.55);
-      padding:14px;
-      display:flex; justify-content:space-between; align-items:center; gap:12px;
-      transition: transform .12s ease, border-color .2s ease, background .2s ease;
-      cursor:pointer;
-    }
-    .svc:hover{
-      transform: translateY(-2px);
-      background: rgba(18,26,43,.85);
-      border-color: rgba(255,255,255,.18);
-    }
-    .svcLeft{display:flex; gap:12px; align-items:center}
-    .svcIcon{
-      width:44px; height:44px; border-radius: 14px;
-      display:grid; place-items:center;
-      border:1px solid rgba(255,255,255,.16);
-      box-shadow: 0 12px 20px rgba(0,0,0,.20);
-      font-weight:900;
-    }
-    .svcMeta h3{margin:0; font-size:15px}
-    .svcMeta p{margin:4px 0 0; font-size:12px; color:var(--muted); line-height:1.4}
-    .tag{
-      font-size:12px; color:var(--muted);
-      border:1px solid rgba(255,255,255,.12);
-      padding:6px 10px; border-radius: 999px;
       background: rgba(11,18,32,.35);
-      white-space:nowrap;
-    }
-    .taxi .svcIcon{background: linear-gradient(135deg, rgba(96,165,250,.90), rgba(96,165,250,.35))}
-    .courier .svcIcon{background: linear-gradient(135deg, rgba(167,139,250,.90), rgba(167,139,250,.35))}
-    .transfer .svcIcon{background: linear-gradient(135deg, rgba(34,197,94,.90), rgba(34,197,94,.35))}
-    .svc.selected{border-color: rgba(255,255,255,.28); background: rgba(18,26,43,.92)}
-    .svc.selected .tag{border-color: rgba(255,255,255,.24)}
-
-    /* Map + bottom sheet */
-    .mapShell{
-      display:grid; gap:12px;
-      grid-template-columns: 1fr;
-      align-items: stretch;
-    }
-    #map{
-      height: 56vh;
-      min-height: 340px;
-      border-radius: 18px;
-      border:1px solid rgba(255,255,255,.12);
-      overflow:hidden;
-      box-shadow: 0 18px 32px rgba(0,0,0,.25);
-    }
-    .addrBar{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:12px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(15,23,38,.58);
-    }
-    .addrBar .txt{
-      display:flex; flex-direction:column; gap:2px;
-      min-width:0;
-    }
-    .addrBar .txt b{font-size:12px}
-    .addrBar .txt span{
-      font-size:12px; color:var(--muted);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      max-width: 68vw;
-    }
-
-    .sheet{
-      border:1px solid rgba(255,255,255,.12);
-      border-radius: 18px;
-      background: rgba(15,23,38,.62);
-      box-shadow: 0 18px 32px rgba(0,0,0,.25);
-      overflow:hidden;
-    }
-    .sheetHead{
-      padding:14px; border-bottom:1px solid rgba(255,255,255,.10);
-      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
-    }
-    .sheetHead h3{margin:0; font-size:14px}
-    .sheetHead p{margin:4px 0 0; font-size:12px; color:var(--muted); line-height:1.4}
-    .sheetBody{padding:14px}
-    .summary{
-      display:grid; gap:10px;
-      grid-template-columns: 1fr;
-      margin-top:12px;
-    }
-    .mini{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: 14px;
-      padding:10px 12px;
-      background: rgba(11,18,32,.38);
-      display:flex; justify-content:space-between; gap:10px;
-      font-size:12px;
-    }
-    .mini span{color:var(--muted)}
-    .row2{display:grid; gap:10px; grid-template-columns: 1fr}
-    .inlineActions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
-    .notice{
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(251,191,36,.10);
-      color: rgba(255,255,255,.88);
-      font-size:12px;
-      line-height:1.45;
-    }
-    .toast{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 16px;
-      padding: 10px 12px;
       border-radius: 12px;
+      padding:10px 12px;
+    }
+    .check input{margin-top:2px}
+    .check span{font-size:12px; color:var(--muted); line-height:1.4}
+    .toast{
+      position:fixed; left:50%; bottom:14px;
+      transform: translateX(-50%);
+      background: rgba(15,23,38,.92);
       border:1px solid rgba(255,255,255,.14);
-      background: rgba(15,23,38,.85);
+      padding:10px 12px;
+      border-radius: 12px;
       box-shadow: var(--shadow);
-      color: var(--text);
-      font-size: 12px;
+      z-index: 3000;
+      font-size:12px;
       opacity:0;
       pointer-events:none;
-      transition: opacity .18s ease, transform .18s ease;
-      z-index: 999;
-      max-width: min(520px, calc(100vw - 24px));
+      transition: opacity .15s ease, transform .15s ease;
+      max-width: min(720px, calc(100vw - 28px));
     }
     .toast.show{opacity:1; transform: translateX(-50%) translateY(-2px)}
 
-    /* Responsive */
-    @media(min-width: 860px){
-      .grid{grid-template-columns: 420px 1fr}
-      .hero{grid-template-columns: 1.2fr .8fr; align-items:center}
-      .formRow{grid-template-columns: 1fr 1fr}
-      .cards{grid-template-columns: 1fr}
-      .mapShell{grid-template-columns: 1fr}
-      .summary{grid-template-columns: 1fr 1fr}
-      .row2{grid-template-columns: 1fr 1fr}
-      .addrBar .txt span{max-width: 520px}
+    /* Screen 4: Tracking (simple) */
+    .trackingOverlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      z-index: 2500;
     }
-    .hidden{display:none !important}
-    .muted{color:var(--muted)}
-    .hr{height:1px; background:rgba(255,255,255,.10); margin:14px 0}
+    .trackingOverlay.show{display:block}
+    .trackPanel{
+      position:absolute; left:10px; right:10px; top:10px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(15,23,38,.88);
+      border-radius: 14px;
+      padding:10px 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .trackPanel b{font-size:13px}
+    .trackPanel span{font-size:12px; color:var(--muted)}
+    .trackActions{display:flex; gap:8px; flex-wrap:wrap}
+
+    @media (max-width: 760px){
+      .services{grid-template-columns: 1fr}
+      .formGrid{grid-template-columns: 1fr}
+      .summary{grid-template-columns: 1fr}
+      .addrText span{max-width: 62vw}
+    }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
+
+  <!-- SCREEN 1 -->
+  <section class="screen landing active" id="screen1">
+    <div class="banner">
+      <h1>SepetTaxi</h1>
+      <p>Taksi, Kurye ve Havalimanı Transferi. Devam etmek için “Devam Et” butonuna bas.</p>
+      <button class="btn primary" id="btnGo">Devam Et</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2/3 (same page: map + service + flow) -->
+  <section class="screen app" id="screen2">
+    <div id="map"></div>
+
     <div class="topbar">
       <div class="brand">
         <div class="logo">ST</div>
         <div>
-          <h1>SepetTaxi</h1>
-          <p>Müşteri Uygulaması</p>
+          <b>SepetTaxi</b>
+          <span id="who">Durum: Misafir</span>
         </div>
       </div>
-
-      <div class="right">
-        <div class="pill" id="pillAuth"><b>Durum:</b> <span class="muted" id="authState">Misafir</span></div>
-        <button class="btn small ghost" id="btnReset">Sıfırla</button>
-        <button class="btn small" id="btnProfile" title="Profil / Kayıt Bilgileri">Profil</button>
+      <div class="status">
+        <div class="pill"><b>Hizmet:</b> <span id="svcPill">Seçilmedi</span></div>
+        <button class="btn miniBtn ghost" id="btnReset">Sıfırla</button>
       </div>
     </div>
 
-    <!-- LANDING -->
-    <div class="section" id="screenLanding">
-      <div class="hero">
-        <div>
-          <h2 class="heroTitle">Tek uygulama ile Taksi, Kurye ve Havalimanı Transferi</h2>
-          <p class="heroText">
-            Devam etmek için kayıt ve doğrulama gereklidir. Sonrasında hizmeti seçip harita üzerinden
-            nereden–nereye belirleyerek çağrınızı oluşturabilirsiniz.
-          </p>
-          <div class="heroActions">
-            <button class="btn primary" id="btnStart">Devam Et / Hizmet Al</button>
-            <button class="btn" id="btnLearn">Nasıl Çalışır?</button>
-          </div>
-        </div>
-
-        <div class="section" style="margin:0; border-radius:18px;">
-          <div class="sectionHead">
-            <div>
-              <h2>Hızlı Özet</h2>
-              <p>3 adımda çağrı oluşturun.</p>
-            </div>
-          </div>
-          <div class="sectionBody">
-            <div class="mini"><b>1</b> <span>Kayıt + SMS Doğrulama</span></div>
-            <div class="mini"><b>2</b> <span>Hizmet seç + detay gir</span></div>
-            <div class="mini"><b>3</b> <span>Harita ile onayla</span></div>
-            <div class="notice">
-              Not: Bu dosya <b>tasarım iskeletidir</b>. OTP ve çağrı oluşturma işlemleri için Apps Script API URL’nizi
-              aşağıdaki <b>API_URL</b> alanına ekleyerek entegre edebilirsiniz.
-            </div>
-          </div>
-        </div>
+    <div class="addressBar">
+      <div class="addrText">
+        <b>Mevcut Konum</b>
+        <span id="curAddr">Konum alınıyor…</span>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn miniBtn" id="btnLocate">Konum Al</button>
       </div>
     </div>
 
-    <div class="grid">
-
-      <!-- AUTH / REGISTER -->
-      <div class="section" id="screenAuth">
-        <div class="sectionHead">
+    <div class="bottom">
+      <div class="panel" id="panel">
+        <div class="panelHead">
           <div>
-            <h2>Kayıt & Doğrulama</h2>
-            <p>Kayıt olmadan hizmet seçimi ve harita ekranı açılmaz.</p>
+            <b id="panelTitle">Hizmet Seçimi</b>
+            <span id="panelSub">Taksi / Kurye / Transfer kartlarından birine tıkla.</span>
           </div>
-          <div class="pill"><b>Adım:</b> <span id="authStepText" class="muted">Kayıt</span></div>
+          <span class="pill" id="authPill"><b>Doğrulama:</b> <span id="authState">Gerekli</span></span>
         </div>
 
-        <div class="sectionBody">
-          <!-- Register -->
-          <div id="authStepRegister">
-            <div class="formRow">
-              <div class="field">
-                <label>Ad Soyad</label>
-                <input id="inpName" type="text" placeholder="Örn: Özhan Samurcu" autocomplete="name" />
-              </div>
-              <div class="field">
-                <label>Telefon (11 hane)</label>
-                <input id="inpPhone" type="tel" placeholder="05xxxxxxxxx" inputmode="numeric" maxlength="11" autocomplete="tel" />
-                <div class="hint">Yalnızca rakam. Örn: 05320000000</div>
-              </div>
-            </div>
-
-            <div class="checks">
-              <div class="check">
-                <input id="chkKvkk" type="checkbox" />
-                <span><b>KVKK</b> metnini okudum ve kabul ediyorum.</span>
-              </div>
-              <div class="check">
-                <input id="chkTerms" type="checkbox" />
-                <span><b>Hizmet Sözleşmesi</b> şartlarını okudum ve kabul ediyorum.</span>
-              </div>
-            </div>
-
-            <div class="inlineActions">
-              <button class="btn primary" id="btnSendOtp">SMS Doğrulama Kodu Gönder</button>
-              <button class="btn" id="btnSkipOtp" title="Sadece iskelet testleri için">Demo: Doğrula</button>
-            </div>
-
-            <div class="notice">
-              OTP entegrasyonu canlıya alınırken: <b>SMS gönderimi</b> + <b>OTP doğrulama</b> Apps Script üzerinden yapılmalıdır.
-              Bu iskelette demo amaçlı “Demo: Doğrula” butonu vardır.
-            </div>
-          </div>
-
-          <!-- OTP -->
-          <div id="authStepOtp" class="hidden">
-            <div class="field">
-              <label>SMS Doğrulama Kodu</label>
-              <input id="inpOtp" type="text" inputmode="numeric" maxlength="6" placeholder="6 haneli kod" />
-              <div class="hint">Kodu girin ve doğrulayın.</div>
-            </div>
-            <div class="inlineActions">
-              <button class="btn good" id="btnVerifyOtp">Doğrula</button>
-              <button class="btn" id="btnBackToRegister">Geri</button>
-              <button class="btn small ghost" id="btnResendOtp">Kodu Tekrar Gönder</button>
-            </div>
-          </div>
-
-          <div class="hr"></div>
-
-          <div class="mini">
-            <b>Profil</b>
-            <span id="profileMini" class="muted">Kayıt yapılmadı</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- MAIN APP -->
-      <div class="section" id="screenApp">
-        <div class="sectionHead">
-          <div>
-            <h2>Hizmet Seçimi & Harita</h2>
-            <p>Doğrulama sonrası hizmeti seçin; adresler ve detaylar ile çağrıyı onaylayın.</p>
-          </div>
-          <div class="pill"><b>Seçili:</b> <span id="pillService" class="muted">—</span></div>
-        </div>
-
-        <div class="sectionBody">
+        <div class="panelBody">
           <!-- Service cards -->
-          <div class="cards" id="serviceCards">
-            <div class="svc taxi" data-service="taxi">
-              <div class="svcLeft">
-                <div class="svcIcon">🚕</div>
-                <div class="svcMeta">
-                  <h3>Taksi</h3>
-                  <p>Nereden–nereye seç, tahmini fiyatı gör, çağrıyı oluştur.</p>
+          <div class="services" id="serviceCards">
+            <div class="card" data-svc="taxi">
+              <div class="left">
+                <div class="ico">🚕</div>
+                <div>
+                  <b>Taksi</b>
+                  <small>Nereden/Nereye → Ücret → Çağır</small>
                 </div>
               </div>
-              <div class="tag">Hızlı</div>
+              <span class="tag">Hızlı</span>
             </div>
 
-            <div class="svc courier" data-service="courier">
-              <div class="svcLeft">
-                <div class="svcIcon">🛵</div>
-                <div class="svcMeta">
-                  <h3>Kurye</h3>
-                  <p>Paket detaylarını gir, alıcı bilgilerini ekle, teslimat başlat.</p>
+            <div class="card" data-svc="courier">
+              <div class="left">
+                <div class="ico">🛵</div>
+                <div>
+                  <b>Kurye</b>
+                  <small>Kilitli akış: paket + alıcı + teslim</small>
                 </div>
               </div>
-              <div class="tag">Paket</div>
+              <span class="tag">Paket</span>
             </div>
 
-            <div class="svc transfer transfer" data-service="transfer">
-              <div class="svcLeft">
-                <div class="svcIcon">✈️</div>
-                <div class="svcMeta">
-                  <h3>Havalimanı Transferi</h3>
-                  <p>Araç seç, valiz sayısı ve rezervasyon zamanı ile transfer oluştur.</p>
+            <div class="card" data-svc="transfer">
+              <div class="left">
+                <div class="ico">✈️</div>
+                <div>
+                  <b>Transfer</b>
+                  <small>Kilitli akış: araç + valiz + zaman</small>
                 </div>
               </div>
-              <div class="tag">Rezervasyon</div>
+              <span class="tag">Rezervasyon</span>
             </div>
           </div>
 
-          <div class="hr"></div>
+          <!-- Flow area (after service selected) -->
+          <div id="flowArea" style="display:none;">
+            <div class="divider"></div>
 
-          <!-- Map + Address -->
-          <div class="mapShell">
-            <div class="addrBar">
-              <div class="txt">
-                <b>Mevcut Konumunuz</b>
-                <span id="currentAddress">Konum bekleniyor…</span>
-              </div>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <button class="btn small" id="btnLocate">Konum Al</button>
-                <button class="btn small ghost" id="btnUseAsPickup" title="Mevcut konumu 'Nereden' yap">Nereden</button>
-              </div>
-            </div>
-
-            <div id="map"></div>
-
-            <!-- Bottom sheet -->
-            <div class="sheet">
-              <div class="sheetHead">
-                <div>
-                  <h3>Çağrı Detayları</h3>
-                  <p id="sheetSub" class="muted">Önce hizmet seçin. Sonra adresleri girin.</p>
-                </div>
-                <button class="btn small ghost" id="btnSwap" title="Nereden/Nereye değiştir">⇅</button>
+            <div class="formGrid">
+              <div class="field">
+                <label>📍 Nereden</label>
+                <input id="pickupText" type="text" placeholder="Mevcut konumdan otomatik dolar" />
+                <div class="hint">Konum alınınca “Nereden” otomatik açık adres olur.</div>
               </div>
 
-              <div class="sheetBody">
-                <div class="row2">
-                  <div class="field">
-                    <label>📍 Nereden (Pickup)</label>
-                    <input id="inpPickup" type="text" placeholder="Mevcut konum veya yazın" />
-                  </div>
-                  <div class="field">
-                    <label>📍 Nereye (Dropoff)</label>
-                    <input id="inpDropoff" type="text" placeholder="Adres yazın" />
-                  </div>
-                </div>
-
-                <!-- Service-specific forms -->
-                <div id="svcTaxi" class="svcForm hidden">
-                  <div class="hr"></div>
-                  <div class="hint">Taksi için ek bilgi gerekmiyor. Adresleri girmeniz yeterli.</div>
-                </div>
-
-                <div id="svcCourier" class="svcForm hidden">
-                  <div class="hr"></div>
-                  <div class="formRow">
-                    <div class="field">
-                      <label>Paket Türü</label>
-                      <select id="pkgType">
-                        <option value="">Seçin</option>
-                        <option>Belge</option>
-                        <option>Gıda</option>
-                        <option>Koli</option>
-                        <option>Diğer</option>
-                      </select>
-                    </div>
-                    <div class="field">
-                      <label>Ağırlık (kg)</label>
-                      <input id="pkgWeight" type="number" min="0" step="0.1" placeholder="Örn: 2.5" />
-                    </div>
-                  </div>
-                  <div class="formRow">
-                    <div class="field">
-                      <label>Alıcı Ad Soyad</label>
-                      <input id="recvName" type="text" placeholder="Örn: Ahmet Yılmaz" />
-                    </div>
-                    <div class="field">
-                      <label>Alıcı Telefon</label>
-                      <input id="recvPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="05xxxxxxxxx" />
-                    </div>
-                  </div>
-                  <div class="field">
-                    <label>Paket Notu (opsiyonel)</label>
-                    <textarea id="pkgNote" rows="2" placeholder="Örn: Kapı görevlisine bırakılabilir"></textarea>
-                  </div>
-                </div>
-
-                <div id="svcTransfer" class="svcForm hidden">
-                  <div class="hr"></div>
-                  <div class="formRow">
-                    <div class="field">
-                      <label>Araç Tipi</label>
-                      <select id="trVehicle">
-                        <option value="">Seçin</option>
-                        <option value="sedan">Binek</option>
-                        <option value="vip">VIP</option>
-                        <option value="van">Minibüs</option>
-                      </select>
-                    </div>
-                    <div class="field">
-                      <label>Valiz Sayısı</label>
-                      <input id="trLuggage" type="number" min="0" step="1" placeholder="Örn: 2" />
-                    </div>
-                  </div>
-                  <div class="formRow">
-                    <div class="field">
-                      <label>Havalimanı</label>
-                      <select id="trAirport">
-                        <option value="">Seçin</option>
-                        <option value="SAW">İstanbul Sabiha Gökçen (SAW)</option>
-                        <option value="IST">İstanbul Havalimanı (IST)</option>
-                        <option value="ESB">Ankara Esenboğa (ESB)</option>
-                        <option value="ADB">İzmir Adnan Menderes (ADB)</option>
-                        <option value="BTZ">Bursa Yenişehir (BTZ)</option>
-                      </select>
-                    </div>
-                    <div class="field">
-                      <label>Rezervasyon</label>
-                      <select id="trScheduleMode">
-                        <option value="now">Hemen</option>
-                        <option value="later">İleri Tarih</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="formRow" id="trLaterRow" class="hidden">
-                    <div class="field">
-                      <label>Tarih</label>
-                      <input id="trDate" type="date" />
-                    </div>
-                    <div class="field">
-                      <label>Saat</label>
-                      <input id="trTime" type="time" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Summary -->
-                <div class="summary">
-                  <div class="mini">
-                    <b>Mesafe</b>
-                    <span id="sumDistance">—</span>
-                  </div>
-                  <div class="mini">
-                    <b>Tahmini Fiyat</b>
-                    <span id="sumPrice">—</span>
-                  </div>
-                  <div class="mini">
-                    <b>Seçilen Hizmet</b>
-                    <span id="sumService">—</span>
-                  </div>
-                  <div class="mini">
-                    <b>Durum</b>
-                    <span id="sumStatus" class="muted">Hazır</span>
-                  </div>
-                </div>
-
-                <div class="inlineActions">
-                  <button class="btn" id="btnCalc">Mesafe & Ücret Hesapla</button>
-                  <button class="btn good" id="btnConfirm">Hizmeti Onayla</button>
-                </div>
-
-                <div class="notice">
-                  “Hizmeti Onayla” bir <b>job</b> oluşturma iskeletidir. Canlı sistemde bu adım,
-                  Apps Script API’ye istek atar ve ardından FAZ 3 (canlı takip) & FAZ 5 (ödeme) akışına geçer.
-                </div>
-
+              <div class="field suggestWrap">
+                <label>📍 Nereye</label>
+                <input id="dropText" type="text" placeholder="Haritadan seç veya yaz (otomatik doldurma)" autocomplete="off"/>
+                <div class="suggest" id="dropSuggest"></div>
+                <div class="hint">Haritaya tıklayarak hedef seçebilirsin veya yazınca öneriler gelir.</div>
               </div>
             </div>
+
+            <!-- Taxi: only these -->
+            <div id="taxiExtra" style="display:none;"></div>
+
+            <!-- Courier extra (minimal placeholders, your locked flow) -->
+            <div id="courierExtra" style="display:none;">
+              <div class="divider"></div>
+              <div class="formGrid">
+                <div class="field">
+                  <label>Paket Türü</label>
+                  <select id="pkgType">
+                    <option value="">Seç</option>
+                    <option>Belge</option>
+                    <option>Koli</option>
+                    <option>Gıda</option>
+                    <option>Diğer</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Ağırlık (kg)</label>
+                  <input id="pkgWeight" type="number" min="0" step="0.1" placeholder="Örn: 2.5"/>
+                </div>
+                <div class="field">
+                  <label>Alıcı Ad Soyad</label>
+                  <input id="recvName" type="text" placeholder="Örn: Ahmet Yılmaz"/>
+                </div>
+                <div class="field">
+                  <label>Alıcı Telefon</label>
+                  <input id="recvPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="05xxxxxxxxx"/>
+                </div>
+              </div>
+              <div class="hint">Kurye akışı kilitli: paket + alıcı + teslim. Buradaki alanlar temel iskelet.</div>
+            </div>
+
+            <!-- Transfer extra (minimal placeholders, your locked flow) -->
+            <div id="transferExtra" style="display:none;">
+              <div class="divider"></div>
+              <div class="formGrid">
+                <div class="field">
+                  <label>Araç Tipi</label>
+                  <select id="trVehicle">
+                    <option value="">Seç</option>
+                    <option value="sedan">Binek</option>
+                    <option value="vip">VIP</option>
+                    <option value="van">Minibüs</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Valiz Sayısı</label>
+                  <input id="trLuggage" type="number" min="0" step="1" placeholder="Örn: 2"/>
+                </div>
+                <div class="field">
+                  <label>Rezervasyon</label>
+                  <select id="trMode">
+                    <option value="now">Hemen</option>
+                    <option value="later">İleri Tarih</option>
+                  </select>
+                </div>
+                <div class="field" id="trLater" style="display:none;">
+                  <label>Tarih / Saat</label>
+                  <input id="trDatetime" type="datetime-local"/>
+                </div>
+              </div>
+              <div class="hint">Transfer akışı kilitli: araç + valiz + zaman + havalimanı (isteğe göre eklenir).</div>
+            </div>
+
+            <div class="summary">
+              <div class="sumBox"><b>Mesafe</b> <span id="sumDist">—</span></div>
+              <div class="sumBox"><b>Ücret</b> <span id="sumPrice">—</span></div>
+              <div class="sumBox"><b>Durum</b> <span id="sumStatus">Hazır</span></div>
+            </div>
+
+            <div class="rowActions">
+              <button class="btn" id="btnCalc">Ücret Hesapla</button>
+              <button class="btn good" id="btnCall">Çağır</button>
+              <button class="btn ghost" id="btnBack">Hizmeti Değiştir</button>
+            </div>
+
+            <div class="hint" id="recentHint" style="margin-top:10px;"></div>
           </div>
 
         </div>
       </div>
+    </div>
+  </section>
 
+  <!-- Register/OTP Modal (opens only when user clicks service and is new) -->
+  <div class="modalBack" id="authModal">
+    <div class="modal">
+      <div class="modalHead">
+        <b id="authTitle">Kayıt</b>
+        <button class="btn miniBtn ghost" id="authClose">Kapat</button>
+      </div>
+      <div class="modalBody">
+        <div id="stepRegister">
+          <div class="field">
+            <label>Ad Soyad</label>
+            <input id="name" type="text" placeholder="Örn: Özhan Samurcu"/>
+          </div>
+          <div class="field" style="margin-top:10px;">
+            <label>Telefon (11 hane)</label>
+            <input id="phone" type="tel" inputmode="numeric" maxlength="11" placeholder="05xxxxxxxxx"/>
+            <div class="hint">Sadece rakam. Örn: 05320000000</div>
+          </div>
+          <div class="checks">
+            <div class="check">
+              <input id="kvkk" type="checkbox"/>
+              <span><b>KVKK</b> metnini okudum ve kabul ediyorum.</span>
+            </div>
+            <div class="check">
+              <input id="terms" type="checkbox"/>
+              <span><b>Hizmet Sözleşmesi</b> şartlarını okudum ve kabul ediyorum.</span>
+            </div>
+          </div>
+          <div class="rowActions" style="margin-top:12px;">
+            <button class="btn primary" id="sendOtp">Doğrulama Kodu Gönder</button>
+            <button class="btn" id="demoVerify">Demo: Doğrula</button>
+          </div>
+          <div class="hint" style="margin-top:8px;">
+            Canlıda: sendOtp / verifyOtp API ile gerçek SMS doğrulama bağlanır.
+          </div>
+        </div>
+
+        <div id="stepOtp" style="display:none;">
+          <div class="field">
+            <label>SMS Kodu</label>
+            <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="6 haneli kod"/>
+          </div>
+          <div class="rowActions" style="margin-top:12px;">
+            <button class="btn good" id="verifyOtp">Doğrula</button>
+            <button class="btn" id="backReg">Geri</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tracking (simple overlay - optional screen) -->
+  <div class="trackingOverlay" id="trackOverlay">
+    <div class="trackPanel">
+      <div>
+        <b>Taksi Konumu</b>
+        <span id="trackInfo">JOB: —</span>
+      </div>
+      <div class="trackActions">
+        <button class="btn miniBtn" id="trackClose">Kapat</button>
+      </div>
     </div>
   </div>
 
@@ -660,107 +616,121 @@
 
   <script>
     /***********************
-     * CONFIG
+     * CONFIG (ONLY ONE LINE)
      ***********************/
-    const API_URL = "https://script.google.com/macros/s/AKfycbxGK3XXKVX-65ZfRCtGhMdIoOgV6RAx7tSldcBW3ugRzB7_T3Bv2DLsCazrpLgYPwg0/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxGK3XXKVX-65ZfRCtGhMdIoOgV6RAx7tSldcBW3ugRzB7_T3Bv2DLsCazrpLgYPwg0/exec"; // BURAYA Apps Script /exec URL (tek satır)
 
-
-    // Basit demo fiyatlandırma (FAZ 5 kilitli mantığınızı burada bağlayacaksınız)
-    const PRICING = {
-      taxi:   { base: 45, perKm: 18 },
-      courier:{ base: 55, perKm: 20 },
-      transfer:{ base: 140, perKm: 24 }
+    /***********************
+     * SIMPLE HELPERS
+     ***********************/
+    const $ = (id)=>document.getElementById(id);
+    const toast = (msg)=>{
+      const t=$("toast");
+      t.textContent=msg;
+      t.classList.add("show");
+      setTimeout(()=>t.classList.remove("show"), 2200);
     };
+    const digitsOnly = (s)=> (s||"").replace(/\D/g,"");
+    const validPhone = (p)=> /^\d{11}$/.test(p||"");
 
     /***********************
      * STATE
      ***********************/
     const state = {
       authed: false,
-      user: null, // {name, phone}
-      service: null, // taxi | courier | transfer
-      pickup: { text:"", lat:null, lng:null },
-      dropoff:{ text:"", lat:null, lng:null },
-      current: { lat:null, lng:null, address:"" },
+      user: null,           // {name, phone}
+      service: null,        // taxi | courier | transfer
       map: null,
-      marker: null,
+      markerMe: null,
+      markerTo: null,
+      coordsMe: null,       // {lat,lng}
+      coordsTo: null,       // {lat,lng}
+      curAddr: "",
       distKm: null,
-      price: null
+      price: null,
+      pendingServiceClick: null
     };
 
     /***********************
-     * HELPERS
+     * STORAGE (recent destinations)
      ***********************/
-    const $ = (id)=>document.getElementById(id);
-    const toast = (msg)=>{
-      const el = $("toast");
-      el.textContent = msg;
-      el.classList.add("show");
-      setTimeout(()=>el.classList.remove("show"), 2200);
-    };
-    const digitsOnly = (s)=> (s||"").replace(/\D/g,"");
-    const validPhone = (p)=> /^\d{11}$/.test(p);
-
-    function setAuthUI(){
-      $("authState").textContent = state.authed ? "Doğrulandı" : "Misafir";
-      $("profileMini").textContent = state.authed
-        ? `${state.user.name} • ${state.user.phone}`
-        : "Kayıt yapılmadı";
-
-      // Auth zorunlu: app ekranı kayıt doğrulanmadan kullanılamaz
-      $("screenApp").style.opacity = state.authed ? "1" : ".55";
-      $("screenApp").style.pointerEvents = state.authed ? "auto" : "none";
+    function loadSession(){
+      try{
+        const u = localStorage.getItem("st_user");
+        const a = localStorage.getItem("st_authed");
+        if(a==="1" && u){
+          state.user = JSON.parse(u);
+          state.authed = true;
+        }
+      }catch(_){}
+      renderAuth();
     }
-
-    function setAuthStep(step){
-      // step: register | otp
-      if(step === "register"){
-        $("authStepText").textContent = "Kayıt";
-        $("authStepRegister").classList.remove("hidden");
-        $("authStepOtp").classList.add("hidden");
-      }else{
-        $("authStepText").textContent = "Doğrulama";
-        $("authStepRegister").classList.add("hidden");
-        $("authStepOtp").classList.remove("hidden");
+    function saveSession(){
+      localStorage.setItem("st_authed","1");
+      localStorage.setItem("st_user", JSON.stringify(state.user));
+    }
+    function resetAll(){
+      localStorage.removeItem("st_authed");
+      localStorage.removeItem("st_user");
+      localStorage.removeItem("st_recent_to");
+      location.reload();
+    }
+    function addRecentDestination(text){
+      if(!text) return;
+      const key="st_recent_to";
+      let arr=[];
+      try{ arr = JSON.parse(localStorage.getItem(key) || "[]"); }catch(_){}
+      arr = arr.filter(x => x !== text);
+      arr.unshift(text);
+      arr = arr.slice(0,6);
+      localStorage.setItem(key, JSON.stringify(arr));
+      renderRecentHint();
+    }
+    function getRecentDestinations(){
+      try{ return JSON.parse(localStorage.getItem("st_recent_to") || "[]"); }catch(_){ return []; }
+    }
+    function renderRecentHint(){
+      const arr = getRecentDestinations();
+      const el = $("recentHint");
+      if(!state.service){ el.textContent=""; return; }
+      if(arr.length===0){
+        el.textContent = "İpucu: Nereye kutusuna yazmaya başlayınca öneriler gelir. Haritaya tıklayarak hedef de seçebilirsin.";
+        return;
       }
-    }
-
-    function setService(service){
-      state.service = service;
-      $("pillService").textContent = service ? service.toUpperCase() : "—";
-      $("sumService").textContent = service ? service.toUpperCase() : "—";
-
-      // Card selection
-      [...document.querySelectorAll(".svc")].forEach(el=>{
-        el.classList.toggle("selected", el.dataset.service === service);
-      });
-
-      // Forms
-      ["svcTaxi","svcCourier","svcTransfer"].forEach(id=>$(id).classList.add("hidden"));
-      if(service === "taxi") $("svcTaxi").classList.remove("hidden");
-      if(service === "courier") $("svcCourier").classList.remove("hidden");
-      if(service === "transfer") $("svcTransfer").classList.remove("hidden");
-
-      // Sub text
-      const sub = {
-        taxi: "Taksi: Nereden–nereye girin ve onaylayın.",
-        courier: "Kurye: Paket ve alıcı detaylarını girin, onaylayın.",
-        transfer: "Transfer: Araç, valiz ve rezervasyon detaylarını girin, onaylayın."
-      };
-      $("sheetSub").textContent = service ? sub[service] : "Önce hizmet seçin. Sonra adresleri girin.";
-
-      // Reset summary
-      state.distKm = null; state.price = null;
-      $("sumDistance").textContent = "—";
-      $("sumPrice").textContent = "—";
-      $("sumStatus").textContent = "Hazır";
+      el.textContent = "Son gidilenler: " + arr.join(" • ");
     }
 
     /***********************
-     * MAP + GEO
+     * AUTH UI
      ***********************/
-    async function reverseGeocode(lat, lng){
-      // Nominatim ücretsiz servis: yoğun kullanımda limit vardır. Canlıda kendi servisiniz/anahtarınız önerilir.
+    function renderAuth(){
+      $("who").textContent = state.authed ? `Durum: Doğrulandı (${state.user.name})` : "Durum: Misafir";
+      $("authState").textContent = state.authed ? "Tamam" : "Gerekli";
+      $("authPill").style.borderColor = state.authed ? "rgba(34,197,94,.40)" : "rgba(251,191,36,.40)";
+      // Disable service cards if not authed? (Your rule: click opens register)
+      // We keep clickable but gate in handler.
+    }
+
+    function openAuthModal(){
+      $("authModal").classList.add("show");
+      $("authTitle").textContent = "Kayıt";
+      $("stepRegister").style.display="block";
+      $("stepOtp").style.display="none";
+    }
+    function closeAuthModal(){
+      $("authModal").classList.remove("show");
+      state.pendingServiceClick = null;
+    }
+    function toOtpStep(){
+      $("authTitle").textContent = "Doğrulama";
+      $("stepRegister").style.display="none";
+      $("stepOtp").style.display="block";
+    }
+
+    /***********************
+     * MAP + GEO + REVERSE
+     ***********************/
+    async function reverseGeocode(lat,lng){
       const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
       const res = await fetch(url, { headers: { "Accept":"application/json" }});
       if(!res.ok) throw new Error("Adres alınamadı");
@@ -768,11 +738,23 @@
       return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     }
 
+    async function searchGeocode(q){
+      // For autocomplete suggestions
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers: { "Accept":"application/json" }});
+      if(!res.ok) throw new Error("Arama hatası");
+      const data = await res.json();
+      return (data||[]).map(x => ({
+        display: x.display_name,
+        lat: parseFloat(x.lat),
+        lng: parseFloat(x.lon)
+      }));
+    }
+
     function initMap(){
       if(state.map) return;
 
       state.map = L.map("map", { zoomControl:true });
-      // Default: Bursa civarı (isteğe göre)
       state.map.setView([40.195, 29.06], 12);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -780,63 +762,208 @@
         attribution: "&copy; OpenStreetMap"
       }).addTo(state.map);
 
-      state.marker = L.marker([40.195, 29.06], { draggable:true }).addTo(state.map);
-
-      state.marker.on("dragend", async ()=>{
-        const {lat, lng} = state.marker.getLatLng();
-        state.current.lat = lat; state.current.lng = lng;
-        $("currentAddress").textContent = "Adres güncelleniyor…";
+      // click to set destination (only after service selected)
+      state.map.on("click", async (e)=>{
+        if(!state.service) return;
+        state.coordsTo = { lat: e.latlng.lat, lng: e.latlng.lng };
+        if(!state.markerTo){
+          state.markerTo = L.marker([state.coordsTo.lat, state.coordsTo.lng]).addTo(state.map);
+        }else{
+          state.markerTo.setLatLng([state.coordsTo.lat, state.coordsTo.lng]);
+        }
+        $("sumStatus").textContent = "Adres alınıyor…";
         try{
-          const addr = await reverseGeocode(lat, lng);
-          state.current.address = addr;
-          $("currentAddress").textContent = addr;
-        }catch(e){
-          $("currentAddress").textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          const addr = await reverseGeocode(state.coordsTo.lat, state.coordsTo.lng);
+          $("dropText").value = addr;
+          addRecentDestination(addr);
+          hideSuggest();
+          $("sumStatus").textContent = "Hazır";
+          toast("Hedef seçildi.");
+        }catch(_){
+          $("sumStatus").textContent = "Hazır";
+          toast("Hedef seçildi (adres alınamadı).");
         }
       });
     }
 
-    async function locate(){
+    function locate(){
       initMap();
-      $("currentAddress").textContent = "Konum alınıyor…";
+      $("curAddr").textContent = "Konum alınıyor…";
       $("sumStatus").textContent = "Konum alınıyor…";
 
       if(!navigator.geolocation){
-        toast("Tarayıcı konum desteği yok.");
-        $("currentAddress").textContent = "Konum desteği yok.";
+        $("curAddr").textContent = "Konum desteği yok.";
         $("sumStatus").textContent = "Hazır";
+        toast("Tarayıcı konum desteği yok.");
         return;
       }
 
       navigator.geolocation.getCurrentPosition(async (pos)=>{
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
+        state.coordsMe = {lat,lng};
 
-        state.current.lat = lat; state.current.lng = lng;
         state.map.setView([lat,lng], 16);
-        state.marker.setLatLng([lat,lng]);
+
+        if(!state.markerMe){
+          state.markerMe = L.marker([lat,lng]).addTo(state.map);
+        }else{
+          state.markerMe.setLatLng([lat,lng]);
+        }
 
         try{
-          const addr = await reverseGeocode(lat, lng);
-          state.current.address = addr;
-          $("currentAddress").textContent = addr;
-          toast("Konum alındı.");
-        }catch(e){
-          $("currentAddress").textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-          toast("Konum alındı (adres çözümlenemedi).");
-        }finally{
+          const addr = await reverseGeocode(lat,lng);
+          state.curAddr = addr;
+          $("curAddr").textContent = addr;
+          // Rule: "Nereden" automatically filled with open address
+          $("pickupText").value = addr;
           $("sumStatus").textContent = "Hazır";
+          toast("Konum alındı.");
+        }catch(_){
+          $("curAddr").textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          $("pickupText").value = $("curAddr").textContent;
+          $("sumStatus").textContent = "Hazır";
+          toast("Konum alındı (adres alınamadı).");
         }
       }, (err)=>{
         console.error(err);
-        toast("Konum izni verilmedi veya alınamadı.");
-        $("currentAddress").textContent = "Konum izni verilmedi / alınamadı.";
+        $("curAddr").textContent = "Konum izni verilmedi / alınamadı.";
         $("sumStatus").textContent = "Hazır";
+        toast("Konum izni verilmedi veya alınamadı.");
       }, { enableHighAccuracy:true, timeout:12000, maximumAge:0 });
     }
 
     /***********************
-     * DISTANCE / PRICE (demo)
+     * SERVICE FLOW
+     ***********************/
+    function setService(svc){
+      state.service = svc;
+      $("svcPill").textContent = svc ? svc.toUpperCase() : "Seçilmedi";
+
+      // rule: when one selected, other services "close"
+      [...document.querySelectorAll("#serviceCards .card")].forEach(el=>{
+        const is = el.dataset.svc === svc;
+        el.classList.toggle("selected", is);
+        el.style.display = is ? "flex" : "none";
+      });
+
+      $("panelTitle").textContent = svc === "taxi" ? "Taksi" : (svc === "courier" ? "Kurye" : "Transfer");
+      $("panelSub").textContent = "Nereden/Nereye seç → Ücret → Çağır";
+
+      $("flowArea").style.display = "block";
+
+      // show extra per service
+      $("courierExtra").style.display = (svc==="courier") ? "block" : "none";
+      $("transferExtra").style.display = (svc==="transfer") ? "block" : "none";
+      $("taxiExtra").style.display = (svc==="taxi") ? "block" : "none";
+
+      // reset computed
+      state.distKm = null;
+      state.price = null;
+      $("sumDist").textContent = "—";
+      $("sumPrice").textContent = "—";
+      $("sumStatus").textContent = "Hazır";
+      renderRecentHint();
+
+      // ensure we have location; if not, try locate
+      if(!state.coordsMe) locate();
+      else {
+        // enforce rule again
+        if(state.curAddr) $("pickupText").value = state.curAddr;
+      }
+    }
+
+    function backToServices(){
+      state.service = null;
+      $("svcPill").textContent = "Seçilmedi";
+      $("panelTitle").textContent = "Hizmet Seçimi";
+      $("panelSub").textContent = "Taksi / Kurye / Transfer kartlarından birine tıkla.";
+      $("flowArea").style.display = "none";
+
+      // show all services again
+      [...document.querySelectorAll("#serviceCards .card")].forEach(el=>{
+        el.classList.remove("selected");
+        el.style.display = "flex";
+      });
+
+      // destination marker stays but is okay; you can keep or reset:
+      // Reset destination:
+      state.coordsTo = null;
+      if(state.markerTo){
+        state.map.removeLayer(state.markerTo);
+        state.markerTo = null;
+      }
+      $("dropText").value = "";
+      hideSuggest();
+    }
+
+    /***********************
+     * AUTOCOMPLETE (Nereye)
+     ***********************/
+    let suggestTimer = null;
+
+    function hideSuggest(){ $("dropSuggest").classList.remove("show"); $("dropSuggest").innerHTML=""; }
+    function showSuggest(items){
+      const box = $("dropSuggest");
+      box.innerHTML = "";
+      items.forEach(it=>{
+        const b = document.createElement("button");
+        b.type="button";
+        b.innerHTML = `${escapeHtml(it.display)}<span class="sub">${it.lat.toFixed(5)}, ${it.lng.toFixed(5)}</span>`;
+        b.addEventListener("click", async ()=>{
+          $("dropText").value = it.display;
+          state.coordsTo = { lat: it.lat, lng: it.lng };
+          addRecentDestination(it.display);
+
+          if(!state.markerTo){
+            state.markerTo = L.marker([it.lat,it.lng]).addTo(state.map);
+          }else{
+            state.markerTo.setLatLng([it.lat,it.lng]);
+          }
+          state.map.setView([it.lat,it.lng], 15);
+          hideSuggest();
+          toast("Hedef seçildi.");
+        });
+        box.appendChild(b);
+      });
+      if(items.length>0) box.classList.add("show");
+      else hideSuggest();
+    }
+
+    function escapeHtml(s){
+      return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    }
+
+    async function handleDropInput(){
+      if(!state.service) return;
+      const q = $("dropText").value.trim();
+
+      // show recents quickly if short
+      if(q.length < 3){
+        const rec = getRecentDestinations().filter(x => x.toLowerCase().includes(q.toLowerCase())).slice(0,6);
+        if(rec.length){
+          showSuggest(rec.map(x => ({display:x, lat:(state.coordsTo?.lat||0), lng:(state.coordsTo?.lng||0)})));
+          // NOTE: recents don't have coords here; user can still click map or type for real coords.
+          // Better: we keep only for quick fill; coords-to must be set by map click or search results.
+          // We’ll treat “recent click” as text-only and require coords for pricing.
+        } else hideSuggest();
+        return;
+      }
+
+      clearTimeout(suggestTimer);
+      suggestTimer = setTimeout(async ()=>{
+        try{
+          const results = await searchGeocode(q);
+          showSuggest(results);
+        }catch(e){
+          console.error(e);
+          hideSuggest();
+        }
+      }, 250);
+    }
+
+    /***********************
+     * DISTANCE + PRICE
      ***********************/
     function haversineKm(lat1, lon1, lat2, lon2){
       const toRad = (x)=> x * Math.PI/180;
@@ -851,118 +978,121 @@
       return R*c;
     }
 
-    // Demo amaçlı: pickup/dropoff adreslerinden koordinat çözmüyor.
-    // Canlıda: Place autocomplete/geocoding veya backend koordinatları ile bağlanmalı.
-    function demoCalc(){
-      if(!state.service) return toast("Önce hizmet seçin.");
-      const pickupText = $("inpPickup").value.trim();
-      const dropText   = $("inpDropoff").value.trim();
-      if(!pickupText || !dropText) return toast("Nereden ve Nereye zorunlu.");
+    // NOTE: FAZ 5 kilitli — burada sadece "bağlama noktası" var.
+    function computePrice(service, km){
+      // Senin FAZ 5’te kilitlediğin fiyat fonksiyonunu buraya bağlayacağız.
+      // Şimdilik minimal placeholder:
+      const base = service==="taxi" ? 45 : (service==="courier" ? 55 : 140);
+      const perKm = service==="taxi" ? 18 : (service==="courier" ? 20 : 24);
+      return Math.round((base + perKm*km) * 10) / 10;
+    }
 
-      // İskelet yaklaşım: pickup koordinatını mevcut konumdan al (varsa)
-      if(state.current.lat == null || state.current.lng == null){
-        toast("Önce konum alın (Nereden için).");
-        return;
-      }
+    function calc(){
+      if(!state.service) return toast("Önce hizmet seç.");
+      if(!state.coordsMe) return toast("Konum alınmadı.");
+      if(!state.coordsTo) return toast("Nereye seç: haritaya tıkla veya önerilerden seç.");
 
-      // Demo: dropoff koordinatı yok -> rasgele küçük sapma ile sadece UI çalışsın
-      const lat1 = state.current.lat, lng1 = state.current.lng;
-      const lat2 = lat1 + 0.02, lng2 = lng1 + 0.02;
-
-      const km = haversineKm(lat1,lng1,lat2,lng2);
+      const km = haversineKm(state.coordsMe.lat, state.coordsMe.lng, state.coordsTo.lat, state.coordsTo.lng);
       state.distKm = km;
+      state.price = computePrice(state.service, km);
 
-      const p = PRICING[state.service];
-      const price = Math.round((p.base + p.perKm * km) * 10) / 10;
-      state.price = price;
-
-      $("sumDistance").textContent = `${km.toFixed(2)} km (demo)`;
-      $("sumPrice").textContent = `${price.toFixed(1)} TL (demo)`;
-
-      toast("Hesaplandı (demo).");
+      $("sumDist").textContent = `${km.toFixed(2)} km`;
+      $("sumPrice").textContent = `${state.price.toFixed(1)} TL`;
+      $("sumStatus").textContent = "Hazır";
+      toast("Ücret hesaplandı.");
     }
 
     /***********************
-     * API (skeletal)
+     * API (createJob + optional tracking)
      ***********************/
     async function apiPost(action, payload){
-      if(!API_URL) throw new Error("API_URL tanımlı değil.");
+      if(!API_URL) throw new Error("API_URL boş. /exec URL’nizi yapıştırın.");
       const res = await fetch(API_URL, {
         method:"POST",
-        headers: {"Content-Type":"application/json"},
+        headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ action, ...payload })
       });
-      return await res.json();
+      const data = await res.json().catch(()=> ({}));
+      return data;
     }
 
-    async function createJob(){
+    async function callService(){
       if(!state.authed) return toast("Önce kayıt/doğrulama.");
-      if(!state.service) return toast("Önce hizmet seçin.");
+      if(!state.service) return toast("Önce hizmet seç.");
+      if(!state.coordsMe || !state.curAddr) return toast("Konum al.");
+      if(!state.coordsTo) return toast("Nereye seç.");
 
-      const pickup = $("inpPickup").value.trim();
-      const dropoff = $("inpDropoff").value.trim();
-      if(!pickup || !dropoff) return toast("Nereden ve Nereye zorunlu.");
-
-      // Hizmete göre alan zorunlulukları
-      if(state.service === "courier"){
-        const recvPhone = digitsOnly($("recvPhone").value);
-        if(!$("recvName").value.trim()) return toast("Alıcı adı zorunlu.");
-        if(!validPhone(recvPhone)) return toast("Alıcı telefonu 11 hane olmalı.");
-      }
-      if(state.service === "transfer"){
-        if(!$("trVehicle").value) return toast("Araç tipi seçin.");
-        if(!$("trAirport").value) return toast("Havalimanı seçin.");
-        if($("trScheduleMode").value === "later"){
-          if(!$("trDate").value || !$("trTime").value) return toast("Tarih ve saat zorunlu.");
-        }
+      if(state.distKm==null || state.price==null){
+        toast("Önce ücret hesapla.");
+        return;
       }
 
-      $("sumStatus").textContent = "Onaylanıyor…";
+      // Minimal validations per locked flows
+      if(state.service==="courier"){
+        const rp = digitsOnly($("recvPhone").value);
+        if(!$("recvName").value.trim()) return toast("Kurye: Alıcı adı zorunlu.");
+        if(!validPhone(rp)) return toast("Kurye: Alıcı telefonu 11 hane.");
+      }
+      if(state.service==="transfer"){
+        if(!$("trVehicle").value) return toast("Transfer: Araç tipi seç.");
+        if($("trMode").value==="later" && !$("trDatetime").value) return toast("Transfer: Tarih/saat zorunlu.");
+      }
 
-      const jobPayload = {
+      $("sumStatus").textContent = "Gönderiliyor…";
+
+      const payload = {
         user: state.user,
-        service: state.service,
-        pickup: { text: pickup, lat: state.current.lat, lng: state.current.lng },
-        dropoff:{ text: dropoff },
-        // servis detayları
-        details: {
-          courier: state.service==="courier" ? {
-            pkgType: $("pkgType").value,
-            pkgWeight: $("pkgWeight").value,
-            recvName: $("recvName").value.trim(),
-            recvPhone: digitsOnly($("recvPhone").value),
-            note: $("pkgNote").value.trim()
-          } : null,
-          transfer: state.service==="transfer" ? {
-            vehicle: $("trVehicle").value,
-            luggage: $("trLuggage").value,
-            airport: $("trAirport").value,
-            scheduleMode: $("trScheduleMode").value,
-            date: $("trDate").value,
-            time: $("trTime").value
-          } : null
+        service_type: state.service,
+        pickup: {
+          address: $("pickupText").value.trim(),
+          lat: state.coordsMe.lat,
+          lng: state.coordsMe.lng
+        },
+        dropoff: {
+          address: $("dropText").value.trim(),
+          lat: state.coordsTo.lat,
+          lng: state.coordsTo.lng
         },
         pricing: {
           distance_km: state.distKm,
           estimated_price: state.price
+        },
+        details: {
+          courier: state.service==="courier" ? {
+            pkg_type: $("pkgType").value,
+            pkg_weight: $("pkgWeight").value,
+            receiver_name: $("recvName").value.trim(),
+            receiver_phone: digitsOnly($("recvPhone").value)
+          } : null,
+          transfer: state.service==="transfer" ? {
+            vehicle: $("trVehicle").value,
+            luggage: $("trLuggage").value,
+            schedule_mode: $("trMode").value,
+            schedule_time: $("trDatetime").value || null
+          } : null
         }
       };
 
       try{
-        // İSKELET: API_URL yoksa demo davranış
+        // If API not wired yet, still allow demo
         if(!API_URL){
-          const demoId = "JOB-" + Date.now();
+          const demoJob = "JOB-" + Date.now();
           $("sumStatus").textContent = "Oluşturuldu (demo)";
-          toast(`Çağrı oluşturuldu: ${demoId}`);
-          // Canlıda burada: track ekranına yönlendirme + ödeme akışı (FAZ 3/5)
+          toast("Çağrı oluşturuldu (demo).");
+          openTracking(demoJob);
           return;
         }
 
-        const data = await apiPost("createJob", jobPayload);
+        // Expected backend shape: { ok:true, job_id:"JOB-..." } or { error:"..." }
+        const data = await apiPost("createJob", payload);
+
         if(data && data.ok){
           $("sumStatus").textContent = "Oluşturuldu";
-          toast(`Çağrı oluşturuldu: ${data.job_id || "JOB"}`);
-          // Canlıda: track.html?job_id=... gibi yönlendirme
+          const jobId = data.job_id || ("JOB-" + Date.now());
+          toast("Çağrı oluşturuldu.");
+          openTracking(jobId); // Screen 4 (optional)
+          // Eğer senin FAZ 3’te track.html ayrı sayfa ise:
+          // window.location.href = `track.html?job_id=${encodeURIComponent(jobId)}`;
         }else{
           $("sumStatus").textContent = "Hata";
           toast(data?.error || "Çağrı oluşturulamadı.");
@@ -975,145 +1105,183 @@
     }
 
     /***********************
-     * AUTH FLOW (skeletal)
+     * TRACKING (optional screen)
+     * - Here it's a simple overlay. If your FAZ 3 uses separate track.html, redirect above.
      ***********************/
-    function demoVerify(){
-      const name = $("inpName").value.trim();
-      const phone = digitsOnly($("inpPhone").value);
-
-      if(!name) return toast("Ad Soyad zorunlu.");
-      if(!validPhone(phone)) return toast("Telefon 11 hane olmalı.");
-      if(!$("chkKvkk").checked) return toast("KVKK onayı zorunlu.");
-      if(!$("chkTerms").checked) return toast("Hizmet sözleşmesi onayı zorunlu.");
-
-      state.authed = true;
-      state.user = { name, phone };
-      localStorage.setItem("st_user", JSON.stringify(state.user));
-      localStorage.setItem("st_authed", "1");
-
-      setAuthUI();
-      toast("Doğrulandı (demo).");
-
-      // Harita init
-      initMap();
-      locate();
-      // Landing’i kapat
-      $("screenLanding").classList.add("hidden");
+    function openTracking(jobId){
+      $("trackInfo").textContent = `JOB: ${jobId} • Taksi konumu izleniyor (FAZ 3 bağlanacak)`;
+      $("trackOverlay").classList.add("show");
+      // Burada FAZ 3’te kilitli olan "driver marker update" mekanizmasını bağlayacağız.
     }
-
-    function loadSession(){
-      try{
-        const authed = localStorage.getItem("st_authed")==="1";
-        const userRaw = localStorage.getItem("st_user");
-        if(authed && userRaw){
-          state.user = JSON.parse(userRaw);
-          state.authed = true;
-        }
-      }catch(_){}
-      setAuthUI();
+    function closeTracking(){
+      $("trackOverlay").classList.remove("show");
     }
 
     /***********************
      * EVENTS
      ***********************/
-    window.addEventListener("DOMContentLoaded", ()=>{
-      loadSession();
+    function goToScreen2(){
+      $("screen1").classList.remove("active");
+      $("screen2").classList.add("active");
       initMap();
+      locate();
+    }
 
-      // Landing actions
-      $("btnStart").addEventListener("click", ()=>{
-        $("screenLanding").classList.add("hidden");
-        toast("Kayıt adımına geçildi.");
-      });
-      $("btnLearn").addEventListener("click", ()=>{
-        toast("Akış: Kayıt → Hizmet seç → Harita → Onay");
-      });
+    function onServiceClick(svc){
+      // Rule: when user clicks a service, if new user => register opens, and service becomes active only after verification
+      if(!state.authed){
+        state.pendingServiceClick = svc;
+        openAuthModal();
+        return;
+      }
+      setService(svc);
+    }
 
-      // Reset
-      $("btnReset").addEventListener("click", ()=>{
-        localStorage.removeItem("st_user");
-        localStorage.removeItem("st_authed");
-        location.reload();
-      });
+    function verifyDemo(){
+      const name = $("name").value.trim();
+      const phone = digitsOnly($("phone").value);
+      if(!name) return toast("Ad Soyad zorunlu.");
+      if(!validPhone(phone)) return toast("Telefon 11 hane olmalı.");
+      if(!$("kvkk").checked) return toast("KVKK onayı zorunlu.");
+      if(!$("terms").checked) return toast("Sözleşme onayı zorunlu.");
 
-      // Profile
-      $("btnProfile").addEventListener("click", ()=>{
-        if(state.authed) toast(`${state.user.name} • ${state.user.phone}`);
-        else toast("Henüz kayıt yok.");
-      });
+      state.user = { name, phone };
+      state.authed = true;
+      saveSession();
+      renderAuth();
+      toast("Doğrulandı (demo).");
+      $("authModal").classList.remove("show");
 
-      // Phone input filter
-      $("inpPhone").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
-      $("recvPhone").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
+      // After verification: service selection becomes active automatically for the clicked one
+      if(state.pendingServiceClick){
+        const svc = state.pendingServiceClick;
+        state.pendingServiceClick = null;
+        setService(svc);
+      }
+    }
 
-      // Auth
-      $("btnSendOtp").addEventListener("click", ()=>{
-        // canlıda: API -> sendOtp
-        const name = $("inpName").value.trim();
-        const phone = digitsOnly($("inpPhone").value);
-        if(!name) return toast("Ad Soyad zorunlu.");
-        if(!validPhone(phone)) return toast("Telefon 11 hane olmalı.");
-        if(!$("chkKvkk").checked) return toast("KVKK onayı zorunlu.");
-        if(!$("chkTerms").checked) return toast("Hizmet sözleşmesi onayı zorunlu.");
+    async function sendOtp(){
+      // iskelet: canlıda sendOtp endpointine bağlanır
+      const name = $("name").value.trim();
+      const phone = digitsOnly($("phone").value);
+      if(!name) return toast("Ad Soyad zorunlu.");
+      if(!validPhone(phone)) return toast("Telefon 11 hane olmalı.");
+      if(!$("kvkk").checked) return toast("KVKK onayı zorunlu.");
+      if(!$("terms").checked) return toast("Sözleşme onayı zorunlu.");
 
-        setAuthStep("otp");
-        toast("Kod gönderildi (demo).");
-      });
-      $("btnResendOtp").addEventListener("click", ()=> toast("Kod tekrar gönderildi (demo)."));
-      $("btnBackToRegister").addEventListener("click", ()=> setAuthStep("register"));
-      $("btnVerifyOtp").addEventListener("click", ()=>{
-        // canlıda: API -> verifyOtp
-        // burada demo:
-        demoVerify();
-      });
-      $("btnSkipOtp").addEventListener("click", demoVerify);
+      if(!API_URL){
+        toast("API_URL boş (demo). OTP adımına geçildi.");
+        toOtpStep();
+        return;
+      }
 
-      // Service selection
+      try{
+        const data = await apiPost("sendOtp", { phone, name });
+        if(data && data.ok){
+          toast("Kod gönderildi.");
+          toOtpStep();
+        }else{
+          toast(data?.error || "Kod gönderilemedi.");
+        }
+      }catch(e){
+        console.error(e);
+        toast(e.message || "OTP hatası");
+      }
+    }
+
+    async function verifyOtp(){
+      const name = $("name").value.trim();
+      const phone = digitsOnly($("phone").value);
+      const otp = digitsOnly($("otp").value).slice(0,6);
+
+      if(!validPhone(phone)) return toast("Telefon hatalı.");
+      if(otp.length !== 6) return toast("Kod 6 hane olmalı.");
+
+      if(!API_URL){
+        // demo fallback
+        return verifyDemo();
+      }
+
+      try{
+        const data = await apiPost("verifyOtp", { phone, otp, name });
+        if(data && data.ok){
+          state.user = { name, phone };
+          state.authed = true;
+          saveSession();
+          renderAuth();
+          toast("Doğrulandı.");
+          closeAuthModal();
+          if(state.pendingServiceClick){
+            const svc = state.pendingServiceClick;
+            state.pendingServiceClick = null;
+            setService(svc);
+          }
+        }else{
+          toast(data?.error || "Kod doğrulanamadı.");
+        }
+      }catch(e){
+        console.error(e);
+        toast(e.message || "OTP hatası");
+      }
+    }
+
+    function wire(){
+      $("btnGo").addEventListener("click", goToScreen2);
+      $("btnLocate").addEventListener("click", locate);
+      $("btnReset").addEventListener("click", resetAll);
+
+      // service cards
       $("serviceCards").addEventListener("click", (e)=>{
-        const card = e.target.closest(".svc");
+        const card = e.target.closest(".card");
         if(!card) return;
-        if(!state.authed) return toast("Önce kayıt/doğrulama.");
-        setService(card.dataset.service);
+        onServiceClick(card.dataset.svc);
       });
 
-      // Transfer schedule toggle
-      $("trScheduleMode").addEventListener("change", ()=>{
-        const later = $("trScheduleMode").value === "later";
-        const row = $("trLaterRow");
-        if(later) row.classList.remove("hidden");
-        else row.classList.add("hidden");
+      // flow buttons
+      $("btnBack").addEventListener("click", backToServices);
+      $("btnCalc").addEventListener("click", calc);
+      $("btnCall").addEventListener("click", callService);
+
+      // drop input
+      $("dropText").addEventListener("input", handleDropInput);
+      $("dropText").addEventListener("focus", handleDropInput);
+      document.addEventListener("click", (e)=>{
+        if(!e.target.closest(".suggestWrap")) hideSuggest();
       });
 
-      // Map actions
-      $("btnLocate").addEventListener("click", ()=>{
-        if(!state.authed) return toast("Önce kayıt/doğrulama.");
-        locate();
-      });
-      $("btnUseAsPickup").addEventListener("click", ()=>{
-        if(!state.authed) return toast("Önce kayıt/doğrulama.");
-        if(!state.current.address) return toast("Önce konum alın.");
-        $("inpPickup").value = state.current.address;
-        toast("Nereden güncellendi.");
+      // transfer mode
+      $("trMode").addEventListener("change", ()=>{
+        $("trLater").style.display = ($("trMode").value==="later") ? "block" : "none";
       });
 
-      // Swap
-      $("btnSwap").addEventListener("click", ()=>{
-        const a = $("inpPickup").value;
-        $("inpPickup").value = $("inpDropoff").value;
-        $("inpDropoff").value = a;
-        toast("Adresler değiştirildi.");
+      // auth modal
+      $("authClose").addEventListener("click", closeAuthModal);
+      $("demoVerify").addEventListener("click", verifyDemo);
+      $("sendOtp").addEventListener("click", sendOtp);
+      $("verifyOtp").addEventListener("click", verifyOtp);
+      $("backReg").addEventListener("click", ()=>{
+        $("authTitle").textContent = "Kayıt";
+        $("stepRegister").style.display="block";
+        $("stepOtp").style.display="none";
       });
 
-      // Calc / confirm
-      $("btnCalc").addEventListener("click", ()=>{
-        if(!state.authed) return toast("Önce kayıt/doğrulama.");
-        demoCalc();
-      });
-      $("btnConfirm").addEventListener("click", createJob);
+      // input filters
+      $("phone").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
+      $("recvPhone").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,11));
+      $("otp").addEventListener("input", (e)=> e.target.value = digitsOnly(e.target.value).slice(0,6));
 
-      // Default
-      setAuthStep("register");
-      setService(null);
+      // tracking overlay
+      $("trackClose").addEventListener("click", closeTracking);
+    }
+
+    /***********************
+     * INIT
+     ***********************/
+    window.addEventListener("DOMContentLoaded", ()=>{
+      wire();
+      loadSession();
+      renderRecentHint();
+      // Screen1 starts. Screen2 opens on "Devam Et".
     });
   </script>
 </body>
