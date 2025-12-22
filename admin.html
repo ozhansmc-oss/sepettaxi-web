@@ -65,9 +65,7 @@ button.secondary{background:#6b7280}
 const API_URL = "https://script.google.com/macros/s/AKfycbyFx229ISjvzMc0d0BR16gXUQ1srZX4h0E9Y_yCkod6v3ulDkY2a8mq5VGQzDxNHosO/exec";
 /* ======================================= */
 
-function badgeClass(s){
-  return "badge " + (s||"");
-}
+function badgeClass(s){ return "badge " + (s||""); }
 
 function nextStatus(s){
   if(s==="pending") return "accepted";
@@ -150,20 +148,24 @@ function loadJobs(){
 
 /* ================= ACTIONS ================= */
 
-function setStatus(jobId,status){
-  fetch(API_URL,{
+function post(data){
+  return fetch(API_URL,{
     method:"POST",
-    body:JSON.stringify({action:"updateStatus",job_id:jobId,status})
-  }).then(loadJobs);
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(data)
+  }).then(r=>r.json());
+}
+
+function setStatus(jobId,status){
+  post({action:"updateStatus",job_id:jobId,status})
+    .then(loadJobs);
 }
 
 function assignDriver(jobId){
   const d = document.getElementById("d_"+jobId).value;
   if(!d) return alert("Driver ID gir");
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"updateStatus",job_id:jobId,status:"accepted",driver_id:d})
-  }).then(loadJobs);
+  post({action:"updateStatus",job_id:jobId,status:"accepted",driver_id:d})
+    .then(loadJobs);
 }
 
 /* ================= FAZ 5 ================= */
@@ -171,19 +173,21 @@ function assignDriver(jobId){
 function savePrice(jobId){
   const p = document.getElementById("p_"+jobId).value;
   if(!p) return alert("Fiyat gir");
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"setJobPrice",job_id:jobId,amount:p})
-  }).then(()=>loadJobs());
+  post({action:"setJobPrice",job_id:jobId,amount:p})
+    .then(res=>{
+      console.log("setJobPrice:",res);
+      loadJobs();
+    });
 }
 
 function markPaid(jobId){
   if(!confirm("Ödeme alındı mı?")) return;
   const m = document.getElementById("m_"+jobId).value;
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"markPaid",job_id:jobId,method:m})
-  }).then(()=>loadJobs());
+  post({action:"markPaid",job_id:jobId,method:m})
+    .then(res=>{
+      console.log("markPaid:",res);
+      loadJobs();
+    });
 }
 
 /* ================= SUMMARY ================= */
