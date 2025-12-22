@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8" />
-<title>SepetTaxi</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4<!DOCTYPE html>
-<html lang="tr">
-<head>
 <meta charset="UTF-8">
 <title>SepetTaxi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,12 +10,20 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{margin:0;padding:0;height:100%}
 body{font-family:Arial,Helvetica,sans-serif;background:#0b0f17;color:#fff}
 
-.screen{display:none;height:100vh}
-.active{display:block}
+/* GENEL SCREEN */
+.screen{
+  display:none;
+  min-height:100vh;
+  padding:20px;
+}
+.screen.active{
+  display:block;
+}
 
+/* MERKEZ */
 .center{
   display:flex;
   flex-direction:column;
@@ -31,38 +32,40 @@ body{font-family:Arial,Helvetica,sans-serif;background:#0b0f17;color:#fff}
   text-align:center;
 }
 
+/* BUTON */
 button{
   width:100%;
   padding:16px;
   border:none;
   border-radius:14px;
   font-size:16px;
-  cursor:pointer;
   background:#fff;
   color:#000;
+  cursor:pointer;
 }
 
+/* HARİTA EKRANI */
+#mapScreen{
+  padding:0;
+}
 .topbar{
-  position:fixed;
-  top:0;left:0;right:0;
   height:56px;
-  background:#0b0f17;
   display:flex;
   align-items:center;
   justify-content:space-between;
   padding:0 16px;
-  z-index:10;
-}
-
-.footer{
-  position:fixed;
-  bottom:0;left:0;right:0;
-  height:120px;
   background:#0b0f17;
+}
+.footer{
+  height:120px;
   padding:12px;
-  z-index:10;
+  background:#0b0f17;
+}
+#map{
+  height:calc(100vh - 56px - 120px);
 }
 
+/* KARTLAR */
 .cards{display:flex;gap:10px}
 .card{
   flex:1;
@@ -80,27 +83,20 @@ input{
   border-radius:10px;
   border:none;
 }
-
-#map{
-  position:fixed;
-  top:56px;
-  bottom:120px;
-  left:0;
-  right:0;
-}
+.small{color:#aaa;font-size:14px}
 </style>
 </head>
 <body>
 
 <!-- 1. GİRİŞ -->
-<div id="s1" class="screen active center">
+<div id="screen1" class="screen active center">
   <h1>SepetTaxi</h1>
-  <div style="color:#aaa;margin:8px 0">Taksi · Kurye · Transfer</div>
-  <button style="max-width:280px" onclick="go(2)">Devam Et</button>
+  <div class="small">Taksi · Kurye · Transfer</div>
+  <button style="max-width:280px;margin-top:20px" onclick="go(2)">Devam Et</button>
 </div>
 
 <!-- 2. HARİTA + HİZMET -->
-<div id="s2" class="screen">
+<div id="screen2" class="screen" >
   <div class="topbar">
     <div>SepetTaxi</div>
     <div id="userState">Misafir</div>
@@ -109,8 +105,8 @@ input{
   <div id="map"></div>
 
   <div class="footer">
-    <div style="margin-bottom:8px">Hizmet Seç</div>
-    <div class="cards">
+    <div class="small">Hizmet Seç</div>
+    <div class="cards" style="margin-top:8px">
       <div class="card" onclick="selectService('taxi')">🚕 Taksi</div>
       <div class="card" onclick="selectService('courier')">🛵 Kurye</div>
       <div class="card" onclick="selectService('transfer')">✈️ Transfer</div>
@@ -119,179 +115,13 @@ input{
 </div>
 
 <!-- 3. KAYIT -->
-<div id="s3" class="screen center">
-  <h2>Kayıt / Giriş</h2>
-  <button onclick="register()">📱 Telefon ile Devam Et</button>
-</div>
-
-<!-- 4. ADRES -->
-<div id="s4" class="screen" style="padding:20px">
-  <h3 id="serviceTitle"></h3>
-  <input id="from" placeholder="Nereden (otomatik)" />
-  <input id="to" placeholder="Nereye (haritadan seç)" />
-  <button onclick="finish()" style="margin-top:16px">Devam Et</button>
-</div>
-
-<script>
-let user=null;
-let service=null;
-let map, fromMarker, toMarker;
-
-function go(n){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('s'+n).classList.add('active');
-  if(n===2) setTimeout(initMap,300);
-}
-
-function selectService(s){
-  service=s;
-  if(!user) go(3);
-  else openAddress();
-}
-
-function register(){
-  user={id:Date.now()};
-  document.getElementById("userState").innerText="Kayıtlı";
-  openAddress();
-}
-
-function openAddress(){
-  document.getElementById("serviceTitle").innerText =
-    service==="taxi"?"Taksi":service==="courier"?"Kurye":"Transfer";
-  go(4);
-}
-
-function finish(){
-  alert("Akış burada kilitli. Backend bir sonraki adım.");
-}
-
-function initMap(){
-  if(map) return;
-
-  map=L.map('map').setView([40.195,29.06],13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-  setTimeout(()=>map.invalidateSize(),300);
-
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(async pos=>{
-      let lat=pos.coords.latitude, lng=pos.coords.longitude;
-      fromMarker=L.marker([lat,lng]).addTo(map).bindPopup("Mevcut Konum").openPopup();
-      map.setView([lat,lng],14);
-      from.value=await reverse(lat,lng);
-    });
-  }
-
-  map.on("click",async e=>{
-    if(toMarker) map.removeLayer(toMarker);
-    toMarker=L.marker(e.latlng).addTo(map);
-    to.value=await reverse(e.latlng.lat,e.latlng.lng);
-  });
-}
-
-async function reverse(lat,lng){
-  try{
-    let r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-    let d=await r.json();
-    return d.display_name || lat+","+lng;
-  }catch{
-    return lat+","+lng;
-  }
-}
-</script>
-
-</body>
-</html>
-/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<style>
-*{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{font-family:Arial,Helvetica,sans-serif;background:#0b0f17;color:#fff}
-
-.screen{display:none;height:100vh}
-.active{display:block}
-
-.center{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
-
-button{
-  width:100%;
-  padding:16px;
-  border:none;
-  border-radius:14px;
-  font-size:16px;
-  cursor:pointer;
-  background:#fff;
-  color:#000;
-}
-
-.topbar{
-  position:fixed;top:0;left:0;right:0;height:56px;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 16px;background:#0b0f17;z-index:5
-}
-
-.footer{
-  position:fixed;left:0;right:0;bottom:0;height:110px;
-  background:#0b0f17;padding:12px;z-index:5
-}
-
-.cards{display:flex;gap:10px}
-.card{
-  flex:1;background:#161b2a;border-radius:14px;padding:14px;
-  text-align:center;cursor:pointer
-}
-
-input{
-  width:100%;padding:14px;margin-top:10px;border-radius:10px;border:none
-}
-
-#map{
-  position:fixed;
-  top:56px;
-  bottom:110px;
-  left:0;
-  right:0;
-  z-index:1;
-}
-</style>
-</head>
-<body>
-
-<!-- SCREEN 1 : GİRİŞ -->
-<div id="s1" class="screen active center">
-  <h1>SepetTaxi</h1>
-  <div style="color:#aaa;margin:8px 0">Taksi · Kurye · Transfer</div>
-  <button onclick="go(2)" style="max-width:280px">Devam Et</button>
-</div>
-
-<!-- SCREEN 2 : HARİTA + HİZMET -->
-<div id="s2" class="screen">
-  <div class="topbar">
-    <div>SepetTaxi</div>
-    <div id="userState">Misafir</div>
-  </div>
-
-  <div id="map"></div>
-
-  <div class="footer">
-    <div style="margin-bottom:8px">Hizmet Seç</div>
-    <div class="cards">
-      <div class="card" onclick="selectService('taxi')">🚕 Taksi</div>
-      <div class="card" onclick="selectService('courier')">🛵 Kurye</div>
-      <div class="card" onclick="selectService('transfer')">✈️ Transfer</div>
-    </div>
-  </div>
-</div>
-
-<!-- SCREEN 3 : KAYIT -->
-<div id="s3" class="screen center">
+<div id="screen3" class="screen center">
   <h2>Kayıt / Giriş</h2>
   <button onclick="register()">Telefon ile Devam Et</button>
 </div>
 
-<!-- SCREEN 4 : ADRES -->
-<div id="s4" class="screen" style="padding:20px">
+<!-- 4. ADRES -->
+<div id="screen4" class="screen">
   <h3 id="serviceTitle"></h3>
   <input id="from" placeholder="Nereden (otomatik)" />
   <input id="to" placeholder="Nereye (haritadan seç)" />
@@ -306,9 +136,9 @@ let map, fromMarker, toMarker;
 
 function go(n){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('s'+n).classList.add('active');
+  document.getElementById('screen'+n).classList.add('active');
   current=n;
-  if(n===2) setTimeout(initMap,300);
+  if(n===2) setTimeout(initMap,200);
 }
 
 function selectService(s){
@@ -324,8 +154,8 @@ function register(){
 }
 
 function openAddress(){
-  document.getElementById('serviceTitle').innerText=
-    service==='taxi'?'Taksi':service==='courier'?'Kurye':'Transfer';
+  document.getElementById('serviceTitle').innerText =
+    service==="taxi"?"Taksi":service==="courier"?"Kurye":"Transfer";
   go(4);
 }
 
@@ -336,23 +166,21 @@ function finish(){
 function initMap(){
   if(map) return;
   map=L.map('map').setView([40.195,29.06],13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-
-  setTimeout(()=>map.invalidateSize(),300);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(async pos=>{
       let lat=pos.coords.latitude,lng=pos.coords.longitude;
       fromMarker=L.marker([lat,lng]).addTo(map).bindPopup("Mevcut Konum").openPopup();
       map.setView([lat,lng],14);
-      document.getElementById('from').value=await reverse(lat,lng);
+      from.value=await reverse(lat,lng);
     });
   }
 
-  map.on('click',async e=>{
+  map.on("click",async e=>{
     if(toMarker) map.removeLayer(toMarker);
     toMarker=L.marker(e.latlng).addTo(map);
-    document.getElementById('to').value=await reverse(e.latlng.lat,e.latlng.lng);
+    to.value=await reverse(e.latlng.lat,e.latlng.lng);
   });
 }
 
