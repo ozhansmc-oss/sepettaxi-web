@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SepetTaxi – Finance</title>
+
+<style>
+/* ADMIN UYUMLU TASARIM */
+body{margin:0;font-family:Arial;background:#f6f7f9}
+.header{background:#0f172a;color:#fff;padding:14px;font-weight:bold}
+.container{padding:14px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.box{background:#fff;border-radius:10px;padding:10px;text-align:center}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+select,button,input{padding:8px;border-radius:6px;border:1px solid #ddd}
+button{cursor:pointer;background:#2563eb;color:#fff;border:none}
+button.secondary{background:#6b7280}
+.jobs{display:grid;grid-template-columns:1fr;gap:12px}
+.card{background:#fff;border-radius:10px;padding:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{padding:4px 8px;border-radius:12px;font-size:12px;background:#e5e7eb}
+.small{font-size:12px;color:#374151}
+.money{font-weight:bold}
+.ok{color:#059669}
+.warn{color:#b45309}
+@media(min-width:900px){.jobs{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+
+<body>
+
+<div class="header">SepetTaxi – Finance (Ödeme & Komisyon)</div>
+
+<div class="container">
+
+  <!-- ÖZET -->
+  <div class="summary">
+    <div class="box"><b id="s_unpaid">0</b><br>Bekleyen Ödeme</div>
+    <div class="box"><b id="s_paid">0</b><br>Ödenmiş</div>
+    <div class="box"><b id="s_total">0</b><br>Toplam</div>
+  </div>
+
+  <!-- FİLTRE -->
+  <div class="controls">
+    <select id="filter" onchange="loadPayments()">
+      <option value="">Tümü</option>
+      <option value="unpaid">Bekleyen</option>
+      <option value="paid">Ödenmiş</option>
+    </select>
+    <button class="secondary" onclick="loadPayments()">Yenile</button>
+  </div>
+
+  <div id="payments" class="jobs"></div>
+</div>
+
+<script>
+/* ================= AYAR ================= */
+const FINANCE_API_URL = "https://script.google.com/macros/s/AKfycbwylTGMdtaTej82k5T66RfUBmenSWLIZNURDHZN5ASjtznrkQGw3m_lklKcOil-qZ8m/exec";
+/* ======================================= */
+
+function post(data){
+  return fetch(FINANCE_API_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(data)
+  }).then(r=>r.json());
+}
+
+function loadPayments(){
+  const f = document.getElementById("filter").value;
+  fetch(FINANCE_API_URL + "?action=getPayments")
+    .then(r=>r.json())
+    .then(list=>{
+      let items = list;
+      if(f) items = list.filter(p=>p.payment_status===f);
+
+      document.getElementById("payments").innerHTML="";
+      updateSummary(list);
+
+      items.forEach(p=>{
+        const paid = p.payment_status==="paid";
+        document.getElementById("payments").innerHTML += `
+          <div class="card">
+            <div class="row">
+              <div>
+                <b>Job:</b> ${p.job_id}<br>
+                <span class="small">Payment ID: ${p.payment_id}</span>
+              </div>
+              <span class="badge ${paid?'ok':'warn'}">${p.payment_status}</span>
+            </div>
+
+            <div class="row" style="margin-top:6px">
+              <div class="small">Yöntem: ${p.payment_method}</div>
+              <div class="money">Brüt: ₺${p.gross_amount}</div>
+            </div>
+
+            <div class="row" style="margin-top:8px">
+              ${!paid?`
+              <input placeholder="Driver ID" id="d_${p.job_id}">
+              <button onclick="markPaid('${p.job_id}')">Ödeme Alındı</button>
+              `:`
+              <div class="small ok">Ödendi: ${p.paid_at||"-"}</div>
+              `}
+            </div>
+          </div>
+        `;
+      });
+    });
+}
+
+function markPaid(jobId){
+  const d = document.getElementById("d_"+jobId).value;
+  if(!d) return alert("Driver ID gir");
+  if(!confirm("Ödeme alındı mı?")) return;
+
+  post({
+    action:"markPaymentPaid",
+    job_id:jobId,
+    driver_id:d
+  }).then(res=>{
+    if(res.status==="paid"){
+      alert("Ödeme işlendi.\nKomisyon: ₺"+res.commission+"\nSürücü Net: ₺"+res.driver_net);
+    }else{
+      alert("Hata: "+JSON.stringify(res));
+    }
+    loadPayments();
+  });
+}
+
+function updateSummary(list){
+  document.getElementById("s_total").innerText = list.length;
+  document.getElementById("s_unpaid").innerText =
+    list.filter(p=>p.payment_status==="unpaid").length;
+  document.getElementById("s_paid").innerText =
+    list.filter(p=>p.payment_status==="paid").length;
+}
+
+/* INIT */
+loadPayments();
+setInterval(loadPayments,30000);
+</script>
+
+</body>
+</html>
