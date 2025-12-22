@@ -9,10 +9,13 @@
 body{margin:0;font-family:Arial;background:#f6f7f9}
 .header{background:#0f172a;color:#fff;padding:14px;font-weight:bold}
 .container{padding:14px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.box{background:#fff;border-radius:10px;padding:10px;text-align:center}
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 select,button,input{padding:8px;border-radius:6px;border:1px solid #ddd}
 button{cursor:pointer;background:#2563eb;color:#fff;border:none}
-button.secondary{background:#6b7280}
+button.gray{background:#6b7280}
+button.green{background:#059669}
 .jobs{display:grid;grid-template-columns:1fr;gap:12px}
 .card{background:#fff;border-radius:10px;padding:12px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
@@ -21,13 +24,7 @@ button.secondary{background:#6b7280}
 .accepted{background:#bfdbfe}
 .on_the_way{background:#bbf7d0}
 .completed{background:#e5e7eb}
-.critical{border:2px solid #f59e0b;background:#fffbeb}
-.actions{display:flex;gap:6px;flex-wrap:wrap}
 .small{font-size:12px;color:#374151}
-.link{color:#2563eb;text-decoration:none}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.box{background:#fff;border-radius:10px;padding:10px;text-align:center}
-.timeline{font-size:12px;color:#374151;margin-top:6px}
 @media(min-width:900px){.jobs{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -54,150 +51,117 @@ button.secondary{background:#6b7280}
       <option value="on_the_way">Yolda</option>
       <option value="completed">Tamamlandı</option>
     </select>
-    <button class="secondary" onclick="loadJobs()">Yenile</button>
+    <button class="gray" onclick="loadJobs()">Yenile</button>
   </div>
 
   <div id="jobs" class="jobs"></div>
 </div>
 
 <script>
-/* ================= AYAR ================= */
-const API_URL = "https://script.google.com/macros/s/AKfycbyFx229ISjvzMc0d0BR16gXUQ1srZX4h0E9Y_yCkod6v3ulDkY2a8mq5VGQzDxNHosO/exec";
-/* ======================================= */
+/* ================== AYAR ================== */
+const OPS_API_URL = "https://script.google.com/macros/s/AKfycbwylTGMdtaTej82k5T66RfUBmenSWLIZNURDHZN5ASjtznrkQGw3m_lklKcOil-qZ8m/exec";
+const FINANCE_API_URL = "https://script.google.com/macros/s/AKfycbwylTGMdtaTej82k5T66RfUBmenSWLIZNURDHZN5ASjtznrkQGw3m_lklKcOil-qZ8m/exec";
+/* ========================================= */
 
-function badgeClass(s){ return "badge " + (s||""); }
-
-function nextStatus(s){
-  if(s==="pending") return "accepted";
-  if(s==="accepted") return "on_the_way";
-  if(s==="on_the_way") return "completed";
-  return null;
-}
-
-function isCritical(created){
-  if(!created) return false;
-  return (Date.now() - new Date(created).getTime()) > 600000;
-}
-
-/* ================= LOAD JOBS ================= */
-
-function loadJobs(){
-  const f = document.getElementById("filter").value;
-  fetch(API_URL + "?action=getJobs" + (f ? "&status="+f : ""))
-    .then(r=>r.json())
-    .then(list=>{
-      document.getElementById("jobs").innerHTML="";
-      updateSummary(list);
-
-      list.forEach(j=>{
-        const ns = nextStatus(j.status);
-        const critical = j.status==="pending" && isCritical(j.created_at);
-
-        document.getElementById("jobs").innerHTML += `
-        <div class="card ${critical?'critical':''}">
-          <div class="row">
-            <div>
-              <b>${j.service_type}</b><br>
-              <span class="small">${j.job_id}</span>
-            </div>
-            <span class="${badgeClass(j.status)}">${j.status}</span>
-          </div>
-
-          <div class="timeline">
-            Oluştu: ${j.created_at||"-"} |
-            Kabul: ${j.accepted_at||"-"} |
-            Yolda: ${j.on_the_way_at||"-"} |
-            Bitti: ${j.completed_at||"-"}
-          </div>
-
-          <div class="row" style="margin-top:8px">
-            <div class="actions">
-              ${ns?`<button onclick="setStatus('${j.job_id}','${ns}')">${ns}</button>`:""}
-              <a class="link" target="_blank" href="track.html?job_id=${j.job_id}">Canlı Takip</a>
-            </div>
-            <div class="small">Driver: ${j.driver_id||"-"}</div>
-          </div>
-
-          <!-- SÜRÜCÜ ATA -->
-          <div class="row" style="margin-top:6px">
-            <input placeholder="Driver ID" id="d_${j.job_id}">
-            <button onclick="assignDriver('${j.job_id}')">Ata</button>
-          </div>
-
-          <!-- FAZ 5 – ÖDEME -->
-          <div class="row" style="margin-top:6px">
-            <input type="number" placeholder="Brüt ₺" id="p_${j.job_id}">
-            <select id="m_${j.job_id}">
-              <option value="cash">Nakit</option>
-              <option value="card">Kart</option>
-              <option value="transfer">Havale</option>
-            </select>
-            <button onclick="savePrice('${j.job_id}')">Kaydet</button>
-            <button onclick="markPaid('${j.job_id}')">Paid</button>
-          </div>
-
-          <div class="small">
-            Ödeme: ${j.payment_status||"-"} |
-            Net: ${j.driver_net_amount||"-"} ₺ |
-            Komisyon: ${j.commission_amount||"-"} ₺
-          </div>
-        </div>`;
-      });
-    });
-}
-
-/* ================= ACTIONS ================= */
-
-function post(data){
-  return fetch(API_URL,{
+function post(url,data){
+  return fetch(url,{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify(data)
   }).then(r=>r.json());
 }
 
+function loadJobs(){
+  const f = document.getElementById("filter").value;
+  fetch(OPS_API_URL + "?action=getJobs" + (f ? "&status="+f : ""))
+    .then(r=>r.json())
+    .then(list=>{
+      document.getElementById("jobs").innerHTML="";
+      updateSummary(list);
+
+      list.forEach(j=>{
+        document.getElementById("jobs").innerHTML += `
+          <div class="card">
+            <div class="row">
+              <div>
+                <b>${j.service_type}</b><br>
+                <span class="small">${j.job_id}</span>
+              </div>
+              <span class="badge ${j.status}">${j.status}</span>
+            </div>
+
+            <div class="small" style="margin-top:4px">
+              Oluştu: ${j.created_at || "-"} |
+              Kabul: ${j.accepted_at || "-"} |
+              Bitti: ${j.completed_at || "-"}
+            </div>
+
+            <div class="row" style="margin-top:8px">
+              <div class="small">Driver: ${j.driver_id || "-"}</div>
+              <div>
+                ${j.status!=="completed"
+                  ? `<button onclick="setStatus('${j.job_id}','completed')">Tamamlandı</button>`
+                  : `<span class="small">✔ Tamamlandı</span>`
+                }
+              </div>
+            </div>
+
+            <!-- FAZ 5 – ÖDEME OLUŞTUR -->
+            ${j.status==="completed" ? `
+            <div class="row" style="margin-top:10px">
+              <button class="green"
+                onclick="createPaymentFromAdmin(
+                  '${j.job_id}',
+                  '${j.estimated_price || j.fixed_price || 0}'
+                )">
+                💰 Ödeme Oluştur
+              </button>
+            </div>
+            ` : ``}
+          </div>
+        `;
+      });
+    });
+}
+
 function setStatus(jobId,status){
-  post({action:"updateStatus",job_id:jobId,status})
-    .then(loadJobs);
+  post(OPS_API_URL,{
+    action:"updateStatus",
+    job_id:jobId,
+    status:status
+  }).then(loadJobs);
 }
 
-function assignDriver(jobId){
-  const d = document.getElementById("d_"+jobId).value;
-  if(!d) return alert("Driver ID gir");
-  post({action:"updateStatus",job_id:jobId,status:"accepted",driver_id:d})
-    .then(loadJobs);
+/* ========= FAZ 5 – ADMIN → FINANCE ========= */
+function createPaymentFromAdmin(jobId,gross){
+  if(!gross || gross<=0){
+    return alert("Bu iş için brüt tutar yok");
+  }
+  if(!confirm("Bu iş için ödeme oluşturulsun mu?")) return;
+
+  post(FINANCE_API_URL,{
+    action:"createPayment",
+    job_id:jobId,
+    gross_amount:Number(gross),
+    payment_method:"cash"
+  })
+  .then(res=>{
+    if(res.status==="payment_created"){
+      alert("Ödeme oluşturuldu. Finance ekranında görünecek.");
+    }else{
+      alert("Hata: "+JSON.stringify(res));
+    }
+  });
 }
-
-/* ================= FAZ 5 ================= */
-
-function savePrice(jobId){
-  const p = document.getElementById("p_"+jobId).value;
-  if(!p) return alert("Fiyat gir");
-  post({action:"setJobPrice",job_id:jobId,amount:p})
-    .then(res=>{
-      console.log("setJobPrice:",res);
-      loadJobs();
-    });
-}
-
-function markPaid(jobId){
-  if(!confirm("Ödeme alındı mı?")) return;
-  const m = document.getElementById("m_"+jobId).value;
-  post({action:"markPaid",job_id:jobId,method:m})
-    .then(res=>{
-      console.log("markPaid:",res);
-      loadJobs();
-    });
-}
-
-/* ================= SUMMARY ================= */
 
 function updateSummary(list){
   document.getElementById("s_total").innerText = list.length;
   document.getElementById("s_active").innerText =
     list.filter(j=>["pending","accepted","on_the_way"].includes(j.status)).length;
   document.getElementById("s_today").innerText =
-    list.filter(j=>j.created_at && new Date(j.created_at).toDateString()===new Date().toDateString()).length;
+    list.filter(j=>j.created_at &&
+      new Date(j.created_at).toDateString()===new Date().toDateString()
+    ).length;
 }
 
 /* INIT */
