@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SepetTaxi – Finance</title>
 
 <style>
-/* ADMIN UYUMLU TASARIM */
 body{margin:0;font-family:Arial;background:#f6f7f9}
 .header{background:#0f172a;color:#fff;padding:14px;font-weight:bold}
 .container{padding:14px}
@@ -19,11 +18,11 @@ button.secondary{background:#6b7280}
 .jobs{display:grid;grid-template-columns:1fr;gap:12px}
 .card{background:#fff;border-radius:10px;padding:12px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.badge{padding:4px 8px;border-radius:12px;font-size:12px;background:#e5e7eb}
+.badge{padding:4px 8px;border-radius:12px;font-size:12px}
+.badge.unpaid{background:#fde68a}
+.badge.paid{background:#bbf7d0}
 .small{font-size:12px;color:#374151}
 .money{font-weight:bold}
-.ok{color:#059669}
-.warn{color:#b45309}
 @media(min-width:900px){.jobs{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -68,12 +67,11 @@ function post(data){
 }
 
 function loadPayments(){
-  const f = document.getElementById("filter").value;
   fetch(FINANCE_API_URL + "?action=getPayments")
     .then(r=>r.json())
     .then(list=>{
-      let items = list;
-      if(f) items = list.filter(p=>p.payment_status===f);
+      const f = document.getElementById("filter").value;
+      const items = f ? list.filter(p=>p.payment_status===f) : list;
 
       document.getElementById("payments").innerHTML="";
       updateSummary(list);
@@ -85,28 +83,29 @@ function loadPayments(){
             <div class="row">
               <div>
                 <b>Job:</b> ${p.job_id}<br>
-                <span class="small">Payment ID: ${p.payment_id}</span>
+                <span class="small">Payment ID: ${p.payment_id||"-"}</span>
               </div>
-              <span class="badge ${paid?'ok':'warn'}">${p.payment_status}</span>
+              <span class="badge ${paid?'paid':'unpaid'}">${p.payment_status}</span>
             </div>
 
             <div class="row" style="margin-top:6px">
-              <div class="small">Yöntem: ${p.payment_method}</div>
-              <div class="money">Brüt: ₺${p.gross_amount}</div>
+              <div class="small">Yöntem: ${p.payment_method||"-"}</div>
+              <div class="money">Brüt: ₺${p.gross_amount||0}</div>
             </div>
 
             <div class="row" style="margin-top:8px">
-              ${!paid?`
-              <input placeholder="Driver ID" id="d_${p.job_id}">
-              <button onclick="markPaid('${p.job_id}')">Ödeme Alındı</button>
-              `:`
-              <div class="small ok">Ödendi: ${p.paid_at||"-"}</div>
+              ${!paid ? `
+                <input placeholder="Driver ID" id="d_${p.job_id}">
+                <button onclick="markPaid('${p.job_id}')">Ödeme Alındı</button>
+              ` : `
+                <div class="small">Ödendi: ${p.paid_at||"-"}</div>
               `}
             </div>
           </div>
         `;
       });
-    });
+    })
+    .catch(()=>alert("Backend erişim hatası"));
 }
 
 function markPaid(jobId){
@@ -114,18 +113,19 @@ function markPaid(jobId){
   if(!d) return alert("Driver ID gir");
   if(!confirm("Ödeme alındı mı?")) return;
 
-  post({
-    action:"markPaymentPaid",
-    job_id:jobId,
-    driver_id:d
-  }).then(res=>{
-    if(res.status==="paid"){
-      alert("Ödeme işlendi.\nKomisyon: ₺"+res.commission+"\nSürücü Net: ₺"+res.driver_net);
-    }else{
-      alert("Hata: "+JSON.stringify(res));
-    }
-    loadPayments();
-  });
+  post({ action:"markPaymentPaid", job_id:jobId, driver_id:d })
+    .then(res=>{
+      if(res.status==="paid"){
+        alert(
+          "Ödeme işlendi\n"+
+          "Komisyon: ₺"+res.commission+"\n"+
+          "Sürücü Net: ₺"+res.driver_net
+        );
+        loadPayments();
+      }else{
+        alert("Hata: "+JSON.stringify(res));
+      }
+    });
 }
 
 function updateSummary(list){
