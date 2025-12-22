@@ -10,8 +10,8 @@ body{margin:0;font-family:Arial;background:#f6f7f9}
 .header{background:#0f172a;color:#fff;padding:14px}
 .container{padding:14px}
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-select,button{padding:10px;border-radius:6px;border:1px solid #ddd}
-.jobs{display:grid;grid-template-columns:1fr;gap:10px}
+select,button,input{padding:8px;border-radius:6px;border:1px solid #ddd}
+.jobs{display:grid;grid-template-columns:1fr;gap:12px}
 .card{background:#fff;border-radius:10px;padding:12px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .badge{padding:4px 8px;border-radius:12px;font-size:12px}
@@ -19,27 +19,38 @@ select,button{padding:10px;border-radius:6px;border:1px solid #ddd}
 .accepted{background:#bfdbfe}
 .on_the_way{background:#bbf7d0}
 .completed{background:#e5e7eb}
+.critical{border:2px solid #f59e0b;background:#fffbeb}
 .actions{display:flex;gap:6px;flex-wrap:wrap}
 .small{font-size:12px;color:#374151}
 .link{color:#2563eb;text-decoration:none}
-@media(min-width:768px){.jobs{grid-template-columns:repeat(2,1fr)}}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.box{background:#fff;border-radius:10px;padding:10px;text-align:center}
+.timeline{font-size:12px;color:#374151;margin-top:6px}
+@media(min-width:900px){.jobs{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <b>SepetTaxi – Admin (Operasyon)</b>
-</div>
+<div class="header"><b>SepetTaxi – Admin (Operasyon Merkezi)</b></div>
 
 <div class="container">
+
+  <!-- GÜNLÜK ÖZET -->
+  <div class="summary">
+    <div class="box"><b id="s_today">0</b><br>Bugünkü İş</div>
+    <div class="box"><b id="s_active">0</b><br>Aktif</div>
+    <div class="box"><b id="s_total">0</b><br>Toplam</div>
+  </div>
+
+  <!-- KONTROLLER -->
   <div class="controls">
     <select id="filter" onchange="loadJobs()">
-      <option value="">All</option>
-      <option value="pending">Pending</option>
-      <option value="accepted">Accepted</option>
-      <option value="on_the_way">On the way</option>
-      <option value="completed">Completed</option>
+      <option value="">Tümü</option>
+      <option value="pending">Bekliyor</option>
+      <option value="accepted">Kabul Edildi</option>
+      <option value="on_the_way">Yolda</option>
+      <option value="completed">Tamamlandı</option>
     </select>
     <button onclick="loadJobs()">Yenile</button>
   </div>
@@ -51,6 +62,14 @@ select,button{padding:10px;border-radius:6px;border:1px solid #ddd}
 /* ================== AYAR ================== */
 const API_URL = "https://script.google.com/macros/s/AKfycbxmjbl9o0881xyp8EV4IgKFI72GDpAw8GtT4OS-uOnMzkGloQn8C_C6A9q5mMIEsBSy/exec";
 /* ========================================= */
+
+function statusLabel(s){
+  if(s==="pending") return "Bekliyor";
+  if(s==="accepted") return "Kabul Edildi";
+  if(s==="on_the_way") return "Yolda";
+  if(s==="completed") return "Tamamlandı";
+  return s;
+}
 
 function badgeClass(s){
   if(s==="pending") return "badge pending";
@@ -67,41 +86,62 @@ function nextStatus(s){
   return null;
 }
 
+function isCritical(createdAt){
+  const c = new Date(createdAt).getTime();
+  return (Date.now() - c) > (10 * 60 * 1000);
+}
+
 function loadJobs(){
   const f = document.getElementById("filter").value;
-  const url = API_URL + "?action=getJobs" + (f ? "&status="+f : "");
-
-  fetch(url)
+  fetch(API_URL + "?action=getJobs" + (f ? "&status="+f : ""))
     .then(r=>r.json())
     .then(list=>{
-      const el = document.getElementById("jobs");
-      el.innerHTML = "";
-      if(!list.length){
-        el.innerHTML = "<div class='small'>Kayıt yok</div>";
-        return;
-      }
+      document.getElementById("jobs").innerHTML="";
+      updateSummary(list);
 
       list.forEach(j=>{
         const ns = nextStatus(j.status);
-        el.innerHTML += `
-          <div class="card">
-            <div class="row">
-              <div>
-                <b>${j.service_type}</b><br>
-                <span class="small">${j.job_id}</span>
-              </div>
-              <span class="${badgeClass(j.status)}">${j.status}</span>
-            </div>
+        const critical = j.status==="pending" && isCritical(j.created_at);
 
-            <div class="row" style="margin-top:8px">
-              <div class="actions">
-                ${ns ? `<button onclick="setStatus('${j.job_id}','${ns}')">${ns.replaceAll('_',' ')}</button>` : ""}
-                <a class="link" target="_blank" href="track.html?job_id=${j.job_id}">Canlı Takip</a>
-              </div>
-              <div class="small">Driver: ${j.driver_id || "-"}</div>
+        document.getElementById("jobs").innerHTML += `
+        <div class="card ${critical?'critical':''}">
+          <div class="row">
+            <div>
+              <b>${j.service_type}</b><br>
+              <span class="small">${j.job_id}</span>
             </div>
+            <span class="${badgeClass(j.status)}">${statusLabel(j.status)}</span>
           </div>
-        `;
+
+          <!-- TIMELINE -->
+          <div class="timeline">
+            Oluştu: ${j.created_at || "-"} |
+            Kabul: ${j.accepted_at || "-"} |
+            Yolda: ${j.on_the_way_at || "-"} |
+            Bitti: ${j.completed_at || "-"}
+          </div>
+
+          <div class="row" style="margin-top:8px">
+            <div class="actions">
+              ${ns?`<button onclick="setStatus('${j.job_id}','${ns}')">${statusLabel(ns)}</button>`:""}
+              <button onclick="setStatus('${j.job_id}','completed')">Tamamlandı</button>
+              <a class="link" target="_blank" href="track.html?job_id=${j.job_id}">Canlı Takip</a>
+            </div>
+            <div class="small">Driver: ${j.driver_id || "-"}</div>
+          </div>
+
+          <!-- MANUEL SÜRÜCÜ ATAMA -->
+          <div class="row" style="margin-top:6px">
+            <input placeholder="Driver ID (örn: DRV-002)" id="d_${j.job_id}">
+            <button onclick="assignDriver('${j.job_id}')">Sürücü Ata</button>
+          </div>
+
+          <!-- FİYAT & ÖDEME (FAZ 5 HAZIRLIK) -->
+          <div class="row" style="margin-top:6px">
+            <input placeholder="Fiyat ₺" id="p_${j.job_id}">
+            <button onclick="savePrice('${j.job_id}')">Fiyat Kaydet</button>
+          </div>
+        </div>`;
       });
     });
 }
@@ -109,18 +149,34 @@ function loadJobs(){
 function setStatus(jobId,status){
   fetch(API_URL,{
     method:"POST",
-    body:JSON.stringify({
-      action:"updateStatus",
-      job_id:jobId,
-      status:status
-    })
-  }).then(()=>loadJobs());
+    body:JSON.stringify({action:"updateStatus",job_id:jobId,status:status})
+  }).then(loadJobs);
 }
 
-/* İlk yükleme */
-loadJobs();
+function assignDriver(jobId){
+  const d = document.getElementById("d_"+jobId).value;
+  if(!d) return alert("Driver ID gir");
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({action:"updateStatus",job_id:jobId,status:"accepted",driver_id:d})
+  }).then(loadJobs);
+}
 
-/* Otomatik yenile (30 sn) */
+function savePrice(jobId){
+  const p = document.getElementById("p_"+jobId).value;
+  alert("Fiyat kaydedildi (FAZ 5 entegrasyonu hazır)");
+}
+
+function updateSummary(list){
+  document.getElementById("s_total").innerText = list.length;
+  document.getElementById("s_active").innerText =
+    list.filter(j=>["pending","accepted","on_the_way"].includes(j.status)).length;
+  document.getElementById("s_today").innerText =
+    list.filter(j=>j.created_at && new Date(j.created_at).toDateString()===new Date().toDateString()).length;
+}
+
+/* INIT */
+loadJobs();
 setInterval(loadJobs,30000);
 </script>
 
