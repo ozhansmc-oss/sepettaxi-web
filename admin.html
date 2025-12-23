@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>SepetTaxi – Admin Panel</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial}
 .wrap{max-width:900px;margin:30px auto;padding:20px}
 .card{background:#151515;border-radius:14px;padding:20px;margin-bottom:20px}
 h1,h2{margin:0 0 10px}
-.badge{display:inline-block;padding:6px 12px;border-radius:20px;background:#0a3;color:#fff;font-size:12px}
+.badge{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px}
+.ok{background:#0a3}
+.err{background:#a00}
 .table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{padding:8px;border-bottom:1px solid #222;font-size:14px}
 input,button{padding:12px;border-radius:10px;border:none;font-size:14px}
@@ -20,6 +22,7 @@ button{background:#fff;color:#000;cursor:pointer}
 </style>
 </head>
 <body>
+
 <div class="wrap">
 
 <div class="card">
@@ -76,31 +79,50 @@ async function api(action,data={}){
 }
 
 async function init(){
+  // PING
   try{
     const p = await api("ping");
-    document.getElementById("conn").innerText = p.ok ? "Backend bağlı" : "Bağlı değil";
-  }catch{ document.getElementById("conn").innerText="Bağlantı hatası"; }
+    document.getElementById("conn").innerText = p.ok ? "Backend bağlı" : "Backend hata";
+    document.getElementById("conn").className = "badge " + (p.ok?"ok":"err");
+  }catch{
+    document.getElementById("conn").innerText = "Bağlantı yok";
+    document.getElementById("conn").className = "badge err";
+  }
 
+  // SUMMARY
   const s = await api("dailySummary");
   document.getElementById("summary").innerText =
     `Bugün: ${s.today} | Aktif: ${s.active} | Pending: ${s.pending}`;
 
+  // JOBS
   const j = await api("listJobs");
-  const rows = j.jobs.filter(x=>["pending","assigned"].includes(x.status))
-    .map(x=>`<tr><td>${x.job_id}</td><td>${x.user_name}<br>${x.user_phone}</td><td>${x.service}</td><td>${x.status}</td></tr>`)
-    .join("");
+  const rows = j.jobs
+    .filter(x=>["pending","assigned"].includes(x.status))
+    .map(x=>`<tr>
+      <td>${x.job_id}</td>
+      <td>${x.user_name}<br>${x.user_phone}</td>
+      <td>${x.service}</td>
+      <td>${x.status}</td>
+    </tr>`).join("");
   document.getElementById("jobs").innerHTML = rows || `<tr><td colspan="4">İş yok</td></tr>`;
 
+  // DRIVERS
   const d = await api("listDrivers");
   document.getElementById("drivers").innerHTML =
-    d.drivers.map(x=>`<tr><td>${x.driver_id}</td><td>${x.name}</td><td>${x.phone}</td><td>${x.vehicle}</td><td>${x.status}</td></tr>`).join("");
+    d.drivers.map(x=>`<tr>
+      <td>${x.driver_id}</td>
+      <td>${x.name}</td>
+      <td>${x.phone}</td>
+      <td>${x.vehicle}</td>
+      <td>${x.status}</td>
+    </tr>`).join("");
 }
 
 async function assign(){
   const job = jobId.value;
   const drv = driverId.value;
   const r = await api("assignJob",{job_id:job,driver_id:drv});
-  assignMsg.innerText = r.ok ? "Atama başarılı" : "Hata";
+  document.getElementById("assignMsg").innerText = r.ok ? "Atama başarılı" : "Hata";
   init();
 }
 
