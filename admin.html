@@ -1,36 +1,3 @@
-<script>
-const API =
-"https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
-
-async function api(action, payload){
-  const url = new URL(API);
-  url.searchParams.set("action", action);
-  if(payload){
-    url.searchParams.set("payload", JSON.stringify(payload));
-  }
-  const r = await fetch(url.toString());
-  return await r.json();
-}
-
-document.addEventListener("DOMContentLoaded", async ()=>{
-  const badge = document.getElementById("backendStatus");
-  if(!badge) return;
-
-  try{
-    const r = await api("ping");
-    if(r && r.ok){
-      badge.textContent = "Backend bağlı";
-      badge.style.color = "#7CFF9B";
-    }else{
-      badge.textContent = "Backend hata";
-      badge.style.color = "#FF7C7C";
-    }
-  }catch{
-    badge.textContent = "Backend bağlantı yok";
-    badge.style.color = "#FF7C7C";
-  }
-});
-</script>
 <!doctype html>
 <html lang="tr">
 <head>
@@ -45,6 +12,8 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   --border:rgba(255,255,255,.12);
   --text:#fff;
   --muted:#a8a8a8;
+  --ok:#7CFF9B;
+  --err:#FF7C7C;
 }
 body{
   margin:0;
@@ -53,7 +22,7 @@ body{
   color:var(--text);
 }
 .container{
-  max-width:1200px;
+  max-width:1100px;
   margin:0 auto;
   padding:20px;
 }
@@ -72,29 +41,21 @@ h2{margin:0 0 10px;font-size:18px}
   border-radius:999px;
   border:1px solid var(--border);
   font-size:12px;
-  color:var(--muted);
 }
-table{
+.ok{color:var(--ok)}
+.err{color:var(--err)}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.col{flex:1;min-width:220px}
+input{
   width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
-th,td{
-  padding:10px;
-  border-bottom:1px solid var(--border);
-  text-align:left;
-}
-th{color:var(--muted);font-weight:500}
-input,select{
-  width:100%;
-  padding:12px;
-  border-radius:12px;
+  padding:14px;
+  border-radius:14px;
   border:1px solid var(--border);
   background:#0f0f0f;
   color:#fff;
 }
 button{
-  padding:14px;
+  padding:14px 18px;
   border-radius:14px;
   border:none;
   background:#fff;
@@ -102,14 +63,18 @@ button{
   font-weight:700;
   cursor:pointer;
 }
-.row{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
 }
-.col{flex:1;min-width:220px}
-.ok{color:#7CFF9B;font-size:13px}
-.err{color:#FF7C7C;font-size:13px}
+th,td{
+  text-align:left;
+  padding:10px;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.small{color:var(--muted);font-size:12px}
 </style>
 </head>
 
@@ -119,59 +84,54 @@ button{
 <!-- HEADER -->
 <div class="card">
   <h1>SepetTaxi – Admin Panel</h1>
-  <div class="badge" id="status">Backend kontrol ediliyor…</div>
+  <div class="badge" id="backendStatus">Backend kontrol ediliyor…</div>
 </div>
 
-<!-- ÖZET -->
+<!-- SUMMARY -->
 <div class="card">
   <h2>Günlük Operasyon Özeti</h2>
   <div class="row">
     <div class="badge" id="todayBox">Bugün: -</div>
-    <div class="badge" id="allBox">Toplam: -</div>
+    <div class="badge" id="totalBox">Toplam: -</div>
   </div>
 </div>
 
-<!-- PENDING İŞLER -->
+<!-- PENDING JOBS -->
 <div class="card">
-  <h2>Bekleyen İşler (Pending)</h2>
-  <div id="jobsBox">Yükleniyor…</div>
+  <h2>Bekleyen / Atanmış İşler</h2>
+  <div id="jobsBox" class="small">Yükleniyor…</div>
 </div>
 
-<!-- SÜRÜCÜLER -->
+<!-- DRIVERS -->
 <div class="card">
   <h2>Sürücüler</h2>
-  <div id="driversBox">Yükleniyor…</div>
+  <div id="driversBox" class="small">Yükleniyor…</div>
 </div>
 
-<!-- MANUEL ATAMA -->
+<!-- ASSIGN -->
 <div class="card">
   <h2>Manuel İş Atama</h2>
   <div class="row">
     <div class="col">
-      <label>Job ID</label>
       <input id="jobId" placeholder="JOB-XXXX">
     </div>
     <div class="col">
-      <label>Driver ID</label>
       <input id="driverId" placeholder="DRV-001">
     </div>
+    <div class="col">
+      <button id="assignBtn">İşi Ata</button>
+    </div>
   </div>
-  <button id="assignBtn">İşi Ata</button>
-  <div id="assignMsg"></div>
+  <div id="assignMsg" class="small"></div>
 </div>
 
 </div>
 
 <script>
-/* ===============================
-   SABİT BACKEND
-================================ */
+/* ================= BACKEND ================= */
 const API =
 "https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
 
-/* ===============================
-   API (GET + payload)
-================================ */
 async function api(action, payload){
   const url = new URL(API);
   url.searchParams.set("action", action);
@@ -182,124 +142,89 @@ async function api(action, payload){
   return await r.json();
 }
 
-/* ===============================
-   PING
-================================ */
-(async()=>{
+/* ================= INIT ================= */
+document.addEventListener("DOMContentLoaded", async ()=>{
+
+  /* PING */
+  const badge = document.getElementById("backendStatus");
   try{
-    const r = await api("ping");
-    status.textContent = r.ok ? "Backend bağlı" : "Backend hata";
+    const ping = await api("ping");
+    if(ping.ok){
+      badge.textContent = "Backend bağlı";
+      badge.classList.add("ok");
+    }else{
+      badge.textContent = "Backend hata";
+      badge.classList.add("err");
+    }
   }catch{
-    status.textContent = "Backend bağlantı yok";
-  }
-})();
-
-/* ===============================
-   LOAD SUMMARY
-================================ */
-async function loadSummary(){
-  const r = await api("dailySummary");
-  if(!r.ok) return;
-  todayBox.textContent =
-    `Bugün: ${r.today.total} | Aktif: ${r.today.active} | Pending: ${r.today.pending}`;
-  allBox.textContent =
-    `Toplam: ${r.all.total} | Aktif: ${r.all.active} | Pending: ${r.all.pending}`;
-}
-
-/* ===============================
-   LOAD JOBS
-================================ */
-async function loadJobs(){
-  const r = await api("listJobs", { status:"pending" });
-  if(!r.ok || !r.jobs.length){
-    jobsBox.innerHTML = "Bekleyen iş yok";
+    badge.textContent = "Backend bağlantı yok";
+    badge.classList.add("err");
     return;
   }
 
-  let html = `<table>
-    <tr>
-      <th>Job</th>
-      <th>Kullanıcı</th>
-      <th>Servis</th>
-      <th>Durum</th>
-    </tr>`;
+  /* SUMMARY */
+  const s = await api("dailySummary");
+  document.getElementById("todayBox").textContent =
+    `Bugün: ${s.today || 0} | Aktif: ${s.active || 0} | Pending: ${s.pending || 0}`;
+  document.getElementById("totalBox").textContent =
+    `Toplam: ${s.total || 0} | Aktif: ${s.active || 0} | Pending: ${s.pending || 0}`;
 
-  r.jobs.forEach(j=>{
-    html += `
-    <tr>
-      <td>${j.job_id}</td>
-      <td>${j.user_name}<br>${j.user_phone}</td>
-      <td>${j.service_type}</td>
-      <td>${j.status}</td>
-    </tr>`;
-  });
+  /* JOBS */
+  const jobs = await api("listAllJobs");
+  const jb = document.getElementById("jobsBox");
+  jb.innerHTML = "";
 
-  html += `</table>`;
-  jobsBox.innerHTML = html;
-}
-
-/* ===============================
-   LOAD DRIVERS
-================================ */
-async function loadDrivers(){
-  const r = await api("listDrivers");
-  if(!r.ok || !r.drivers.length){
-    driversBox.innerHTML = "Sürücü yok";
-    return;
-  }
-
-  let html = `<table>
-    <tr>
-      <th>ID</th>
-      <th>Ad</th>
-      <th>Telefon</th>
-      <th>Araç</th>
-      <th>Durum</th>
-    </tr>`;
-
-  r.drivers.forEach(d=>{
-    html += `
-    <tr>
-      <td>${d.driver_id}</td>
-      <td>${d.name}</td>
-      <td>${d.phone}</td>
-      <td>${d.vehicle_type}</td>
-      <td>${d.status}</td>
-    </tr>`;
-  });
-
-  html += `</table>`;
-  driversBox.innerHTML = html;
-}
-
-/* ===============================
-   ASSIGN JOB
-================================ */
-assignBtn.onclick = async ()=>{
-  try{
-    const job = jobId.value.trim();
-    const driver = driverId.value.trim();
-    if(!job || !driver) throw "Job ID ve Driver ID zorunlu";
-
-    const r = await api("assignJob", {
-      job_id: job,
-      driver_id: driver
+  if(!jobs.jobs.length){
+    jb.textContent = "İş yok";
+  }else{
+    let t = `<table><tr><th>Job</th><th>Kullanıcı</th><th>Servis</th><th>Status</th><th>Driver</th></tr>`;
+    jobs.jobs.forEach(j=>{
+      t += `<tr>
+        <td>${j.job_id}</td>
+        <td>${j.user_name}<br>${j.user_phone}</td>
+        <td>${j.service_type}</td>
+        <td>${j.status}</td>
+        <td>${j.driver_id || "-"}</td>
+      </tr>`;
     });
+    t += `</table>`;
+    jb.innerHTML = t;
+  }
 
+  /* DRIVERS */
+  const d = await api("listDrivers");
+  const db = document.getElementById("driversBox");
+  let dt = `<table><tr><th>ID</th><th>Ad</th><th>Telefon</th><th>Araç</th><th>Durum</th></tr>`;
+  d.drivers.forEach(x=>{
+    dt += `<tr>
+      <td>${x.driver_id}</td>
+      <td>${x.name}</td>
+      <td>${x.phone}</td>
+      <td>${x.vehicle_type}</td>
+      <td>${x.status}</td>
+    </tr>`;
+  });
+  dt += `</table>`;
+  db.innerHTML = dt;
+});
+
+/* ================= ASSIGN ================= */
+assignBtn.onclick = async ()=>{
+  const msg = document.getElementById("assignMsg");
+  msg.textContent = "İşleniyor…";
+
+  try{
+    const r = await api("assignJob",{
+      job_id: jobId.value.trim(),
+      driver_id: driverId.value.trim()
+    });
     if(!r.ok) throw r.error;
-    assignMsg.innerHTML = `<div class="ok">İş atandı</div>`;
-    loadJobs();
+    msg.textContent = "İş atandı";
+    location.reload();
   }catch(e){
-    assignMsg.innerHTML = `<div class="err">${e}</div>`;
+    msg.textContent = e;
   }
 };
-
-/* ===============================
-   INIT
-================================ */
-loadSummary();
-loadJobs();
-loadDrivers();
 </script>
 </body>
 </html>
