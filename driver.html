@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SepetTaxi – Sürücü</title>
+
+<style>
+:root{
+  --bg:#0b0b0b;
+  --card:#151515;
+  --border:rgba(255,255,255,.12);
+  --text:#fff;
+  --muted:#a8a8a8;
+  --ok:#7CFF9B;
+  --err:#FF7C7C;
+}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:var(--bg);
+  color:var(--text);
+}
+.container{
+  max-width:820px;
+  margin:0 auto;
+  padding:20px;
+}
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:20px;
+  margin-bottom:16px;
+  box-shadow:0 0 0 1px var(--border) inset;
+}
+h1{margin:0 0 6px;font-size:22px}
+h2{margin:0 0 10px;font-size:18px}
+label{
+  font-size:12px;
+  color:var(--muted);
+  display:block;
+  margin:10px 0 4px;
+}
+input,select{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:#0f0f0f;
+  color:#fff;
+  font-size:15px;
+}
+button{
+  width:100%;
+  padding:16px;
+  border-radius:16px;
+  border:none;
+  background:#fff;
+  color:#000;
+  font-weight:700;
+  font-size:15px;
+  cursor:pointer;
+  margin-top:10px;
+}
+.row{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.col{flex:1;min-width:220px}
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  font-size:12px;
+  color:var(--muted);
+}
+.ok{color:var(--ok);font-size:13px;margin-top:8px}
+.err{color:var(--err);font-size:13px;margin-top:8px}
+.job{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:14px;
+  margin-top:12px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<div class="card">
+  <h1>SepetTaxi – Sürücü Paneli</h1>
+  <div class="badge" id="backendStatus">Backend kontrol ediliyor…</div>
+</div>
+
+<!-- DRIVER LOGIN -->
+<div class="card">
+  <h2>1) Sürücü Girişi</h2>
+
+  <label>Sürücü ID</label>
+  <input id="driverId" placeholder="Örn: DRV-001">
+
+  <button id="loginBtn">Panele Gir</button>
+  <div id="loginMsg"></div>
+</div>
+
+<!-- JOB LIST -->
+<div class="card" id="jobsCard" style="display:none">
+  <h2>2) Atanan İşler</h2>
+  <div id="jobsBox">Yükleniyor…</div>
+</div>
+
+</div>
+
+<script>
+/* =================================================
+   SABİT BACKEND
+================================================= */
+const API =
+"https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
+
+/* =================================================
+   API HELPER
+================================================= */
+async function api(action, payload){
+  const url = new URL(API);
+  url.searchParams.set("action", action);
+  if(payload){
+    url.searchParams.set("payload", JSON.stringify(payload));
+  }
+  const res = await fetch(url.toString());
+  return await res.json();
+}
+
+/* =================================================
+   BACKEND PING
+================================================= */
+(async ()=>{
+  const el = document.getElementById("backendStatus");
+  try{
+    const r = await api("ping");
+    if(r && r.ok){
+      el.textContent = "Backend bağlı";
+      el.style.color = "var(--ok)";
+    }else{
+      el.textContent = "Backend hata";
+      el.style.color = "var(--err)";
+    }
+  }catch{
+    el.textContent = "Backend bağlantı yok";
+    el.style.color = "var(--err)";
+  }
+})();
+
+/* =================================================
+   DRIVER LOGIN
+================================================= */
+let CURRENT_DRIVER = null;
+
+document.getElementById("loginBtn").onclick = async ()=>{
+  const msg = document.getElementById("loginMsg");
+  msg.textContent = "";
+
+  try{
+    const id = document.getElementById("driverId").value.trim();
+    if(!id) throw "Sürücü ID zorunlu";
+
+    const r = await api("getDriver", { driver_id:id });
+    if(!r.ok) throw r.error || "Sürücü bulunamadı";
+
+    CURRENT_DRIVER = id;
+    msg.innerHTML = `<div class="ok">Giriş başarılı</div>`;
+    document.getElementById("jobsCard").style.display = "block";
+    loadJobs();
+  }catch(e){
+    msg.innerHTML = `<div class="err">${e}</div>`;
+  }
+};
+
+/* =================================================
+   LOAD ASSIGNED JOBS
+================================================= */
+async function loadJobs(){
+  const box = document.getElementById("jobsBox");
+  box.textContent = "Yükleniyor…";
+
+  const r = await api("listDriverJobs",{
+    driver_id: CURRENT_DRIVER
+  });
+
+  if(!r.ok || !r.jobs.length){
+    box.textContent = "Atanmış iş yok";
+    return;
+  }
+
+  let html = "";
+  r.jobs.forEach(j=>{
+    html += `
+      <div class="job">
+        <div><b>Job:</b> ${j.job_id}</div>
+        <div><b>Müşteri:</b> ${j.user_name} (${j.user_phone})</div>
+        <div><b>Servis:</b> ${j.service_type}</div>
+        <div><b>Durum:</b> ${j.status}</div>
+        <button onclick="acceptJob('${j.job_id}')">İşi Kabul Et</button>
+      </div>
+    `;
+  });
+
+  box.innerHTML = html;
+}
+
+/* =================================================
+   ACCEPT JOB
+================================================= */
+async function acceptJob(jobId){
+  try{
+    const r = await api("acceptJob",{
+      job_id: jobId,
+      driver_id: CURRENT_DRIVER
+    });
+
+    if(!r.ok) throw r.error || "Kabul edilemedi";
+    alert("İş kabul edildi");
+    loadJobs();
+  }catch(e){
+    alert(e);
+  }
+}
+</script>
+</body>
+</html>
