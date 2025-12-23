@@ -45,9 +45,7 @@ h2{margin:0 0 10px;font-size:18px}
 .ok{color:var(--ok)}
 .err{color:var(--err)}
 .row{display:flex;gap:12px;flex-wrap:wrap}
-.col{flex:1;min-width:220px}
 input{
-  width:100%;
   padding:14px;
   border-radius:14px;
   border:1px solid var(--border);
@@ -81,13 +79,11 @@ th,td{
 <body>
 <div class="container">
 
-<!-- HEADER -->
 <div class="card">
   <h1>SepetTaxi – Admin Panel</h1>
   <div class="badge" id="backendStatus">Backend kontrol ediliyor…</div>
 </div>
 
-<!-- SUMMARY -->
 <div class="card">
   <h2>Günlük Operasyon Özeti</h2>
   <div class="row">
@@ -96,31 +92,22 @@ th,td{
   </div>
 </div>
 
-<!-- PENDING JOBS -->
 <div class="card">
   <h2>Bekleyen / Atanmış İşler</h2>
   <div id="jobsBox" class="small">Yükleniyor…</div>
 </div>
 
-<!-- DRIVERS -->
 <div class="card">
   <h2>Sürücüler</h2>
   <div id="driversBox" class="small">Yükleniyor…</div>
 </div>
 
-<!-- ASSIGN -->
 <div class="card">
   <h2>Manuel İş Atama</h2>
   <div class="row">
-    <div class="col">
-      <input id="jobId" placeholder="JOB-XXXX">
-    </div>
-    <div class="col">
-      <input id="driverId" placeholder="DRV-001">
-    </div>
-    <div class="col">
-      <button id="assignBtn">İşi Ata</button>
-    </div>
+    <input id="jobId" placeholder="JOB-XXXX">
+    <input id="driverId" placeholder="DRV-001">
+    <button id="assignBtn">İşi Ata</button>
   </div>
   <div id="assignMsg" class="small"></div>
 </div>
@@ -128,105 +115,77 @@ th,td{
 </div>
 
 <script>
-/* ================= BACKEND ================= */
 const API =
 "https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
 
 async function api(action, payload){
-  const url = new URL(API);
-  url.searchParams.set("action", action);
-  if(payload){
-    url.searchParams.set("payload", JSON.stringify(payload));
-  }
-  const r = await fetch(url.toString());
-  return await r.json();
+  const u = new URL(API);
+  u.searchParams.set("action", action);
+  if(payload) u.searchParams.set("payload", JSON.stringify(payload));
+  return await (await fetch(u)).json();
 }
 
-/* ================= INIT ================= */
 document.addEventListener("DOMContentLoaded", async ()=>{
 
   /* PING */
-  const badge = document.getElementById("backendStatus");
+  const badge = backendStatus;
   try{
-    const ping = await api("ping");
-    if(ping.ok){
-      badge.textContent = "Backend bağlı";
-      badge.classList.add("ok");
-    }else{
-      badge.textContent = "Backend hata";
-      badge.classList.add("err");
-    }
+    const p = await api("ping");
+    badge.textContent = p.ok ? "Backend bağlı" : "Backend hata";
+    badge.className = "badge " + (p.ok ? "ok" : "err");
   }catch{
-    badge.textContent = "Backend bağlantı yok";
-    badge.classList.add("err");
+    badge.textContent = "Backend yok";
+    badge.className = "badge err";
     return;
   }
 
   /* SUMMARY */
   const s = await api("dailySummary");
- document.getElementById("todayBox").textContent =
-  `Bugün: ${s.today.total || 0} | Aktif: ${s.today.active || 0} | Pending: ${s.today.pending || 0}`;
-
-document.getElementById("totalBox").textContent =
-  `Toplam: ${s.total.total || 0} | Aktif: ${s.total.active || 0} | Pending: ${s.total.pending || 0}`;
-
-  document.getElementById("totalBox").textContent =
-    `Toplam: ${s.total || 0} | Aktif: ${s.active || 0} | Pending: ${s.pending || 0}`;
+  todayBox.textContent =
+    `Bugün: ${s.today.total} | Aktif: ${s.today.active} | Pending: ${s.today.pending}`;
+  totalBox.textContent =
+    `Toplam: ${s.total.total} | Aktif: ${s.total.active} | Pending: ${s.total.pending}`;
 
   /* JOBS */
-  const jobs = await api("listAllJobs");
-  const jb = document.getElementById("jobsBox");
-  jb.innerHTML = "";
-
-  if(!jobs.jobs.length){
-    jb.textContent = "İş yok";
-  }else{
-    let t = `<table><tr><th>Job</th><th>Kullanıcı</th><th>Servis</th><th>Status</th><th>Driver</th></tr>`;
-    jobs.jobs.forEach(j=>{
-      t += `<tr>
-        <td>${j.job_id}</td>
-        <td>${j.user_name}<br>${j.user_phone}</td>
-        <td>${j.service_type}</td>
-        <td>${j.status}</td>
-        <td>${j.driver_id || "-"}</td>
-      </tr>`;
-    });
-    t += `</table>`;
-    jb.innerHTML = t;
-  }
+  const j = await api("listPendingJobs");
+  jobsBox.innerHTML = j.jobs.length
+    ? `<table><tr><th>Job</th><th>Kullanıcı</th><th>Servis</th><th>Status</th></tr>` +
+      j.jobs.map(x=>`
+        <tr>
+          <td>${x.job_id}</td>
+          <td>${x.user_name}<br>${x.user_phone}</td>
+          <td>${x.service_type}</td>
+          <td>${x.status}</td>
+        </tr>`).join("") + `</table>`
+    : "Bekleyen iş yok";
 
   /* DRIVERS */
   const d = await api("listDrivers");
-  const db = document.getElementById("driversBox");
-  let dt = `<table><tr><th>ID</th><th>Ad</th><th>Telefon</th><th>Araç</th><th>Durum</th></tr>`;
-  d.drivers.forEach(x=>{
-    dt += `<tr>
-      <td>${x.driver_id}</td>
-      <td>${x.name}</td>
-      <td>${x.phone}</td>
-      <td>${x.vehicle_type}</td>
-      <td>${x.status}</td>
-    </tr>`;
-  });
-  dt += `</table>`;
-  db.innerHTML = dt;
+  driversBox.innerHTML =
+    `<table><tr><th>ID</th><th>Ad</th><th>Telefon</th><th>Araç</th><th>Durum</th></tr>` +
+    d.drivers.map(x=>`
+      <tr>
+        <td>${x.driver_id}</td>
+        <td>${x.name}</td>
+        <td>${x.phone}</td>
+        <td>${x.vehicle_type}</td>
+        <td>${x.status}</td>
+      </tr>`).join("") + `</table>`;
 });
 
-/* ================= ASSIGN ================= */
+/* ASSIGN */
 assignBtn.onclick = async ()=>{
-  const msg = document.getElementById("assignMsg");
-  msg.textContent = "İşleniyor…";
-
+  assignMsg.textContent = "İşleniyor…";
   try{
     const r = await api("assignJob",{
       job_id: jobId.value.trim(),
       driver_id: driverId.value.trim()
     });
     if(!r.ok) throw r.error;
-    msg.textContent = "İş atandı";
+    assignMsg.textContent = "İş atandı";
     location.reload();
   }catch(e){
-    msg.textContent = e;
+    assignMsg.textContent = e;
   }
 };
 </script>
