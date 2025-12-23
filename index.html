@@ -12,6 +12,8 @@
   --border:rgba(255,255,255,.12);
   --text:#fff;
   --muted:#a8a8a8;
+  --ok:#7CFF9B;
+  --err:#FF7C7C;
 }
 body{
   margin:0;
@@ -33,7 +35,12 @@ body{
 }
 h1{margin:0 0 6px;font-size:22px}
 h2{margin:0 0 10px;font-size:18px}
-label{font-size:12px;color:var(--muted);display:block;margin:10px 0 4px}
+label{
+  font-size:12px;
+  color:var(--muted);
+  display:block;
+  margin:10px 0 4px;
+}
 input{
   width:100%;
   padding:14px;
@@ -61,8 +68,6 @@ button{
   flex-wrap:wrap;
 }
 .col{flex:1;min-width:220px}
-.ok{color:#7CFF9B;font-size:13px;margin-top:8px}
-.err{color:#FF7C7C;font-size:13px;margin-top:8px}
 .badge{
   display:inline-block;
   padding:6px 10px;
@@ -71,6 +76,8 @@ button{
   font-size:12px;
   color:var(--muted);
 }
+.ok{color:var(--ok);font-size:13px;margin-top:8px}
+.err{color:var(--err);font-size:13px;margin-top:8px}
 </style>
 </head>
 
@@ -80,7 +87,7 @@ button{
 <!-- HEADER -->
 <div class="card">
   <h1>SepetTaxi</h1>
-  <div class="badge" id="status">Backend kontrol ediliyor…</div>
+  <div class="badge" id="backendStatus">Backend kontrol ediliyor…</div>
 </div>
 
 <!-- KAYIT -->
@@ -88,7 +95,7 @@ button{
   <h2>1) Kayıt</h2>
 
   <label>Ad Soyad</label>
-  <input id="name" placeholder="Örn: Cahit Berk">
+  <input id="name" placeholder="Örn: Semra Pekkan">
 
   <label>Telefon (11 hane)</label>
   <input id="phone" placeholder="05XXXXXXXXX" maxlength="11">
@@ -133,48 +140,58 @@ button{
 </div>
 
 <script>
-/* ===============================
-   SABİT BACKEND
-================================ */
+/* =================================================
+   SABİT BACKEND (ÇALIŞAN)
+================================================= */
 const API =
 "https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
 
-/* ===============================
-   API CALL (GET + payload)
-================================ */
+/* =================================================
+   API HELPER – SADE, TEK YER
+================================================= */
 async function api(action, payload){
   const url = new URL(API);
   url.searchParams.set("action", action);
   if(payload){
     url.searchParams.set("payload", JSON.stringify(payload));
   }
-  const r = await fetch(url.toString());
-  return await r.json();
+  const res = await fetch(url.toString());
+  return await res.json();
 }
 
-/* ===============================
-   PING
-================================ */
-(async()=>{
+/* =================================================
+   BACKEND PING
+================================================= */
+(async ()=>{
+  const el = document.getElementById("backendStatus");
   try{
     const r = await api("ping");
-    document.getElementById("status").textContent =
-      r.ok ? "Backend bağlı" : "Backend hata";
+    if(r && r.ok){
+      el.textContent = "Backend bağlı";
+      el.style.color = "var(--ok)";
+    }else{
+      el.textContent = "Backend hata";
+      el.style.color = "var(--err)";
+    }
   }catch{
-    document.getElementById("status").textContent = "Backend bağlantı yok";
+    el.textContent = "Backend bağlantı yok";
+    el.style.color = "var(--err)";
   }
 })();
 
-/* ===============================
+/* =================================================
    KAYIT
-================================ */
-registerBtn.onclick = async ()=>{
+================================================= */
+document.getElementById("registerBtn").onclick = async ()=>{
+  const msg = document.getElementById("registerMsg");
+  msg.textContent = "";
+
   try{
-    const name = document.getElementById("name").value.trim();
+    const name  = document.getElementById("name").value.trim();
     const phone = document.getElementById("phone").value.replace(/\D/g,"");
 
     if(!name) throw "Ad zorunlu";
-    if(phone.length!==11) throw "Telefon 11 hane olmalı";
+    if(phone.length !== 11) throw "Telefon 11 hane olmalı";
     if(!kvkk.checked || !contract.checked) throw "Onaylar zorunlu";
 
     const r = await api("upsertUser",{
@@ -184,54 +201,45 @@ registerBtn.onclick = async ()=>{
       contract_accepted:true
     });
 
-    if(!r.ok) throw r.error;
-    registerMsg.innerHTML = `<div class="ok">Kayıt başarılı</div>`;
+    if(!r.ok) throw r.error || "Kayıt başarısız";
+
+    msg.innerHTML = `<div class="ok">Kayıt başarılı</div>`;
   }catch(e){
-    registerMsg.innerHTML = `<div class="err">${e}</div>`;
+    msg.innerHTML = `<div class="err">${e}</div>`;
   }
 };
 
-/* ===============================
+/* =================================================
    TALEP
-================================ */
-jobBtn.onclick = async ()=>{
-  try{
-    const userName  = document.getElementById("name").value.trim();
-    const userPhone = document.getElementById("phone").value.replace(/\D/g,"");
+================================================= */
+document.getElementById("jobBtn").onclick = async ()=>{
+  const msg = document.getElementById("jobMsg");
+  msg.textContent = "";
 
-    if(!userName || userPhone.length !== 11){
-      throw "Talep oluşturmadan önce geçerli kayıt yapılmalı";
+  try{
+    const name  = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.replace(/\D/g,"");
+
+    if(!name || phone.length !== 11){
+      throw "Önce geçerli kayıt yapılmalı";
     }
 
-    const response = await api("createJob",{
+    const r = await api("createJob",{
       service_type:"taxi",
-      user_name: userName,
-      user_phone: userPhone,
-      pickup_lat: Number(pLat.value),
-      pickup_lng: Number(pLng.value),
-      dropoff_lat: Number(dLat.value),
-      dropoff_lng: Number(dLng.value)
+      user_name:name,
+      user_phone:phone,
+      pickup_lat:Number(pLat.value),
+      pickup_lng:Number(pLng.value),
+      dropoff_lat:Number(dLat.value),
+      dropoff_lng:Number(dLng.value)
     });
 
-    if(!response.ok){
-      throw response.error || "Job oluşturulamadı";
-    }
+    if(!r.ok) throw r.error || "Talep oluşturulamadı";
 
-    jobMsg.innerHTML =
-      `<div class="ok">Talep oluşturuldu: ${response.job_id}</div>`;
-
+    msg.innerHTML =
+      `<div class="ok">Talep oluşturuldu: ${r.job_id}</div>`;
   }catch(e){
-    jobMsg.innerHTML = `<div class="err">${e}</div>`;
-  }
-};
-
-
-
-
-    if(!r.ok) throw r.error;
-    jobMsg.innerHTML = `<div class="ok">Talep oluşturuldu: ${r.job_id}</div>`;
-  }catch(e){
-    jobMsg.innerHTML = `<div class="err">${e}</div>`;
+    msg.innerHTML = `<div class="err">${e}</div>`;
   }
 };
 </script>
