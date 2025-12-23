@@ -164,8 +164,12 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
   /* SUMMARY */
   const s = await api("dailySummary");
-  document.getElementById("todayBox").textContent =
-    `Bugün: ${s.today || 0} | Aktif: ${s.active || 0} | Pending: ${s.pending || 0}`;
+ document.getElementById("todayBox").textContent =
+  `Bugün: ${s.today.total || 0} | Aktif: ${s.today.active || 0} | Pending: ${s.today.pending || 0}`;
+
+document.getElementById("totalBox").textContent =
+  `Toplam: ${s.total.total || 0} | Aktif: ${s.total.active || 0} | Pending: ${s.total.pending || 0}`;
+
   document.getElementById("totalBox").textContent =
     `Toplam: ${s.total || 0} | Aktif: ${s.active || 0} | Pending: ${s.pending || 0}`;
 
