@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>SepetTaxi – Admin Panel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
 body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial}
 .wrap{max-width:900px;margin:30px auto;padding:20px}
@@ -12,13 +13,21 @@ h1,h2{margin:0 0 10px}
 .badge{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px}
 .ok{background:#0a3}
 .err{background:#a00}
+.small{color:#aaa;font-size:12px}
+
 .table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{padding:8px;border-bottom:1px solid #222;font-size:14px}
-input,button{padding:12px;border-radius:10px;border:none;font-size:14px}
+th,td{padding:8px;border-bottom:1px solid #222;font-size:14px;text-align:left}
+
+input,button{
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  font-size:14px
+}
 input{background:#111;color:#fff;width:100%}
 button{background:#fff;color:#000;cursor:pointer}
+
 .flex{display:flex;gap:10px}
-.small{color:#aaa;font-size:12px}
 </style>
 </head>
 <body>
@@ -39,9 +48,16 @@ button{background:#fff;color:#000;cursor:pointer}
   <h2>Bekleyen / Atanmış İşler</h2>
   <table class="table">
     <thead>
-      <tr><th>Job</th><th>Kullanıcı</th><th>Servis</th><th>Durum</th></tr>
+      <tr>
+        <th>Job</th>
+        <th>Kullanıcı</th>
+        <th>Servis</th>
+        <th>Durum</th>
+      </tr>
     </thead>
-    <tbody id="jobs"><tr><td colspan="4">Yükleniyor…</td></tr></tbody>
+    <tbody id="jobs">
+      <tr><td colspan="4">Yükleniyor…</td></tr>
+    </tbody>
   </table>
 </div>
 
@@ -49,9 +65,17 @@ button{background:#fff;color:#000;cursor:pointer}
   <h2>Sürücüler</h2>
   <table class="table">
     <thead>
-      <tr><th>ID</th><th>Ad</th><th>Telefon</th><th>Araç</th><th>Durum</th></tr>
+      <tr>
+        <th>ID</th>
+        <th>Ad</th>
+        <th>Telefon</th>
+        <th>Araç</th>
+        <th>Durum</th>
+      </tr>
     </thead>
-    <tbody id="drivers"><tr><td colspan="5">Yükleniyor…</td></tr></tbody>
+    <tbody id="drivers">
+      <tr><td colspan="5">Yükleniyor…</td></tr>
+    </tbody>
   </table>
 </div>
 
@@ -60,7 +84,7 @@ button{background:#fff;color:#000;cursor:pointer}
   <div class="flex">
     <input id="jobId" placeholder="JOB-XXXX">
     <input id="driverId" placeholder="DRV-001">
-    <button onclick="assign()">İşi Ata</button>
+    <button onclick="assignJob()">İşi Ata</button>
   </div>
   <div id="assignMsg" class="small"></div>
 </div>
@@ -68,25 +92,33 @@ button{background:#fff;color:#000;cursor:pointer}
 </div>
 
 <script>
+// ⛔ BURAYI DEĞİŞTİRME – SADECE EXEC URL
 const API = "https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
 
-async function api(action,data={}){
-  const r = await fetch(API,{
-    method:"POST",
-    body:JSON.stringify({action,...data})
-  });
+// GET tabanlı, Apps Script doGet uyumlu
+async function api(action, params = {}) {
+  const q = new URLSearchParams({ action, ...params }).toString();
+  const r = await fetch(API + "?" + q);
   return r.json();
 }
 
-async function init(){
+async function init() {
   // PING
-  try{
+  try {
     const p = await api("ping");
-    document.getElementById("conn").innerText = p.ok ? "Backend bağlı" : "Backend hata";
-    document.getElementById("conn").className = "badge " + (p.ok?"ok":"err");
-  }catch{
-    document.getElementById("conn").innerText = "Bağlantı yok";
-    document.getElementById("conn").className = "badge err";
+    const c = document.getElementById("conn");
+    if (p.ok) {
+      c.innerText = "Backend bağlı";
+      c.className = "badge ok";
+    } else {
+      c.innerText = "Backend hata";
+      c.className = "badge err";
+    }
+  } catch {
+    const c = document.getElementById("conn");
+    c.innerText = "Bağlantı yok";
+    c.className = "badge err";
+    return;
   }
 
   // SUMMARY
@@ -96,33 +128,40 @@ async function init(){
 
   // JOBS
   const j = await api("listJobs");
-  const rows = j.jobs
-    .filter(x=>["pending","assigned"].includes(x.status))
-    .map(x=>`<tr>
-      <td>${x.job_id}</td>
-      <td>${x.user_name}<br>${x.user_phone}</td>
-      <td>${x.service}</td>
-      <td>${x.status}</td>
-    </tr>`).join("");
-  document.getElementById("jobs").innerHTML = rows || `<tr><td colspan="4">İş yok</td></tr>`;
+  const jobRows = j.jobs
+    .filter(x => x.status === "pending" || x.status === "assigned")
+    .map(x => `
+      <tr>
+        <td>${x.job_id}</td>
+        <td>${x.user_name}<br>${x.user_phone}</td>
+        <td>${x.service}</td>
+        <td>${x.status}</td>
+      </tr>
+    `).join("");
+
+  document.getElementById("jobs").innerHTML =
+    jobRows || `<tr><td colspan="4">İş yok</td></tr>`;
 
   // DRIVERS
   const d = await api("listDrivers");
   document.getElementById("drivers").innerHTML =
-    d.drivers.map(x=>`<tr>
-      <td>${x.driver_id}</td>
-      <td>${x.name}</td>
-      <td>${x.phone}</td>
-      <td>${x.vehicle}</td>
-      <td>${x.status}</td>
-    </tr>`).join("");
+    d.drivers.map(x => `
+      <tr>
+        <td>${x.driver_id}</td>
+        <td>${x.name}</td>
+        <td>${x.phone}</td>
+        <td>${x.vehicle}</td>
+        <td>${x.status}</td>
+      </tr>
+    `).join("");
 }
 
-async function assign(){
-  const job = jobId.value;
-  const drv = driverId.value;
-  const r = await api("assignJob",{job_id:job,driver_id:drv});
-  document.getElementById("assignMsg").innerText = r.ok ? "Atama başarılı" : "Hata";
+async function assignJob() {
+  const job = document.getElementById("jobId").value;
+  const drv = document.getElementById("driverId").value;
+  const r = await api("assignJob", { job_id: job, driver_id: drv });
+  document.getElementById("assignMsg").innerText =
+    r.ok ? "Atama başarılı" : "Atama hatası";
   init();
 }
 
