@@ -207,18 +207,23 @@ function normPhone(p){
 async function api(action, payload=null, params={}){
   const base = $("apiBase").value.trim();
   if(!base) throw new Error("Backend URL boş");
+
   const url = new URL(base);
   url.searchParams.set("action", action);
-  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k, v));
 
-  // POST öncelikli
+  // payload varsa GET parametresi olarak gönder
   if(payload){
-    const res = await fetch(url.toString(), {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    return await res.json();
+    url.searchParams.set("payload", JSON.stringify(payload));
+  }
+
+  Object.entries(params||{}).forEach(([k,v]) =>
+    url.searchParams.set(k, v)
+  );
+
+  const res = await fetch(url.toString(), { method: "GET" });
+  return await res.json();
+}
+
   } else {
     const res = await fetch(url.toString(), { method:"GET" });
     return await res.json();
