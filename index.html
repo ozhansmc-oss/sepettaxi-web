@@ -196,15 +196,14 @@ registerBtn.onclick = async ()=>{
 ================================ */
 jobBtn.onclick = async ()=>{
   try{
-    const r = await api("createJob",{
-      service_type:"taxi",
-      user_name:name.value,
-      user_phone:phone.value,
-      pickup_lat:Number(pLat.value),
-      pickup_lng:Number(pLng.value),
-      dropoff_lat:Number(dLat.value),
-      dropoff_lng:Number(dLng.value)
-    });
+const userName  = document.getElementById("name").value.trim();
+const userPhone = document.getElementById("phone").value.replace(/\D/g,"");
+
+if(!userName || userPhone.length !== 11){
+  throw "Talep oluşturmadan önce geçerli kayıt yapılmalı";
+}
+
+
 
     if(!r.ok) throw r.error;
     jobMsg.innerHTML = `<div class="ok">Talep oluşturuldu: ${r.job_id}</div>`;
