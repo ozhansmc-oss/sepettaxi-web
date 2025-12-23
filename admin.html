@@ -21,11 +21,7 @@ body{
   background:var(--bg);
   color:var(--text);
 }
-.container{
-  max-width:1100px;
-  margin:0 auto;
-  padding:20px;
-}
+.container{max-width:1100px;margin:0 auto;padding:20px}
 .card{
   background:var(--card);
   border-radius:18px;
@@ -128,16 +124,9 @@ async function api(action, payload){
 document.addEventListener("DOMContentLoaded", async ()=>{
 
   /* PING */
-  const badge = backendStatus;
-  try{
-    const p = await api("ping");
-    badge.textContent = p.ok ? "Backend bağlı" : "Backend hata";
-    badge.className = "badge " + (p.ok ? "ok" : "err");
-  }catch{
-    badge.textContent = "Backend yok";
-    badge.className = "badge err";
-    return;
-  }
+  const p = await api("ping");
+  backendStatus.textContent = p.ok ? "Backend bağlı" : "Backend hata";
+  backendStatus.className = "badge " + (p.ok ? "ok" : "err");
 
   /* SUMMARY */
   const s = await api("dailySummary");
@@ -146,18 +135,19 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   totalBox.textContent =
     `Toplam: ${s.total.total} | Aktif: ${s.total.active} | Pending: ${s.total.pending}`;
 
-  /* JOBS */
-  const j = await api("listPendingJobs");
+  /* JOBS (pending + assigned) */
+  const j = await api("listJobsByStatus",{ statuses:["pending","assigned"] });
   jobsBox.innerHTML = j.jobs.length
-    ? `<table><tr><th>Job</th><th>Kullanıcı</th><th>Servis</th><th>Status</th></tr>` +
+    ? `<table><tr><th>Job</th><th>Kullanıcı</th><th>Servis</th><th>Status</th><th>Driver</th></tr>` +
       j.jobs.map(x=>`
         <tr>
           <td>${x.job_id}</td>
           <td>${x.user_name}<br>${x.user_phone}</td>
           <td>${x.service_type}</td>
           <td>${x.status}</td>
+          <td>${x.driver_id || "-"}</td>
         </tr>`).join("") + `</table>`
-    : "Bekleyen iş yok";
+    : "İş yok";
 
   /* DRIVERS */
   const d = await api("listDrivers");
@@ -176,17 +166,12 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 /* ASSIGN */
 assignBtn.onclick = async ()=>{
   assignMsg.textContent = "İşleniyor…";
-  try{
-    const r = await api("assignJob",{
-      job_id: jobId.value.trim(),
-      driver_id: driverId.value.trim()
-    });
-    if(!r.ok) throw r.error;
-    assignMsg.textContent = "İş atandı";
-    location.reload();
-  }catch(e){
-    assignMsg.textContent = e;
-  }
+  const r = await api("assignJob",{
+    job_id: jobId.value.trim(),
+    driver_id: driverId.value.trim()
+  });
+  assignMsg.textContent = r.ok ? "İş atandı" : r.error;
+  if(r.ok) location.reload();
 };
 </script>
 </body>
