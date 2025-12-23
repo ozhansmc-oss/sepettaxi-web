@@ -1,151 +1,213 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>SepetTaxi</title>
-  <meta name="theme-color" content="#0b0b0b">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SepetTaxi</title>
 
-  <style>
-    body{margin:0;font-family:system-ui;background:#0b0b0b;color:#fff}
-    .wrap{max-width:780px;margin:0 auto;padding:16px}
-    .card{background:#141414;border-radius:16px;padding:16px;margin:12px 0;
-      box-shadow:0 0 0 1px rgba(255,255,255,.06) inset}
-    h1{font-size:20px;margin:0 0 8px}
-    label{font-size:12px;color:#aaa;display:block;margin:8px 0 4px}
-    input,select{width:100%;padding:12px;border-radius:12px;
-      background:#0f0f0f;border:1px solid rgba(255,255,255,.15);color:#fff}
-    button{width:100%;padding:14px;border-radius:14px;border:0;
-      background:#fff;color:#000;font-weight:700;cursor:pointer}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .col{flex:1;min-width:200px}
-    .ok{color:#7CFF9B;font-size:13px}
-    .err{color:#FF7C7C;font-size:13px}
-    .pill{display:inline-block;padding:6px 10px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.15);font-size:12px;color:#aaa}
-  </style>
+<style>
+:root{
+  --bg:#0b0b0b;
+  --card:#151515;
+  --border:rgba(255,255,255,.12);
+  --text:#fff;
+  --muted:#a8a8a8;
+}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:var(--bg);
+  color:var(--text);
+}
+.container{
+  max-width:820px;
+  margin:0 auto;
+  padding:20px;
+}
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:20px;
+  margin-bottom:16px;
+  box-shadow:0 0 0 1px var(--border) inset;
+}
+h1{margin:0 0 6px;font-size:22px}
+h2{margin:0 0 10px;font-size:18px}
+label{font-size:12px;color:var(--muted);display:block;margin:10px 0 4px}
+input{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:#0f0f0f;
+  color:#fff;
+  font-size:15px;
+}
+button{
+  width:100%;
+  padding:16px;
+  border-radius:16px;
+  border:none;
+  background:#fff;
+  color:#000;
+  font-weight:700;
+  font-size:15px;
+  cursor:pointer;
+  margin-top:12px;
+}
+.row{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.col{flex:1;min-width:220px}
+.ok{color:#7CFF9B;font-size:13px;margin-top:8px}
+.err{color:#FF7C7C;font-size:13px;margin-top:8px}
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  font-size:12px;
+  color:var(--muted);
+}
+</style>
 </head>
 
 <body>
-<div class="wrap">
+<div class="container">
 
-  <div class="card">
-    <h1>SepetTaxi</h1>
-    <div class="pill">Backend: sabit bağlı</div>
-    <div id="pingStatus" class="ok" style="margin-top:6px">Durum: kontrol ediliyor…</div>
+<!-- HEADER -->
+<div class="card">
+  <h1>SepetTaxi</h1>
+  <div class="badge" id="status">Backend kontrol ediliyor…</div>
+</div>
+
+<!-- KAYIT -->
+<div class="card">
+  <h2>1) Kayıt</h2>
+
+  <label>Ad Soyad</label>
+  <input id="name" placeholder="Örn: Cahit Berk">
+
+  <label>Telefon (11 hane)</label>
+  <input id="phone" placeholder="05XXXXXXXXX" maxlength="11">
+
+  <label><input type="checkbox" id="kvkk"> KVKK kabul</label>
+  <label><input type="checkbox" id="contract"> Hizmet sözleşmesi kabul</label>
+
+  <button id="registerBtn">Kaydı Tamamla</button>
+  <div id="registerMsg"></div>
+</div>
+
+<!-- TALEP -->
+<div class="card">
+  <h2>2) Talep Oluştur</h2>
+
+  <div class="row">
+    <div class="col">
+      <label>Pickup Lat</label>
+      <input id="pLat" value="40.195">
+    </div>
+    <div class="col">
+      <label>Pickup Lng</label>
+      <input id="pLng" value="29.060">
+    </div>
   </div>
 
-  <div class="card">
-    <h1>1) Kayıt</h1>
-    <label>Ad Soyad</label>
-    <input id="name" placeholder="Örn: Özhan Samurcu"/>
-
-    <label>Telefon (11 hane)</label>
-    <input id="phone" placeholder="05XXXXXXXXX" maxlength="11"/>
-
-    <label><input type="checkbox" id="kvkk"/> KVKK kabul</label>
-    <label><input type="checkbox" id="contract"/> Hizmet sözleşmesi kabul</label>
-
-    <button id="btnRegister">Kaydı Tamamla</button>
-    <div id="regMsg"></div>
+  <div class="row">
+    <div class="col">
+      <label>Dropoff Lat</label>
+      <input id="dLat" value="40.210">
+    </div>
+    <div class="col">
+      <label>Dropoff Lng</label>
+      <input id="dLng" value="29.020">
+    </div>
   </div>
 
-  <div class="card">
-    <h1>2) Konum & Talep</h1>
-
-    <label>Pickup Lat</label>
-    <input id="pLat" value="40.195"/>
-
-    <label>Pickup Lng</label>
-    <input id="pLng" value="29.060"/>
-
-    <label>Dropoff Lat</label>
-    <input id="dLat" value="40.210"/>
-
-    <label>Dropoff Lng</label>
-    <input id="dLng" value="29.020"/>
-
-    <button id="btnCreate">Talep Oluştur</button>
-    <div id="jobMsg"></div>
-  </div>
+  <button id="jobBtn">Talep Oluştur</button>
+  <div id="jobMsg"></div>
+</div>
 
 </div>
 
 <script>
-/* ================================
-   SABİT BACKEND URL
+/* ===============================
+   SABİT BACKEND
 ================================ */
-const API_BASE =
+const API =
 "https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
 
-/* ================================
-   API (GET + payload)
+/* ===============================
+   API CALL (GET + payload)
 ================================ */
-async function api(action, payload=null){
-  const url = new URL(API_BASE);
+async function api(action, payload){
+  const url = new URL(API);
   url.searchParams.set("action", action);
   if(payload){
     url.searchParams.set("payload", JSON.stringify(payload));
   }
-  const res = await fetch(url.toString());
-  return await res.json();
+  const r = await fetch(url.toString());
+  return await r.json();
 }
 
-/* ================================
-   Ping (otomatik)
+/* ===============================
+   PING
 ================================ */
-(async ()=>{
+(async()=>{
   try{
     const r = await api("ping");
-    document.getElementById("pingStatus").textContent =
-      r.ok ? "Durum: bağlı" : "Durum: hata";
-  }catch(e){
-    document.getElementById("pingStatus").textContent = "Durum: bağlı değil";
+    document.getElementById("status").textContent =
+      r.ok ? "Backend bağlı" : "Backend hata";
+  }catch{
+    document.getElementById("status").textContent = "Backend bağlantı yok";
   }
 })();
 
-/* ================================
-   Kayıt
+/* ===============================
+   KAYIT
 ================================ */
-document.getElementById("btnRegister").onclick = async ()=>{
+registerBtn.onclick = async ()=>{
   try{
-    const name = nameEl.value.trim();
-    const phone = phoneEl.value.replace(/\D/g,"");
+    const name = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.replace(/\D/g,"");
+
     if(!name) throw "Ad zorunlu";
     if(phone.length!==11) throw "Telefon 11 hane olmalı";
     if(!kvkk.checked || !contract.checked) throw "Onaylar zorunlu";
 
-    const r = await api("upsertUser", {
-      name, phone,
+    const r = await api("upsertUser",{
+      name,
+      phone,
       kvkk_accepted:true,
       contract_accepted:true
     });
 
     if(!r.ok) throw r.error;
-    regMsg.innerHTML = `<div class="ok">Kayıt OK</div>`;
+    registerMsg.innerHTML = `<div class="ok">Kayıt başarılı</div>`;
   }catch(e){
-    regMsg.innerHTML = `<div class="err">${e}</div>`;
+    registerMsg.innerHTML = `<div class="err">${e}</div>`;
   }
 };
 
-/* ================================
-   Talep Oluştur
+/* ===============================
+   TALEP
 ================================ */
-document.getElementById("btnCreate").onclick = async ()=>{
+jobBtn.onclick = async ()=>{
   try{
-    const r = await api("createJob", {
+    const r = await api("createJob",{
       service_type:"taxi",
-      user_name: name.value,
-      user_phone: phone.value,
-      pickup_lat: Number(pLat.value),
-      pickup_lng: Number(pLng.value),
-      dropoff_lat: Number(dLat.value),
-      dropoff_lng: Number(dLng.value)
+      user_name:name.value,
+      user_phone:phone.value,
+      pickup_lat:Number(pLat.value),
+      pickup_lng:Number(pLng.value),
+      dropoff_lat:Number(dLat.value),
+      dropoff_lng:Number(dLng.value)
     });
 
     if(!r.ok) throw r.error;
-    jobMsg.innerHTML =
-      `<div class="ok">Talep oluşturuldu: ${r.job_id}</div>`;
+    jobMsg.innerHTML = `<div class="ok">Talep oluşturuldu: ${r.job_id}</div>`;
   }catch(e){
     jobMsg.innerHTML = `<div class="err">${e}</div>`;
   }
