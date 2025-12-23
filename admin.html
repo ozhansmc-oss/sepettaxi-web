@@ -1,3 +1,36 @@
+<script>
+const API =
+"https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
+
+async function api(action, payload){
+  const url = new URL(API);
+  url.searchParams.set("action", action);
+  if(payload){
+    url.searchParams.set("payload", JSON.stringify(payload));
+  }
+  const r = await fetch(url.toString());
+  return await r.json();
+}
+
+document.addEventListener("DOMContentLoaded", async ()=>{
+  const badge = document.getElementById("backendStatus");
+  if(!badge) return;
+
+  try{
+    const r = await api("ping");
+    if(r && r.ok){
+      badge.textContent = "Backend bağlı";
+      badge.style.color = "#7CFF9B";
+    }else{
+      badge.textContent = "Backend hata";
+      badge.style.color = "#FF7C7C";
+    }
+  }catch{
+    badge.textContent = "Backend bağlantı yok";
+    badge.style.color = "#FF7C7C";
+  }
+});
+</script>
 <!doctype html>
 <html lang="tr">
 <head>
