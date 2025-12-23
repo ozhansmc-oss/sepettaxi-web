@@ -1,510 +1,155 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>SepetTaxi</title>
-
-  <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0b0b0b">
+
   <style>
-    :root{--bg:#0b0b0b;--card:#141414;--txt:#fff;--muted:#a8a8a8;--pri:#ffffff;}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--txt)}
+    body{margin:0;font-family:system-ui;background:#0b0b0b;color:#fff}
     .wrap{max-width:780px;margin:0 auto;padding:16px}
-    .card{background:var(--card);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset}
+    .card{background:#141414;border-radius:16px;padding:16px;margin:12px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,.06) inset}
     h1{font-size:20px;margin:0 0 8px}
+    label{font-size:12px;color:#aaa;display:block;margin:8px 0 4px}
+    input,select{width:100%;padding:12px;border-radius:12px;
+      background:#0f0f0f;border:1px solid rgba(255,255,255,.15);color:#fff}
+    button{width:100%;padding:14px;border-radius:14px;border:0;
+      background:#fff;color:#000;font-weight:700;cursor:pointer}
     .row{display:flex;gap:10px;flex-wrap:wrap}
-    .col{flex:1;min-width:220px}
-    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
-    input,select,textarea{width:100%;box-sizing:border-box;background:#0f0f0f;border:1px solid rgba(255,255,255,.10);color:var(--txt);border-radius:12px;padding:12px;outline:none}
-    textarea{min-height:84px;resize:vertical}
-    button{width:100%;border:0;border-radius:14px;padding:14px 12px;background:var(--pri);color:#000;font-weight:700;cursor:pointer}
-    button.secondary{background:#1f1f1f;color:var(--txt);border:1px solid rgba(255,255,255,.12)}
-    .small{font-size:12px;color:var(--muted);line-height:1.4}
-    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#101010;border:1px solid rgba(255,255,255,.10);color:var(--muted);font-size:12px}
-    .ok{color:#8cffb0}
-    .err{color:#ff8c8c}
-    .hidden{display:none}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:720px){.grid2{grid-template-columns:1fr}}
-    a{color:#fff}
+    .col{flex:1;min-width:200px}
+    .ok{color:#7CFF9B;font-size:13px}
+    .err{color:#FF7C7C;font-size:13px}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.15);font-size:12px;color:#aaa}
   </style>
 </head>
+
 <body>
 <div class="wrap">
+
   <div class="card">
     <h1>SepetTaxi</h1>
-    <div class="small">Müşteri akışı + takip ekranı (PWA hazır). Backend URL’ini aşağıya yapıştır.</div>
-    <label>Backend EXEC URL</label>
-    <input id="apiBase" placeholder="https://script.google.com/macros/s/XXXXX/exec" />
-    <div class="row">
-      <div class="col"><span class="pill">Durum: <span id="apiStatus" class="err">bağlı değil</span></span></div>
-      <div class="col"><button class="secondary" id="btnPing">Ping</button></div>
-    </div>
-  </div>
-
-  <!-- 1) Kayıt -->
-  <div class="card" id="screenRegister">
-    <h1>1) Kayıt</h1>
-    <div class="grid2">
-      <div>
-        <label>Ad Soyad</label>
-        <input id="name" placeholder="Örn: Özhan Samurcu" />
-      </div>
-      <div>
-        <label>Telefon (11 hane)</label>
-        <input id="phone" inputmode="numeric" placeholder="05XXXXXXXXX" maxlength="11" />
-      </div>
-    </div>
-
-    <label>
-      <input type="checkbox" id="kvkk" /> KVKK Aydınlatma Metni’ni okudum, kabul ediyorum
-      (<a href="kvkk.html" target="_blank">aç</a>)
-    </label>
-    <label>
-      <input type="checkbox" id="contract" /> Hizmet Sözleşmesi’ni okudum, kabul ediyorum
-      (<a href="contract.html" target="_blank">aç</a>)
-    </label>
-
-    <button id="btnRegister">Kaydı Tamamla</button>
-    <div class="small" id="regMsg"></div>
-  </div>
-
-  <!-- 2) Hizmet -->
-  <div class="card hidden" id="screenService">
-    <h1>2) Hizmet Seç</h1>
-    <label>Hizmet</label>
-    <select id="serviceType">
-      <option value="taxi">Taxi (Mobilite)</option>
-      <option value="courier">Kurye</option>
-      <option value="transfer">Havalimanı Transfer</option>
-    </select>
-
-    <div id="serviceDetails" class="card" style="margin:12px 0;background:#101010"></div>
-
-    <div class="row">
-      <div class="col"><button class="secondary" id="btnBack1">Geri</button></div>
-      <div class="col"><button id="btnNextToRoute">Devam</button></div>
-    </div>
-  </div>
-
-  <!-- 3) Rota -->
-  <div class="card hidden" id="screenRoute">
-    <h1>3) Konum & Rota</h1>
-
-    <div class="grid2">
-      <div>
-        <label>Alış Adresi</label>
-        <input id="pickupAddress" placeholder="Örn: Nilüfer / Bursa" />
-        <div class="row">
-          <div class="col">
-            <label>Pickup Lat</label>
-            <input id="pickupLat" placeholder="40.195" />
-          </div>
-          <div class="col">
-            <label>Pickup Lng</label>
-            <input id="pickupLng" placeholder="29.060" />
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <label>Bırakış Adresi</label>
-        <input id="dropoffAddress" placeholder="Örn: Osmangazi / Bursa" />
-        <div class="row">
-          <div class="col">
-            <label>Dropoff Lat</label>
-            <input id="dropoffLat" placeholder="40.210" />
-          </div>
-          <div class="col">
-            <label>Dropoff Lng</label>
-            <input id="dropoffLng" placeholder="29.020" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <label>Planlı Zaman (opsiyonel ISO)</label>
-    <input id="scheduleTime" placeholder="2025-12-24T10:00:00+03:00" />
-
-    <button id="btnCreateJob">Talep Oluştur</button>
-    <div class="small" id="jobMsg"></div>
-
-    <div class="row">
-      <div class="col"><button class="secondary" id="btnBack2">Geri</button></div>
-      <div class="col"><button class="secondary" id="btnGoTrack" disabled>Takibe Git</button></div>
-    </div>
-  </div>
-
-  <!-- 4) Takip -->
-  <div class="card hidden" id="screenTrack">
-    <h1>4) Takip</h1>
-    <div class="row">
-      <div class="col">
-        <label>Job ID</label>
-        <input id="trackJobId" placeholder="JOB-XXXXXXXXXX" />
-      </div>
-      <div class="col">
-        <label>&nbsp;</label>
-        <button class="secondary" id="btnLoadJob">Yükle</button>
-      </div>
-    </div>
-
-    <div class="card" style="background:#101010">
-      <div class="row">
-        <div class="col"><span class="pill">Status: <span id="jobStatus">-</span></span></div>
-        <div class="col"><span class="pill">Driver: <span id="jobDriver">-</span></span></div>
-      </div>
-      <div class="small" id="jobInfo"></div>
-    </div>
-
-    <div class="card" style="background:#101010">
-      <h1 style="font-size:16px;margin:0 0 8px">Timeline</h1>
-      <div id="timeline" class="small">-</div>
-    </div>
-
-    <div class="row">
-      <div class="col"><button class="secondary" id="btnBack3">Geri</button></div>
-      <div class="col"><button class="secondary" id="btnAutoRefresh">Oto Yenile: Kapalı</button></div>
-    </div>
+    <div class="pill">Backend: sabit bağlı</div>
+    <div id="pingStatus" class="ok" style="margin-top:6px">Durum: kontrol ediliyor…</div>
   </div>
 
   <div class="card">
-    <div class="small">
-      Admin: <a href="admin.html" target="_blank">admin.html</a> —
-      Driver: <a href="driver.html" target="_blank">driver.html</a> —
-      Driver Register: <a href="driver-register.html" target="_blank">driver-register.html</a>
-    </div>
+    <h1>1) Kayıt</h1>
+    <label>Ad Soyad</label>
+    <input id="name" placeholder="Örn: Özhan Samurcu"/>
+
+    <label>Telefon (11 hane)</label>
+    <input id="phone" placeholder="05XXXXXXXXX" maxlength="11"/>
+
+    <label><input type="checkbox" id="kvkk"/> KVKK kabul</label>
+    <label><input type="checkbox" id="contract"/> Hizmet sözleşmesi kabul</label>
+
+    <button id="btnRegister">Kaydı Tamamla</button>
+    <div id="regMsg"></div>
   </div>
+
+  <div class="card">
+    <h1>2) Konum & Talep</h1>
+
+    <label>Pickup Lat</label>
+    <input id="pLat" value="40.195"/>
+
+    <label>Pickup Lng</label>
+    <input id="pLng" value="29.060"/>
+
+    <label>Dropoff Lat</label>
+    <input id="dLat" value="40.210"/>
+
+    <label>Dropoff Lng</label>
+    <input id="dLng" value="29.020"/>
+
+    <button id="btnCreate">Talep Oluştur</button>
+    <div id="jobMsg"></div>
+  </div>
+
 </div>
 
 <script>
-/** Storage **/
-const LS = {
-  apiBase: "st_apiBase",
-  user: "st_user",
-  draft: "st_draft",
-  lastJob: "st_lastJob"
-};
+/* ================================
+   SABİT BACKEND URL
+================================ */
+const API_BASE =
+"https://script.google.com/macros/s/AKfycbzS34ZfQf99CI7LAee2RtI0qRjKIuwOik6ymJ1hy1P4_D1bEk3Al7ftu1L1X1S5o-xI/exec";
 
-function $(id){return document.getElementById(id);}
-function setStatus(ok, msg){
-  const el = $("apiStatus");
-  el.textContent = msg;
-  el.className = ok ? "ok" : "err";
-}
-
-function saveApiBase(v){ localStorage.setItem(LS.apiBase, v); }
-function loadApiBase(){ return localStorage.getItem(LS.apiBase) || ""; }
-
-function normPhone(p){
-  const d = String(p||"").replace(/\D/g,"").slice(0,11);
-  if(d.length !== 11) return "";
-  if(!d.startsWith("0")) return "";
-  return d;
-}
-
-async function api(action, payload=null, params={}){
-  const base = $("apiBase").value.trim();
-  if(!base) throw new Error("Backend URL boş");
-
-  const url = new URL(base);
+/* ================================
+   API (GET + payload)
+================================ */
+async function api(action, payload=null){
+  const url = new URL(API_BASE);
   url.searchParams.set("action", action);
-
-  // payload varsa GET parametresi olarak gönder
   if(payload){
     url.searchParams.set("payload", JSON.stringify(payload));
   }
-
-  Object.entries(params||{}).forEach(([k,v]) =>
-    url.searchParams.set(k, v)
-  );
-
-  const res = await fetch(url.toString(), { method: "GET" });
+  const res = await fetch(url.toString());
   return await res.json();
 }
 
-  } else {
-    const res = await fetch(url.toString(), { method:"GET" });
-    return await res.json();
+/* ================================
+   Ping (otomatik)
+================================ */
+(async ()=>{
+  try{
+    const r = await api("ping");
+    document.getElementById("pingStatus").textContent =
+      r.ok ? "Durum: bağlı" : "Durum: hata";
+  }catch(e){
+    document.getElementById("pingStatus").textContent = "Durum: bağlı değil";
   }
-}
+})();
 
-/** UI flow **/
-let state = {
-  user: null,
-  draft: { service_type:"taxi", details:{} },
-  lastJobId: null,
-  auto: false,
-  autoTimer: null
+/* ================================
+   Kayıt
+================================ */
+document.getElementById("btnRegister").onclick = async ()=>{
+  try{
+    const name = nameEl.value.trim();
+    const phone = phoneEl.value.replace(/\D/g,"");
+    if(!name) throw "Ad zorunlu";
+    if(phone.length!==11) throw "Telefon 11 hane olmalı";
+    if(!kvkk.checked || !contract.checked) throw "Onaylar zorunlu";
+
+    const r = await api("upsertUser", {
+      name, phone,
+      kvkk_accepted:true,
+      contract_accepted:true
+    });
+
+    if(!r.ok) throw r.error;
+    regMsg.innerHTML = `<div class="ok">Kayıt OK</div>`;
+  }catch(e){
+    regMsg.innerHTML = `<div class="err">${e}</div>`;
+  }
 };
 
-function show(id){
-  ["screenRegister","screenService","screenRoute","screenTrack"].forEach(s=>$(s).classList.add("hidden"));
-  $(id).classList.remove("hidden");
-}
-
-function renderServiceDetails(){
-  const t = $("serviceType").value;
-  const box = $("serviceDetails");
-  if(t==="taxi"){
-    box.innerHTML = `
-      <div class="small">Taxi: Standart mobilite akışı. (Fiyat/mesafe opsiyonel; admin/algoritma ile netleşir.)</div>
-      <label>Araç Tipi</label>
-      <select id="taxiVehicle">
-        <option value="standard">Standart</option>
-        <option value="vip">VIP</option>
-        <option value="minivan">Minivan</option>
-      </select>
-      <label>Not</label>
-      <textarea id="taxiNote" placeholder="Opsiyonel not..."></textarea>
-    `;
-  }
-  if(t==="courier"){
-    box.innerHTML = `
-      <div class="small">Kurye: Gönderi bilgileri + alıcı bilgileri zorunlu.</div>
-      <label>Kurye Tipi</label>
-      <select id="courierType">
-        <option value="courier_motor">Motorlu Kurye</option>
-        <option value="courier_car">Araçlı Kurye</option>
-      </select>
-      <div class="grid2">
-        <div>
-          <label>Alıcı Ad Soyad</label>
-          <input id="recvName" placeholder="Örn: Ali Veli" />
-        </div>
-        <div>
-          <label>Alıcı Telefon</label>
-          <input id="recvPhone" placeholder="05XXXXXXXXX" maxlength="11" />
-        </div>
-      </div>
-      <label>Paket İçeriği / Açıklama</label>
-      <textarea id="pkgDesc" placeholder="Örn: Evrak / 1kg"></textarea>
-      <div class="grid2">
-        <div>
-          <label>Ağırlık (kg)</label>
-          <input id="pkgKg" placeholder="1.0" />
-        </div>
-        <div>
-          <label>Hacim (ops.)</label>
-          <input id="pkgVol" placeholder="Örn: 20x30x10" />
-        </div>
-      </div>
-    `;
-  }
-  if(t==="transfer"){
-    box.innerHTML = `
-      <div class="small">Transfer: Araç seçimi + valiz + rezervasyon opsiyonu.</div>
-      <label>Araç</label>
-      <select id="trVehicle">
-        <option value="transfer_sedan">Binek</option>
-        <option value="transfer_vip">VIP</option>
-        <option value="transfer_minibus">Minibüs</option>
-      </select>
-      <label>Valiz Sayısı</label>
-      <input id="luggage" placeholder="0" />
-      <label>Havalimanı</label>
-      <input id="airport" placeholder="Örn: Sabiha Gökçen" />
-      <label>Not</label>
-      <textarea id="trNote" placeholder="Opsiyonel not..."></textarea>
-    `;
-  }
-}
-
-function captureServiceDetails(){
-  const t = $("serviceType").value;
-  const details = {};
-  if(t==="taxi"){
-    details.vehicle = document.getElementById("taxiVehicle")?.value || "standard";
-    details.note = document.getElementById("taxiNote")?.value || "";
-  }
-  if(t==="courier"){
-    const rp = normPhone(document.getElementById("recvPhone")?.value || "");
-    details.courier_type = document.getElementById("courierType")?.value || "courier_motor";
-    details.receiver_name = (document.getElementById("recvName")?.value || "").trim();
-    details.receiver_phone = rp;
-    details.package_desc = document.getElementById("pkgDesc")?.value || "";
-    details.package_kg = Number(document.getElementById("pkgKg")?.value || "");
-    details.package_vol = document.getElementById("pkgVol")?.value || "";
-    if(!details.receiver_name || !details.receiver_phone) throw new Error("Kurye için alıcı adı/telefon zorunlu (11 hane).");
-  }
-  if(t==="transfer"){
-    details.vehicle = document.getElementById("trVehicle")?.value || "transfer_sedan";
-    details.luggage = Number(document.getElementById("luggage")?.value || 0);
-    details.airport = document.getElementById("airport")?.value || "";
-    details.note = document.getElementById("trNote")?.value || "";
-  }
-  return { service_type: t, details };
-}
-
-function hydrateFromStorage(){
-  $("apiBase").value = loadApiBase();
-  const u = localStorage.getItem(LS.user);
-  if(u) state.user = JSON.parse(u);
-  const j = localStorage.getItem(LS.lastJob);
-  if(j) state.lastJobId = j;
-  if(state.user){
-    show("screenService");
-  }else{
-    show("screenRegister");
-  }
-  $("serviceType").value = state.draft.service_type || "taxi";
-  renderServiceDetails();
-}
-
-async function ping(){
+/* ================================
+   Talep Oluştur
+================================ */
+document.getElementById("btnCreate").onclick = async ()=>{
   try{
-    saveApiBase($("apiBase").value.trim());
-    const r = await api("ping");
-    setStatus(!!r.ok, r.ok ? "bağlı" : "hata");
+    const r = await api("createJob", {
+      service_type:"taxi",
+      user_name: name.value,
+      user_phone: phone.value,
+      pickup_lat: Number(pLat.value),
+      pickup_lng: Number(pLng.value),
+      dropoff_lat: Number(dLat.value),
+      dropoff_lng: Number(dLng.value)
+    });
+
+    if(!r.ok) throw r.error;
+    jobMsg.innerHTML =
+      `<div class="ok">Talep oluşturuldu: ${r.job_id}</div>`;
   }catch(e){
-    setStatus(false, "bağlı değil");
+    jobMsg.innerHTML = `<div class="err">${e}</div>`;
   }
-}
-
-/** Tracking **/
-async function loadJob(jobId){
-  const r = await api("getJob", null, { job_id: jobId });
-  if(!r.ok || !r.job) throw new Error("Job bulunamadı");
-  $("jobStatus").textContent = r.job.status;
-  $("jobDriver").textContent = r.job.driver_id ? `${r.job.driver_id}` : "-";
-  $("jobInfo").textContent = `${r.job.service_type} | ${r.job.pickup_address || ""} → ${r.job.dropoff_address || ""}`;
-
-  // events
-  const ev = await api("jobEvents", null, { job_id: jobId });
-  const list = (ev.events || []).map(x => `• ${String(x.created_at).replace("T"," ").slice(0,19)} — ${x.type}`).join("<br/>");
-  $("timeline").innerHTML = list || "-";
-}
-
-function setAutoRefresh(on){
-  state.auto = on;
-  $("btnAutoRefresh").textContent = "Oto Yenile: " + (on ? "Açık" : "Kapalı");
-  if(state.autoTimer) clearInterval(state.autoTimer);
-  if(on){
-    state.autoTimer = setInterval(async ()=>{
-      const id = $("trackJobId").value.trim();
-      if(!id) return;
-      try{ await loadJob(id); }catch(_){}
-    }, 5000);
-  }
-}
-
-/** Events **/
-$("btnPing").addEventListener("click", ping);
-$("apiBase").addEventListener("change", ()=>saveApiBase($("apiBase").value.trim()));
-
-$("btnRegister").addEventListener("click", async ()=>{
-  $("regMsg").textContent = "";
-  try{
-    const name = $("name").value.trim();
-    const phone = normPhone($("phone").value);
-    if(!name) throw new Error("Ad Soyad zorunlu");
-    if(!phone) throw new Error("Telefon 11 hane olmalı (05XXXXXXXXX)");
-    if(!$("kvkk").checked) throw new Error("KVKK onayı zorunlu");
-    if(!$("contract").checked) throw new Error("Sözleşme onayı zorunlu");
-
-    const payload = { name, phone, kvkk_accepted:true, contract_accepted:true };
-    const r = await api("upsertUser", payload);
-    if(!r.ok) throw new Error(r.error || "Kayıt hatası");
-
-    state.user = { user_id: r.user_id, name, phone };
-    localStorage.setItem(LS.user, JSON.stringify(state.user));
-    show("screenService");
-  }catch(e){
-    $("regMsg").innerHTML = `<span class="err">${e.message}</span>`;
-  }
-});
-
-$("btnBack1").addEventListener("click", ()=>show("screenRegister"));
-
-$("serviceType").addEventListener("change", ()=>{
-  renderServiceDetails();
-});
-
-$("btnNextToRoute").addEventListener("click", ()=>{
-  try{
-    const { service_type, details } = captureServiceDetails();
-    state.draft.service_type = service_type;
-    state.draft.details = details;
-    show("screenRoute");
-  }catch(e){
-    alert(e.message);
-  }
-});
-
-$("btnBack2").addEventListener("click", ()=>show("screenService"));
-
-$("btnCreateJob").addEventListener("click", async ()=>{
-  $("jobMsg").textContent = "";
-  try{
-    if(!state.user) throw new Error("Kullanıcı yok");
-    const pickup_lat = Number($("pickupLat").value);
-    const pickup_lng = Number($("pickupLng").value);
-    const dropoff_lat = Number($("dropoffLat").value);
-    const dropoff_lng = Number($("dropoffLng").value);
-    if(!isFinite(pickup_lat) || !isFinite(pickup_lng)) throw new Error("Pickup lat/lng zorunlu");
-    if(!isFinite(dropoff_lat) || !isFinite(dropoff_lng)) throw new Error("Dropoff lat/lng zorunlu");
-
-    const payload = {
-      service_type: state.draft.service_type,
-      user_id: state.user.user_id,
-      user_name: state.user.name,
-      user_phone: state.user.phone,
-      pickup_address: $("pickupAddress").value.trim(),
-      pickup_lat, pickup_lng,
-      dropoff_address: $("dropoffAddress").value.trim(),
-      dropoff_lat, dropoff_lng,
-      details: state.draft.details,
-      schedule_time: $("scheduleTime").value.trim()
-    };
-    const r = await api("createJob", payload);
-    if(!r.ok) throw new Error(r.error || "Job oluşturma hatası");
-
-    state.lastJobId = r.job_id;
-    localStorage.setItem(LS.lastJob, state.lastJobId);
-    $("jobMsg").innerHTML = `<span class="ok">Talep oluşturuldu: ${r.job_id}</span>`;
-    $("btnGoTrack").disabled = false;
-    $("trackJobId").value = r.job_id;
-  }catch(e){
-    $("jobMsg").innerHTML = `<span class="err">${e.message}</span>`;
-  }
-});
-
-$("btnGoTrack").addEventListener("click", ()=>{
-  show("screenTrack");
-  if($("trackJobId").value.trim()){
-    $("btnLoadJob").click();
-  }
-});
-
-$("btnBack3").addEventListener("click", ()=>{
-  show("screenRoute");
-  setAutoRefresh(false);
-});
-
-$("btnLoadJob").addEventListener("click", async ()=>{
-  try{
-    const id = $("trackJobId").value.trim();
-    if(!id) throw new Error("Job ID gir");
-    await loadJob(id);
-  }catch(e){
-    alert(e.message);
-  }
-});
-
-$("btnAutoRefresh").addEventListener("click", ()=>{
-  setAutoRefresh(!state.auto);
-});
-
-/** PWA register */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try { await navigator.serviceWorker.register("./sw.js"); } catch(_) {}
-  });
-}
-
-hydrateFromStorage();
-ping();
+};
 </script>
 </body>
 </html>
