@@ -1,171 +1,160 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>SepetTaxi – Admin Panel</title>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SepetTaxi – Admin</title>
 
 <style>
-body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial}
-.wrap{max-width:900px;margin:30px auto;padding:20px}
-.card{background:#151515;border-radius:14px;padding:20px;margin-bottom:20px}
-h1,h2{margin:0 0 10px}
-.badge{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px}
-.ok{background:#0a3}
-.err{background:#a00}
-.small{color:#aaa;font-size:12px}
-
-.table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{padding:8px;border-bottom:1px solid #222;font-size:14px;text-align:left}
-
-input,button{
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  font-size:14px
+:root{
+  --bg:#0b0b0b; --card:#151515; --border:rgba(255,255,255,.12);
+  --text:#fff; --muted:#a8a8a8; --ok:#7CFF9B; --err:#FF7C7C;
 }
-input{background:#111;color:#fff;width:100%}
-button{background:#fff;color:#000;cursor:pointer}
-
-.flex{display:flex;gap:10px}
+body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
+.container{max-width:980px;margin:0 auto;padding:20px}
+.card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:16px;
+  box-shadow:0 0 0 1px var(--border) inset}
+h1{margin:0 0 6px;font-size:22px}
+h2{margin:0 0 10px;font-size:18px}
+.badge{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px}
+.ok{color:var(--ok)} .err{color:var(--err)}
+select,button{width:100%;padding:14px;border-radius:14px;border:1px solid var(--border);
+  background:#0f0f0f;color:#fff;font-size:15px}
+button{background:#fff;color:#000;font-weight:700;border:none;margin-top:10px;cursor:pointer}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.job{border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:10px}
 </style>
 </head>
+
 <body>
-
-<div class="wrap">
+<div class="container">
 
 <div class="card">
-  <h1>SepetTaxi – Admin Panel</h1>
-  <span id="conn" class="badge">Kontrol ediliyor…</span>
+  <h1>SepetTaxi – Admin Paneli</h1>
+  <span class="badge" id="backend">Backend kontrol ediliyor…</span>
 </div>
 
 <div class="card">
-  <h2>Günlük Operasyon Özeti</h2>
-  <div id="summary" class="small">Yükleniyor…</div>
+  <h2>1) İş Seç</h2>
+  <select id="jobSelect"></select>
 </div>
 
 <div class="card">
-  <h2>Bekleyen / Atanmış İşler</h2>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Job</th>
-        <th>Kullanıcı</th>
-        <th>Servis</th>
-        <th>Durum</th>
-      </tr>
-    </thead>
-    <tbody id="jobs">
-      <tr><td colspan="4">Yükleniyor…</td></tr>
-    </tbody>
-  </table>
+  <h2>2) Sürücü Seç</h2>
+  <select id="driverSelect"></select>
 </div>
 
 <div class="card">
-  <h2>Sürücüler</h2>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Ad</th>
-        <th>Telefon</th>
-        <th>Araç</th>
-        <th>Durum</th>
-      </tr>
-    </thead>
-    <tbody id="drivers">
-      <tr><td colspan="5">Yükleniyor…</td></tr>
-    </tbody>
-  </table>
+  <h2>3) Ata</h2>
+  <button onclick="assign()">Sürücüye Ata</button>
+  <div id="msg"></div>
 </div>
 
 <div class="card">
-  <h2>Manuel İş Atama</h2>
-  <div class="flex">
-    <input id="jobId" placeholder="JOB-XXXX">
-    <input id="driverId" placeholder="DRV-001">
-    <button onclick="assignJob()">İşi Ata</button>
-  </div>
-  <div id="assignMsg" class="small"></div>
+  <h2>Bekleyen İşler</h2>
+  <div id="jobsBox">Yükleniyor…</div>
 </div>
 
 </div>
 
 <script>
-// ⛔ BURAYI DEĞİŞTİRME – SADECE EXEC URL
-const API = "https://script.google.com/macros/s/AKfycbw_hDjwwc8cO3qHE_y7znohPf_4agoogg_FUD96MWvpGI4GF3tUEp54klAFOIfLZegD/exec";
+/* ================= CONFIG ================= */
+const API_BASE =
+"https://script.google.com/macros/s/AKfycbw_hDjwwc8cO3qHE_y7znohPf_4agoogg_FUD96MWvpGI4GF3tUEp54klAFOIfLZegD/exec";
 
-// GET tabanlı, Apps Script doGet uyumlu
-async function api(action, params = {}) {
-  const q = new URLSearchParams({ action, ...params }).toString();
-  const r = await fetch(API + "?" + q);
-  return r.json();
+/* ================= HELPERS ================= */
+async function get(params){
+  const u = new URL(API_BASE);
+  Object.keys(params).forEach(k=>u.searchParams.set(k,params[k]));
+  const r = await fetch(u.toString());
+  return await r.json();
+}
+async function post(action, body){
+  const r = await fetch(`${API_BASE}?action=${action}`,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body)
+  });
+  return await r.json();
 }
 
-async function init() {
-  // PING
-  try {
-    const p = await api("ping");
-    const c = document.getElementById("conn");
-    if (p.ok) {
-      c.innerText = "Backend bağlı";
-      c.className = "badge ok";
-    } else {
-      c.innerText = "Backend hata";
-      c.className = "badge err";
-    }
-  } catch {
-    const c = document.getElementById("conn");
-    c.innerText = "Bağlantı yok";
-    c.className = "badge err";
-    return;
+/* ================= PING ================= */
+(async()=>{
+  const b = document.getElementById("backend");
+  try{
+    const r = await get({action:"ping"});
+    if(r.ok){ b.textContent="Backend bağlı"; b.classList.add("ok"); }
+    else throw "";
+  }catch{
+    b.textContent="Backend yok"; b.classList.add("err");
+  }
+})();
+
+/* ================= LOAD DATA ================= */
+async function load(){
+  await loadJobs();
+  await loadDrivers();
+}
+load();
+
+async function loadJobs(){
+  const box = document.getElementById("jobsBox");
+  const sel = document.getElementById("jobSelect");
+  box.innerHTML = "Yükleniyor…";
+  sel.innerHTML = "";
+
+  const r = await get({action:"listJobs"});
+  if(!r.ok || !r.jobs || r.jobs.length===0){
+    box.textContent="İş yok"; return;
   }
 
-  // SUMMARY
-  const s = await api("dailySummary");
-  document.getElementById("summary").innerText =
-    `Bugün: ${s.today} | Aktif: ${s.active} | Pending: ${s.pending}`;
+  const pending = r.jobs.filter(j=>j.status==="pending");
+  if(pending.length===0){ box.textContent="Bekleyen iş yok"; return; }
 
-  // JOBS
-  const j = await api("listJobs");
-  const jobRows = j.jobs
-    .filter(x => x.status === "pending" || x.status === "assigned")
-    .map(x => `
-      <tr>
-        <td>${x.job_id}</td>
-        <td>${x.user_name}<br>${x.user_phone}</td>
-        <td>${x.service}</td>
-        <td>${x.status}</td>
-      </tr>
-    `).join("");
+  box.innerHTML="";
+  pending.forEach(j=>{
+    const d=document.createElement("div");
+    d.className="job";
+    d.innerHTML=`<b>${j.job_id}</b> – ${j.service_type} – ${j.pickup_address} → ${j.dropoff_address}`;
+    box.appendChild(d);
 
-  document.getElementById("jobs").innerHTML =
-    jobRows || `<tr><td colspan="4">İş yok</td></tr>`;
-
-  // DRIVERS
-  const d = await api("listDrivers");
-  document.getElementById("drivers").innerHTML =
-    d.drivers.map(x => `
-      <tr>
-        <td>${x.driver_id}</td>
-        <td>${x.name}</td>
-        <td>${x.phone}</td>
-       <td>${x.vehicle_type}</td>
-       <td>${x.status}</td>
-      </tr>
-    `).join("");
+    const o=document.createElement("option");
+    o.value=j.job_id;
+    o.textContent=`${j.job_id} (${j.service_type})`;
+    sel.appendChild(o);
+  });
 }
 
-async function assignJob() {
-  const job = document.getElementById("jobId").value;
-  const drv = document.getElementById("driverId").value;
-  const r = await api("assignJob", { job_id: job, driver_id: drv });
-  document.getElementById("assignMsg").innerText =
-    r.ok ? "Atama başarılı" : "Atama hatası";
-  init();
+async function loadDrivers(){
+  const sel=document.getElementById("driverSelect");
+  sel.innerHTML="";
+  const r = await get({action:"listDrivers"});
+  if(!r.ok || !r.drivers) return;
+
+  r.drivers.forEach(d=>{
+    const o=document.createElement("option");
+    o.value=d.driver_id;
+    o.textContent=`${d.driver_id} – ${d.name||""}`;
+    sel.appendChild(o);
+  });
 }
 
-init();
+/* ================= ASSIGN ================= */
+async function assign(){
+  const msg=document.getElementById("msg");
+  msg.textContent="";
+  const job_id=document.getElementById("jobSelect").value;
+  const driver_id=document.getElementById("driverSelect").value;
+  if(!job_id||!driver_id){
+    msg.innerHTML=`<div class="err">İş ve sürücü seç</div>`; return;
+  }
+  const r = await post("assignJob",{job_id,driver_id});
+  if(r.ok){
+    msg.innerHTML=`<div class="ok">Atandı</div>`;
+    load();
+  }else{
+    msg.innerHTML=`<div class="err">${r.error||"Hata"}</div>`;
+  }
+}
 </script>
 </body>
 </html>
