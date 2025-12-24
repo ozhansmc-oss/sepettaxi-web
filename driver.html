@@ -78,6 +78,10 @@ button{
   padding:14px;
   margin-top:12px;
 }
+.job button{
+  background:#7CFF9B;
+  color:#000;
+}
 </style>
 </head>
 
@@ -95,7 +99,7 @@ button{
   <h2>1) Sürücü Girişi</h2>
   <label>Sürücü ID</label>
   <input id="driverId" placeholder="Örn: DRV-001">
-  <button id="loginBtn">Panele Gir</button>
+  <button onclick="login()">Panele Gir</button>
   <div id="loginMsg"></div>
 </div>
 
@@ -108,17 +112,26 @@ button{
 </div>
 
 <script>
-/* ================= BACKEND ================= */
-const API =
-"https://script.google.com/macros/s/AKfycbz579QjSr9bnUn830HFp5lkcSWO_FL9ijv1WAoBWXY1fbjU_hCtpIxtukN0dkUmHmU7/exec";
+/* ================= CONFIG ================= */
+const API_BASE =
+"https://script.google.com/macros/s/AKfycbw_hDjwwc8cO3qHE_y7znohPf_4agoogg_FUD96MWvpGI4GF3tUEp54klAFOIfLZegD/exec";
 
-async function api(action, payload){
-  const url = new URL(API);
-  url.searchParams.set("action", action);
-  if(payload){
-    url.searchParams.set("payload", JSON.stringify(payload));
-  }
+let DRIVER_ID = "";
+
+/* ================= API HELPERS ================= */
+async function apiGet(params){
+  const url = new URL(API_BASE);
+  Object.keys(params).forEach(k=>url.searchParams.set(k,params[k]));
   const r = await fetch(url.toString());
+  return await r.json();
+}
+
+async function apiPost(action, body){
+  const r = await fetch(`${API_BASE}?action=${action}`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
   return await r.json();
 }
 
@@ -126,74 +139,78 @@ async function api(action, payload){
 (async()=>{
   const el = document.getElementById("backendStatus");
   try{
-    const r = await api("ping");
-    el.textContent = r.ok ? "Backend bağlı" : "Backend hata";
-    el.style.color = r.ok ? "var(--ok)" : "var(--err)";
+    const r = await apiGet({ action:"ping" });
+    if(r.ok){
+      el.textContent = "Backend bağlı";
+      el.style.color = "var(--ok)";
+    }else{
+      throw "";
+    }
   }catch{
     el.textContent = "Backend yok";
     el.style.color = "var(--err)";
   }
 })();
 
-/* ================= DRIVER FLOW ================= */
-let DRIVER_ID = null;
-
-loginBtn.onclick = async ()=>{
+/* ================= LOGIN ================= */
+function login(){
   const msg = document.getElementById("loginMsg");
-  msg.textContent = "";
+  const id = document.getElementById("driverId").value.trim();
+  msg.innerHTML = "";
 
-  try{
-    const id = driverId.value.trim();
-    if(!id) throw "Sürücü ID zorunlu";
-
-    DRIVER_ID = id;
-    msg.innerHTML = `<div class="ok">Giriş başarılı</div>`;
-    jobsCard.style.display = "block";
-    loadJobs();
-  }catch(e){
-    msg.innerHTML = `<div class="err">${e}</div>`;
+  if(!id){
+    msg.innerHTML = `<div class="err">Sürücü ID zorunlu</div>`;
+    return;
   }
-};
 
+  DRIVER_ID = id;
+  msg.innerHTML = `<div class="ok">Giriş başarılı</div>`;
+  document.getElementById("jobsCard").style.display = "block";
+  loadJobs();
+}
+
+/* ================= JOBS ================= */
 async function loadJobs(){
   const box = document.getElementById("jobsBox");
   box.textContent = "Yükleniyor…";
 
-  const r = await api("listDriverJobs",{
+  const r = await apiGet({
+    action:"driverJobs",
     driver_id: DRIVER_ID
   });
 
-  if(!r.ok || !r.jobs.length){
+  if(!r.ok || !r.jobs || r.jobs.length===0){
     box.textContent = "Atanmış iş yok";
     return;
   }
 
-  let html = "";
+  box.innerHTML = "";
   r.jobs.forEach(j=>{
-    html += `
-      <div class="job">
-        <div><b>Job:</b> ${j.job_id}</div>
-        <div><b>Müşteri:</b> ${j.user_name} (${j.user_phone})</div>
-        <div><b>Servis:</b> ${j.service_type}</div>
-        <div><b>Durum:</b> ${j.status}</div>
-        <button onclick="acceptJob('${j.job_id}')">İşi Kabul Et</button>
-      </div>`;
+    const d = document.createElement("div");
+    d.className = "job";
+    d.innerHTML = `
+      <div><b>İş:</b> ${j.job_id}</div>
+      <div><b>Servis:</b> ${j.service_type}</div>
+      <div><b>Alış:</b> ${j.pickup_address}</div>
+      <div><b>Bırakış:</b> ${j.dropoff_address}</div>
+      <button onclick="acceptJob('${j.job_id}')">İşi Kabul Et</button>
+    `;
+    box.appendChild(d);
   });
-
-  box.innerHTML = html;
 }
 
+/* ================= ACCEPT ================= */
 async function acceptJob(jobId){
-  try{
-    const r = await api("acceptJob",{
-      job_id: jobId,
-      driver_id: DRIVER_ID
-    });
-    if(!r.ok) throw r.error || "Kabul edilemedi";
+  const r = await apiPost("acceptJob",{
+    job_id: jobId,
+    driver_id: DRIVER_ID
+  });
+
+  if(r.ok){
     alert("İş kabul edildi");
     loadJobs();
-  }catch(e){
-    alert(e);
+  }else{
+    alert(r.error || "Kabul edilemedi");
   }
 }
 </script>
