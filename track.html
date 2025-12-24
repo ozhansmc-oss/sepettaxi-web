@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SepetTaxi | Canlı Takip</title>
 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
@@ -52,9 +49,9 @@
 /* ==========================
    AYARLAR (KİLİTLİ)
 ========================== */
-const API_URL = "https://script.google.com/macros/s/AKfycbx2SpDfLdmVu0zr1eCydbF7cPVNHEpxtY0iOmqyztRr5U84ZP8dLgREPSOPTCt9-9V9/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyn8FCoEHg4R5nAFGsuFw8GNp5HfMD8RCsr_rJHvf-8_kOijkJEM5GSaYRwzmN6s4ck/exec";
 const JOB_ID = new URLSearchParams(window.location.search).get("job_id");
-const REFRESH_MS = 5000;
+const REFRESH_MS = 4000;
 
 /* ==========================
    KONTROL
@@ -78,19 +75,19 @@ let driverMarker = null;
 /* ==========================
    BAŞLAT
 ========================== */
-loadJob();
-setInterval(loadJob, REFRESH_MS);
+load();
+setInterval(load, REFRESH_MS);
 
 /* ==========================
    JOB + DRIVER OKU
 ========================== */
-function loadJob(){
+function load(){
   fetch(`${API_URL}?action=listJobs`)
     .then(r=>r.json())
     .then(res=>{
       if(!res.ok) return;
 
-      const job = res.jobs.find(j=>j.job_id === JOB_ID);
+      const job = res.jobs.find(j => j.job_id === JOB_ID);
       if(!job){
         document.getElementById("info").innerText = "İş bulunamadı.";
         return;
@@ -103,9 +100,29 @@ function loadJob(){
         <b>Teslim:</b> ${job.dropoff_address}
       `;
 
-      if(job.pickup_lat && job.pickup_lng){
-        updateDriverMarker(job.pickup_lat, job.pickup_lng);
+      if(!job.driver_id){
+        document.getElementById("info").innerHTML += "<br><i>Sürücü bekleniyor…</i>";
+        return;
       }
+
+      loadDriver(job.driver_id);
+    })
+    .catch(()=>{});
+}
+
+/* ==========================
+   DRIVER KONUMU OKU
+========================== */
+function loadDriver(driverId){
+  fetch(`${API_URL}?action=listDrivers`)
+    .then(r=>r.json())
+    .then(res=>{
+      if(!res.ok) return;
+
+      const drv = res.drivers.find(d => d.driver_id === driverId);
+      if(!drv || !drv.lat || !drv.lng) return;
+
+      updateMarker(drv.lat, drv.lng);
     })
     .catch(()=>{});
 }
@@ -113,12 +130,12 @@ function loadJob(){
 /* ==========================
    MARKER
 ========================== */
-function updateDriverMarker(lat, lng){
+function updateMarker(lat, lng){
   const pos = [Number(lat), Number(lng)];
 
   if(!driverMarker){
     driverMarker = L.marker(pos).addTo(map);
-    map.setView(pos, 14);
+    map.setView(pos, 15);
   } else {
     driverMarker.setLatLng(pos);
   }
