@@ -1,247 +1,316 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SepetTaxi</title>
+  <meta charset="UTF-8" />
+  <title>SepetTaxi – Taksi & Kurye</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
-:root{
-  --bg:#0b0b0b;
-  --card:#151515;
-  --border:rgba(255,255,255,.12);
-  --text:#fff;
-  --muted:#a8a8a8;
-  --ok:#7CFF9B;
-  --err:#FF7C7C;
-}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
-  background:var(--bg);
-  color:var(--text);
-}
-.container{
-  max-width:820px;
-  margin:0 auto;
-  padding:20px;
-}
-.card{
-  background:var(--card);
-  border-radius:18px;
-  padding:20px;
-  margin-bottom:16px;
-  box-shadow:0 0 0 1px var(--border) inset;
-}
-h1{margin:0 0 6px;font-size:22px}
-h2{margin:0 0 10px;font-size:18px}
-label{
-  font-size:12px;
-  color:var(--muted);
-  display:block;
-  margin:10px 0 4px;
-}
-input{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:#0f0f0f;
-  color:#fff;
-  font-size:15px;
-}
-button{
-  width:100%;
-  padding:16px;
-  border-radius:16px;
-  border:none;
-  background:#fff;
-  color:#000;
-  font-weight:700;
-  font-size:15px;
-  cursor:pointer;
-  margin-top:12px;
-}
-.row{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-}
-.col{flex:1;min-width:220px}
-.badge{
-  display:inline-block;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  font-size:12px;
-  color:var(--muted);
-}
-.ok{color:var(--ok);font-size:13px;margin-top:8px}
-.err{color:var(--err);font-size:13px;margin-top:8px}
-</style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#000; color:#fff; }
+    .screen { display:none; min-height:100vh; padding:20px; box-sizing:border-box; }
+    .active { display:flex; flex-direction:column; }
+    .center { justify-content:center; align-items:center; text-align:center; }
+
+    button {
+      width:100%;
+      padding:16px;
+      margin-top:15px;
+      border-radius:14px;
+      border:none;
+      font-size:16px;
+      cursor:pointer;
+      background:#fff;
+      color:#000;
+    }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+
+    .list-item {
+      padding:18px;
+      border-bottom:1px solid #333;
+      font-size:18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      cursor:pointer;
+    }
+
+    input {
+      width:100%;
+      padding:14px;
+      margin:8px 0;
+      border-radius:10px;
+      border:none;
+      font-size:15px;
+    }
+
+    .small { color:#aaa; font-size:14px; }
+    h1 span { color:#FFD600; }
+
+    #map {
+      width:100%;
+      height:50vh;
+      border-radius:12px;
+      margin-top:10px;
+    }
+
+    .pill {
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      background:#1a1a1a;
+      border:1px solid #333;
+      color:#ddd;
+      margin-top:8px;
+    }
+  </style>
 </head>
-
 <body>
-<div class="container">
 
-<!-- HEADER -->
-<div class="card">
-  <h1>SepetTaxi</h1>
-  <div class="badge" id="backendStatus">Backend kontrol ediliyor…</div>
+<script>
+/* =========================
+   BACKEND (KİLİTLİ)
+========================= */
+const API_URL = "BURAYA_SENIN_GUNCEL_EXEC_URL_YAPISTIR"; // https://script.google.com/macros/s/XXXX/exec
+
+/* =========================
+   FİYAT (TRANSFER YOK)
+========================= */
+const PRICES = {
+  taksi: { open: 30, km: 12 },
+  kurye: { open: 25, km: 10 }
+};
+
+let selectedService = "taksi";
+let map, markerFrom, markerTo;
+let fromLatLng = null;
+let toLatLng = null;
+let lastPrice = 0;
+let lastDistance = 0;
+let cachedFromAddress = "";
+let cachedToAddress = "";
+
+/* =========================
+   USER (KAYIT AYRI)
+   - register.html sonrasında localStorage set edilir
+========================= */
+function getUser_(){
+  const user_name = (localStorage.getItem("user_name") || "").trim();
+  const user_phone = (localStorage.getItem("user_phone") || "").trim();
+  return { user_name, user_phone };
+}
+</script>
+
+<!-- 1. AÇILIŞ -->
+<div id="screen1" class="screen active center">
+  <h1>SepetTa<span>x</span>i</h1>
+  <p class="small">Taksi & Kurye – hızlı talep oluştur.</p>
+  <div class="pill" id="userPill">Kullanıcı: kontrol ediliyor…</div>
+  <button onclick="startFlow()">Devam Et</button>
 </div>
 
-<!-- KAYIT -->
-<div class="card">
-  <h2>1) Kayıt</h2>
-
-  <label>Ad Soyad</label>
-  <input id="name" placeholder="Örn: Semra Pekkan">
-
-  <label>Telefon (11 hane)</label>
-  <input id="phone" placeholder="05XXXXXXXXX" maxlength="11">
-
-  <label><input type="checkbox" id="kvkk"> KVKK kabul</label>
-  <label><input type="checkbox" id="contract"> Hizmet sözleşmesi kabul</label>
-
-  <button id="registerBtn">Kaydı Tamamla</button>
-  <div id="registerMsg"></div>
+<!-- 2. HİZMET -->
+<div id="screen2" class="screen">
+  <h2>Ne yapmak istiyorsun?</h2>
+  <div class="list-item" onclick="selectService('taksi')">🚕 Taksi Çağır <span>›</span></div>
+  <div class="list-item" onclick="selectService('kurye')">🛵 Kurye Çağır <span>›</span></div>
 </div>
 
-<!-- TALEP -->
-<div class="card">
-  <h2>2) Talep Oluştur</h2>
+<!-- 3. ADRES -->
+<div id="screen3" class="screen">
+  <h2>Adres Seçimi</h2>
 
-  <div class="row">
-    <div class="col">
-      <label>Pickup Lat</label>
-      <input id="pLat" value="40.195">
-    </div>
-    <div class="col">
-      <label>Pickup Lng</label>
-      <input id="pLng" value="29.060">
-    </div>
-  </div>
+  <input id="from" placeholder="Nereden? (Otomatik alınır)" />
+  <input id="to" placeholder="Nereye? (Haritadan seç)" />
 
-  <div class="row">
-    <div class="col">
-      <label>Dropoff Lat</label>
-      <input id="dLat" value="40.210">
-    </div>
-    <div class="col">
-      <label>Dropoff Lng</label>
-      <input id="dLng" value="29.020">
-    </div>
-  </div>
-
-  <button id="jobBtn">Talep Oluştur</button>
-  <div id="jobMsg"></div>
+  <div id="map"></div>
+  <button onclick="hesaplaVeDevam()">Devam Et</button>
 </div>
 
+<!-- 4. ÜCRET -->
+<div id="screen4" class="screen">
+  <h2 id="priceText">0 TL</h2>
+  <p class="small" id="infoText">0 km</p>
+
+  <label><input type="radio" name="odeme" checked> Nakit</label><br>
+  <label><input type="radio" name="odeme"> Kart</label><br>
+  <label><input type="radio" name="odeme"> Online</label><br><br>
+
+  <button onclick="goTo(5)">Ödemeyi Onayla</button>
+</div>
+
+<!-- 5. GÖNDER -->
+<div id="screen5" class="screen center">
+  <h2>Hazırsın</h2>
+  <p id="finalText"></p>
+  <button id="sendBtn" onclick="sendJob()">🚕 Çağrıyı Gönder</button>
+  <p class="small" id="sendStatus" style="margin-top:10px;"></p>
 </div>
 
 <script>
-/* =================================================
-   SABİT BACKEND (ÇALIŞAN)
-================================================= */
-const API =
-"https://script.google.com/macros/s/AKfycbyn8FCoEHg4R5nAFGsuFw8GNp5HfMD8RCsr_rJHvf-8_kOijkJEM5GSaYRwzmN6s4ck/exec";
-
-/* =================================================
-   API HELPER – SADE, TEK YER
-================================================= */
-async function api(action, payload){
-  const url = new URL(API);
-  url.searchParams.set("action", action);
-  if(payload){
-    url.searchParams.set("payload", JSON.stringify(payload));
-  }
-  const res = await fetch(url.toString());
-  return await res.json();
+/* =========================
+   EKRAN GEÇİŞİ
+========================= */
+function goTo(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen'+n).classList.add('active');
+  if(n === 3) setTimeout(initMap, 250);
 }
 
-/* =================================================
-   BACKEND PING
-================================================= */
-(async ()=>{
-  const el = document.getElementById("backendStatus");
-  try{
-    const r = await api("ping");
-    if(r && r.ok){
-      el.textContent = "Backend bağlı";
-      el.style.color = "var(--ok)";
-    }else{
-      el.textContent = "Backend hata";
-      el.style.color = "var(--err)";
+function startFlow(){
+  const u = getUser_();
+  if(!u.user_name || !u.user_phone){
+    alert("Önce kayıt olmalısın (register.html).");
+    // İstersen burada register.html’e yönlendirebilirsin:
+    // window.location.href = "register.html";
+    return;
+  }
+  goTo(2);
+}
+
+function selectService(type){
+  selectedService = type;
+  goTo(3);
+}
+
+/* =========================
+   HARİTA + KONUM
+========================= */
+function initMap(){
+  if(map) return;
+
+  map = L.map('map').setView([40.1950, 29.0600], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    fromLatLng = [lat,lng];
+    markerFrom = L.marker([lat,lng]).addTo(map).bindPopup("📍 Konumun").openPopup();
+    map.setView([lat,lng], 14);
+
+    cachedFromAddress = await reverseGeocode(lat,lng);
+    document.getElementById("from").value = cachedFromAddress;
+  }, () => {
+    alert("Konum izni verilmedi. Nereden alanı otomatik dolmayabilir.");
+  });
+
+  map.on("click", async function(e){
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    toLatLng = [lat,lng];
+
+    if(markerTo) map.removeLayer(markerTo);
+    markerTo = L.marker([lat,lng]).addTo(map).bindPopup("🎯 Varış").openPopup();
+
+    cachedToAddress = await reverseGeocode(lat,lng);
+    document.getElementById("to").value = cachedToAddress;
+  });
+}
+
+async function reverseGeocode(lat,lng){
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+  const data = await res.json();
+  return data.display_name || lat.toFixed(5)+","+lng.toFixed(5);
+}
+
+/* =========================
+   MESAFE + ÜCRET
+========================= */
+function distanceKm(a,b){
+  const R=6371;
+  const dLat=(b[0]-a[0])*Math.PI/180;
+  const dLng=(b[1]-a[1])*Math.PI/180;
+  const aa=Math.sin(dLat/2)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*(2*Math.atan2(Math.sqrt(aa),Math.sqrt(1-aa)));
+}
+
+function hesaplaVeDevam(){
+  if(!fromLatLng || !toLatLng) return alert("Başlangıç ve varış seçilmeli");
+
+  lastDistance = distanceKm(fromLatLng,toLatLng);
+  const pricing = PRICES[selectedService];
+  lastPrice = Math.round(pricing.open + lastDistance * pricing.km);
+
+  document.getElementById("priceText").innerText = lastPrice + " TL";
+  document.getElementById("infoText").innerText = `${lastDistance.toFixed(2)} km – ${selectedService.toUpperCase()}`;
+  document.getElementById("finalText").innerText = `${selectedService.toUpperCase()} – ${lastPrice} TL`;
+
+  goTo(4);
+}
+
+/* =========================
+   JOB OLUŞTUR (BACKEND v2.1)
+========================= */
+function sendJob(){
+  const u = getUser_();
+  if(!u.user_name || !u.user_phone){
+    alert("Kayıt bulunamadı. register.html üzerinden kayıt ol.");
+    return;
+  }
+  if(!fromLatLng || !toLatLng){
+    alert("Konumlar eksik.");
+    return;
+  }
+
+  const payload = {
+    action: "createJob",
+    service_type: selectedService,
+    user_name: u.user_name,
+    user_phone: u.user_phone,
+    pickup_address: document.getElementById("from").value || cachedFromAddress || "",
+    pickup_lat: String(fromLatLng[0]),
+    pickup_lng: String(fromLatLng[1]),
+    dropoff_address: document.getElementById("to").value || cachedToAddress || "",
+    dropoff_lat: String(toLatLng[0]),
+    dropoff_lng: String(toLatLng[1])
+  };
+
+  const btn = document.getElementById("sendBtn");
+  const st = document.getElementById("sendStatus");
+  btn.disabled = true;
+  st.innerText = "Gönderiliyor…";
+
+  fetch(API_URL, {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.ok){
+      st.innerText = "✅ Çağrı oluşturuldu. İş No: " + res.job_id;
+      // İstersen müşteri track linkini burada göster:
+      // st.innerHTML = `✅ Çağrı oluşturuldu. <br>Takip: track.html?job_id=${res.job_id}`;
+      alert("✅ Çağrı başarıyla gönderildi!");
+    } else {
+      st.innerText = "❌ Hata: " + (res.error || "Bilinmeyen");
+      btn.disabled = false;
     }
-  }catch{
-    el.textContent = "Backend bağlantı yok";
-    el.style.color = "var(--err)";
+  })
+  .catch(()=>{
+    st.innerText = "❌ Ağ hatası";
+    btn.disabled = false;
+  });
+}
+
+/* =========================
+   AÇILIŞTA KULLANICI PİLİ
+========================= */
+(function boot(){
+  const u = getUser_();
+  const pill = document.getElementById("userPill");
+  if(u.user_name && u.user_phone){
+    pill.textContent = `Kullanıcı: ${u.user_name} (${u.user_phone})`;
+  } else {
+    pill.textContent = "Kullanıcı: kayıt yok (register.html gerekli)";
   }
 })();
-
-/* =================================================
-   KAYIT
-================================================= */
-document.getElementById("registerBtn").onclick = async ()=>{
-  const msg = document.getElementById("registerMsg");
-  msg.textContent = "";
-
-  try{
-    const name  = document.getElementById("name").value.trim();
-    const phone = document.getElementById("phone").value.replace(/\D/g,"");
-
-    if(!name) throw "Ad zorunlu";
-    if(phone.length !== 11) throw "Telefon 11 hane olmalı";
-    if(!kvkk.checked || !contract.checked) throw "Onaylar zorunlu";
-
-    const r = await api("upsertUser",{
-      name,
-      phone,
-      kvkk_accepted:true,
-      contract_accepted:true
-    });
-
-    if(!r.ok) throw r.error || "Kayıt başarısız";
-
-    msg.innerHTML = `<div class="ok">Kayıt başarılı</div>`;
-  }catch(e){
-    msg.innerHTML = `<div class="err">${e}</div>`;
-  }
-};
-
-/* =================================================
-   TALEP
-================================================= */
-document.getElementById("jobBtn").onclick = async ()=>{
-  const msg = document.getElementById("jobMsg");
-  msg.textContent = "";
-
-  try{
-    const name  = document.getElementById("name").value.trim();
-    const phone = document.getElementById("phone").value.replace(/\D/g,"");
-
-    if(!name || phone.length !== 11){
-      throw "Önce geçerli kayıt yapılmalı";
-    }
-
-    const r = await api("createJob",{
-      service_type:"taxi",
-      user_name:name,
-      user_phone:phone,
-      pickup_lat:Number(pLat.value),
-      pickup_lng:Number(pLng.value),
-      dropoff_lat:Number(dLat.value),
-      dropoff_lng:Number(dLng.value)
-    });
-
-    if(!r.ok) throw r.error || "Talep oluşturulamadı";
-
-    msg.innerHTML =
-      `<div class="ok">Talep oluşturuldu: ${r.job_id}</div>`;
-  }catch(e){
-    msg.innerHTML = `<div class="err">${e}</div>`;
-  }
-};
 </script>
+
 </body>
 </html>
