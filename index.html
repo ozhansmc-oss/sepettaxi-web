@@ -988,8 +988,6 @@
   mode: "no-cors",
   body: JSON.stringify(payload)
 });
-
-    });
     const txt = await res.text();
     try{ return JSON.parse(txt); }catch(_){ return { ok:false, message:"Geçersiz yanıt", raw:txt }; }
   }
