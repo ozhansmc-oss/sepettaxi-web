@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SepetTaxi | Canlı Takip</title>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  body {
+    margin: 0;
+    background: #000;
+    color: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  header {
+    padding: 14px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    border-bottom: 1px solid #222;
+  }
+  #map {
+    width: 100%;
+    height: calc(100vh - 50px);
+  }
+  .info {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.75);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+</style>
+</head>
+
+<body>
+
+<header>🚕 SepetTaxi – Canlı Takip</header>
+<div id="map"></div>
+<div class="info" id="info">Yükleniyor…</div>
+
+<script>
+/* ==========================
+   AYARLAR (KİLİTLİ)
+========================== */
+const API_URL = "https://script.google.com/macros/s/AKfycbx2SpDfLdmVu0zr1eCydbF7cPVNHEpxtY0iOmqyztRr5U84ZP8dLgREPSOPTCt9-9V9/exec";
+const JOB_ID = new URLSearchParams(window.location.search).get("job_id");
+const REFRESH_MS = 5000;
+
+/* ==========================
+   KONTROL
+========================== */
+if(!JOB_ID){
+  document.getElementById("info").innerText = "Job ID bulunamadı.";
+  throw "Missing job_id";
+}
+
+/* ==========================
+   HARİTA
+========================== */
+const map = L.map("map").setView([39.92077, 32.85411], 13);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19
+}).addTo(map);
+
+let driverMarker = null;
+
+/* ==========================
+   BAŞLAT
+========================== */
+loadJob();
+setInterval(loadJob, REFRESH_MS);
+
+/* ==========================
+   JOB + DRIVER OKU
+========================== */
+function loadJob(){
+  fetch(`${API_URL}?action=listJobs`)
+    .then(r=>r.json())
+    .then(res=>{
+      if(!res.ok) return;
+
+      const job = res.jobs.find(j=>j.job_id === JOB_ID);
+      if(!job){
+        document.getElementById("info").innerText = "İş bulunamadı.";
+        return;
+      }
+
+      document.getElementById("info").innerHTML = `
+        <b>İş No:</b> ${job.job_id}<br>
+        <b>Durum:</b> ${job.status}<br>
+        <b>Alım:</b> ${job.pickup_address}<br>
+        <b>Teslim:</b> ${job.dropoff_address}
+      `;
+
+      if(job.pickup_lat && job.pickup_lng){
+        updateDriverMarker(job.pickup_lat, job.pickup_lng);
+      }
+    })
+    .catch(()=>{});
+}
+
+/* ==========================
+   MARKER
+========================== */
+function updateDriverMarker(lat, lng){
+  const pos = [Number(lat), Number(lng)];
+
+  if(!driverMarker){
+    driverMarker = L.marker(pos).addTo(map);
+    map.setView(pos, 14);
+  } else {
+    driverMarker.setLatLng(pos);
+  }
+}
+</script>
+
+</body>
+</html>
