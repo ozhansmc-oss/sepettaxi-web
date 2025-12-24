@@ -5,7 +5,172 @@
   <title>SepetTaxi – Taksi & Kurye</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>SepetTaxi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+.screen{display:none;min-height:100vh;padding:20px;box-sizing:border-box}
+.active{display:flex;flex-direction:column}
+.center{justify-content:center;align-items:center;text-align:center}
+button{width:100%;padding:16px;margin-top:14px;border-radius:14px;border:none;font-size:16px;background:#fff;color:#000}
+input{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:none}
+.list-item{padding:18px;border-bottom:1px solid #333;font-size:18px;display:flex;justify-content:space-between;cursor:pointer}
+#map{height:50vh;border-radius:12px;margin-top:10px}
+.small{color:#aaa;font-size:14px}
+</style>
+</head>
+
+<body>
+
+<script>
+const API_URL = "BURAYA_EXEC_URL";
+
+/* fiyatlar */
+const PRICES = {
+  taksi:{open:30,km:12},
+  kurye:{open:25,km:10}
+};
+
+let service="taksi";
+let map,fromLL,toLL,markerFrom,markerTo;
+let distance=0, price=0;
+</script>
+
+<!-- 1. KAYIT -->
+<div id="s1" class="screen active center">
+  <h1>SepetTaxi</h1>
+  <input id="name" placeholder="Ad Soyad">
+  <input id="phone" placeholder="Telefon">
+  <label><input type="checkbox" id="kvkk"> KVKK kabul</label>
+  <label><input type="checkbox" id="soz"> Hizmet sözleşmesi</label>
+  <button onclick="register()">Devam Et</button>
+</div>
+
+<!-- 2. HİZMET -->
+<div id="s2" class="screen">
+  <h2>Hizmet Seç</h2>
+  <div class="list-item" onclick="choose('taksi')">🚕 Taksi</div>
+  <div class="list-item" onclick="choose('kurye')">🛵 Kurye</div>
+</div>
+
+<!-- 3. ADRES -->
+<div id="s3" class="screen">
+  <h2>Adres Seç</h2>
+  <input id="from" placeholder="Nereden">
+  <input id="to" placeholder="Nereye">
+  <div id="map"></div>
+  <button onclick="calc()">Ücreti Hesapla</button>
+</div>
+
+<!-- 4. ONAY -->
+<div id="s4" class="screen center">
+  <h2 id="priceText">0 TL</h2>
+  <p class="small" id="info"></p>
+  <button onclick="createJob()">Çağır</button>
+</div>
+
+<script>
+function go(n){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("s"+n).classList.add("active");
+  if(n===3) setTimeout(initMap,300);
+}
+
+function register(){
+  const n=name.value.trim(), p=phone.value.trim();
+  if(!n||!p||!kvkk.checked||!soz.checked){
+    alert("Bilgiler eksik"); return;
+  }
+  fetch(API_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action:"registerUser",user_name:n,user_phone:p})
+  }).then(r=>r.json()).then(res=>{
+    if(res.ok) go(2);
+    else alert(res.error);
+  });
+}
+
+function choose(t){ service=t; go(3); }
+
+function initMap(){
+  if(map) return;
+  map=L.map("map").setView([40.195,29.06],13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    fromLL=[pos.coords.latitude,pos.coords.longitude];
+    markerFrom=L.marker(fromLL).addTo(map);
+    from.value=await rev(fromLL);
+    map.setView(fromLL,14);
+  });
+
+  map.on("click",async e=>{
+    toLL=[e.latlng.lat,e.latlng.lng];
+    if(markerTo) map.removeLayer(markerTo);
+    markerTo=L.marker(toLL).addTo(map);
+    to.value=await rev(toLL);
+  });
+}
+
+async function rev(ll){
+  const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${ll[0]}&lon=${ll[1]}`);
+  const d=await r.json();
+  return d.display_name||ll.join(",");
+}
+
+function dist(a,b){
+  const R=6371;
+  const dLat=(b[0]-a[0])*Math.PI/180;
+  const dLng=(b[1]-a[1])*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+
+    Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*(2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));
+}
+
+function calc(){
+  if(!fromLL||!toLL){ alert("Konum seç"); return; }
+  distance=dist(fromLL,toLL);
+  price=Math.round(PRICES[service].open+distance*PRICES[service].km);
+  priceText.innerText=price+" TL";
+  info.innerText=distance.toFixed(2)+" km – "+service.toUpperCase();
+  go(4);
+}
+
+function createJob(){
+  fetch(API_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      action:"createJob",
+      service_type:service,
+      user_name:name.value,
+      user_phone:phone.value,
+      pickup_address:from.value,
+      pickup_lat:String(fromLL[0]),
+      pickup_lng:String(fromLL[1]),
+      dropoff_address:to.value,
+      dropoff_lat:String(toLL[0]),
+      dropoff_lng:String(toLL[1])
+    })
+  }).then(r=>r.json()).then(res=>{
+    if(res.ok) alert("Çağrı oluşturuldu");
+    else alert(res.error);
+  });
+}
+</script>
+
+</body>
+</html>
+/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
