@@ -86,7 +86,7 @@ loadJobs();
 ========================== */
 function getLocation(){
   if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(
+  navigator.geolocation.getCurrentPositİon(
     pos => {
       window.driverLocation = {
         lat: pos.coords.latitude,
