@@ -2,208 +2,176 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>SepetTaxi</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SepetTaxi — Tek Sayfa</title>
 
 <style>
-body{margin:0;font-family:Arial;background:#000;color:#fff}
-.screen{display:none;min-height:100vh;padding:20px;box-sizing:border-box}
-.active{display:flex;flex-direction:column}
-.center{justify-content:center;align-items:center;text-align:center}
-h1{margin-bottom:10px}
-button{width:100%;padding:16px;margin-top:14px;border-radius:14px;border:none;font-size:16px;background:#fff;color:#000;font-weight:bold;cursor:pointer}
-input{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:none;font-size:15px}
-.list-item{padding:18px;border-bottom:1px solid #333;font-size:18px;display:flex;justify-content:space-between;cursor:pointer}
-.small{color:#aaa;font-size:14px}
-label{margin-top:10px}
-#map{height:50vh;border-radius:12px;margin-top:10px}
+  body, html {margin:0; padding:0; width:100%; height:100%; font-family:Arial,sans-serif;}
+  #app {display:flex; flex-direction:column; height:100%;}
+  #map {flex:1; width:100%;}
+  .panel {padding:12px; background:#fff; box-shadow:0 -2px 6px rgba(0,0,0,0.15);}
+  .row {margin-bottom:8px;}
+  .row label {display:block; font-size:14px; font-weight:600;}
+  .row input, .row select {width:100%; padding:8px; box-sizing:border-box;}
+  button {width:100%; padding:12px; font-size:16px; background:#007bff; color:#fff; border:none; cursor:pointer;}
+  button:disabled {background:#888;}
+  .info {font-size:14px; margin-top:8px;}
+  .error {color:#d00;}
+  .success {color:#080;}
 </style>
-</head>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+</head>
 <body>
 
-<script>
-/* ===== CONFIG ===== */
-const API_URL = "https://script.google.com/macros/s/AKfycbyXfyQG4ZYPmsLF94hbYt9nKSIdta6wW9pfEDX4blNFCAsgbyR72kGwzZ5yO_zRzme2/exec";
-
-const PRICES = {
-  taksi: { open: 30, km: 12 },
-  kurye:{ open: 25, km: 10 }
-};
-
-/* ===== STATE ===== */
-let service = null;
-let map, fromLL=null, toLL=null, mFrom, mTo;
-let distanceKm=0, price=0;
-let user = { name:"", phone:"" };
-
-/* ===== HELPERS ===== */
-const $ = id => document.getElementById(id);
-function go(n){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  $("s"+n).classList.add("active");
-  if(n===3) setTimeout(initMap,300);
-}
-</script>
-
-<!-- ========== 1) KAYIT ========== -->
-<div id="s1" class="screen active center">
-  <h1>SepetTaxi</h1>
-
-  <input id="inp_name" placeholder="Ad Soyad">
-  <input id="inp_phone" placeholder="Telefon (05xx)">
-
-  <label><input type="checkbox" id="chk_kvkk"> KVKK kabul</label>
-  <label><input type="checkbox" id="chk_contract"> Hizmet sözleşmesi</label>
-
-  <button onclick="register()">Devam Et</button>
-  <p class="small" id="msg"></p>
-</div>
-
-<!-- ========== 2) HİZMET ========== -->
-<div id="s2" class="screen">
-  <h2>Hizmet Seç</h2>
-  <div class="list-item" onclick="selectService('taksi')">🚕 Taksi <span>›</span></div>
-  <div class="list-item" onclick="selectService('kurye')">🛵 Kurye <span>›</span></div>
-</div>
-
-<!-- ========== 3) ADRES / HARİTA ========== -->
-<div id="s3" class="screen">
-  <h2>Adres Seç</h2>
-  <input id="from" placeholder="Nereden (otomatik)">
-  <input id="to" placeholder="Nereye (haritadan seç)">
+<div id="app">
   <div id="map"></div>
-  <button onclick="calculate()">Ücreti Hesapla</button>
-</div>
 
-<!-- ========== 4) ONAY ========== -->
-<div id="s4" class="screen center">
-  <h2 id="priceText">0 TL</h2>
-  <p class="small" id="infoText"></p>
-  <button onclick="createJob()">Çağır</button>
+  <div class="panel">
+    <div class="row">
+      <label>Hizmet Seçimi</label>
+      <select id="serviceType">
+        <option value="taxi">Taksi</option>
+        <option value="courier">Kurye</option>
+        <option value="transfer">Transfer</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>Telefon (05XXXXXXXXX)</label>
+      <input type="text" id="phone" placeholder="0532..." />
+    </div>
+
+    <div class="row">
+      <label>Ad Soyad</label>
+      <input type="text" id="name" placeholder="Ad Soyad" />
+    </div>
+
+    <div class="row">
+      <input type="checkbox" id="kvkk" />
+      <label for="kvkk">KVKK ve Hizmet Şartlarını okudum, kabul ediyorum</label>
+    </div>
+
+    <button id="btnSubmit">Talep Oluştur</button>
+
+    <div class="info" id="status"></div>
+  </div>
+
 </div>
 
 <script>
-/* ===== REGISTER ===== */
-function register(){
-  const name = $("inp_name").value.trim();
-  const phone = $("inp_phone").value.trim();
-  const kvkk = $("chk_kvkk").checked;
-  const contract = $("chk_contract").checked;
+(async function(){
+  const API_URL = "https://script.google.com/macros/s/AKfycbxnLQqyuBgDxYMJmNY_9ShqCFWLDF2gDVwEqNuIGDNB1IN-msQXxTWVVBpljl-_am8w5w/exec";
 
-  if(!name || !phone){ alert("Ad ve telefon zorunlu"); return; }
-  if(!kvkk || !contract){ alert("KVKK ve sözleşme kabul edilmeli"); return; }
+  let map, pickupMarker, dropoffMarker;
+  let pickup = null, dropoff = null;
 
-  $("msg").innerText = "Kaydediliyor...";
+  function setStatus(msg, isError){
+    const st = document.getElementById("status");
+    st.textContent = msg;
+    st.className = isError ? "error" : "success";
+  }
 
-  fetch(API_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      action:"registerUser",
-      user_name:name,
-      user_phone:phone
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.ok){
-      user.name = name;
-      user.phone = phone;
-      go(2);
-    }else{
-      $("msg").innerText = res.error || "Kayıt hatası";
+  function initMap(){
+    map = L.map("map").setView([39.92077, 32.85411], 11);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:"&copy; OpenStreetMap"
+    }).addTo(map);
+
+    map.on("click", function(e){
+      if(!pickup){
+        pickup = e.latlng;
+        pickupMarker = L.marker(pickup, {draggable:true}).addTo(map)
+          .bindPopup("Alış Noktası").openPopup();
+        setStatus("Bırakma noktasını seçin", false);
+      } else if(!dropoff){
+        dropoff = e.latlng;
+        dropoffMarker = L.marker(dropoff, {draggable:true}).addTo(map)
+          .bindPopup("Bırakma Noktası").openPopup();
+        calculateDistance();
+      }
+    });
+  }
+
+  function calculateDistance(){
+    if(pickup && dropoff){
+      const distMeters = map.distance(pickup, dropoff);
+      const distKm = (distMeters / 1000).toFixed(2);
+      setStatus("Mesafe: " + distKm + " km", false);
     }
-  })
-  .catch(()=> $("msg").innerText="Bağlantı hatası");
-}
+  }
 
-/* ===== SERVICE ===== */
-function selectService(s){
-  service = s;
-  go(3);
-}
+  document.getElementById("btnSubmit").addEventListener("click", async function(){
+    const name = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const kvkkAccepted = document.getElementById("kvkk").checked;
+    const serviceType = document.getElementById("serviceType").value;
 
-/* ===== MAP ===== */
-function initMap(){
-  if(map) return;
+    if(!pickup || !dropoff){
+      return setStatus("Lütfen haritada iki nokta seçin", true);
+    }
+    if(!phone.match(/^05\d{9}$/)){
+      return setStatus("Geçerli bir telefon girin", true);
+    }
+    if(!name){
+      return setStatus("İsim girin", true);
+    }
+    if(!kvkkAccepted){
+      return setStatus("KVKK kabul etmelisiniz", true);
+    }
 
-  map = L.map("map").setView([40.195,29.060],13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+    const distMeters = map.distance(pickup, dropoff);
+    const distanceKm = parseFloat((distMeters/1000).toFixed(2));
+    const estimatedPrice = estimatePrice(serviceType, distanceKm);
 
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    fromLL=[pos.coords.latitude,pos.coords.longitude];
-    mFrom=L.marker(fromLL).addTo(map).bindPopup("Konumun").openPopup();
-    map.setView(fromLL,14);
-    $("from").value = await reverse(fromLL);
+    const body = {
+      action:"create_job",
+      user:{
+        name, phone, kvkkAccepted, kvkkVersion:"v1", source:"web"
+      },
+      job:{
+        service_type:serviceType,
+        pickup:{lat:pickup.lat, lng:pickup.lng, address:""},
+        dropoff:{lat:dropoff.lat, lng:dropoff.lng, address:""},
+        distance_km:distanceKm,
+        estimated_price:estimatedPrice,
+        currency:"TRY",
+        notes:""
+      }
+    };
+
+    try{
+      setStatus("Gönderiliyor...", false);
+      const res = await fetch(API_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if(data.ok){
+        setStatus("Talebiniz alındı! İş ID: " + data.job.job_id, false);
+      } else {
+        setStatus("Hata: " + (data.message||"Bilinmeyen"), true);
+      }
+    }catch(err){
+      setStatus("Sunucu hatası: " + err.message, true);
+    }
   });
 
-  map.on("click", async e=>{
-    toLL=[e.latlng.lat,e.latlng.lng];
-    if(mTo) map.removeLayer(mTo);
-    mTo=L.marker(toLL).addTo(map).bindPopup("Varış").openPopup();
-    $("to").value = await reverse(toLL);
-  });
-}
+  function estimatePrice(service, km){
+    let base = 10;
+    let perKm = 15;
+    if(service === "courier"){ base = 8; perKm = 10; }
+    if(service === "transfer"){ base = 15; perKm = 18; }
+    return Math.max(base + perKm * km, 0).toFixed(2);
+  }
 
-async function reverse(ll){
-  const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${ll[0]}&lon=${ll[1]}`);
-  const d=await r.json();
-  return d.display_name || ll.join(",");
-}
+  initMap();
 
-/* ===== CALC ===== */
-function hav(a,b){
-  const R=6371;
-  const dLat=(b[0]-a[0])*Math.PI/180;
-  const dLng=(b[1]-a[1])*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+
-    Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R*(2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));
-}
-
-function calculate(){
-  if(!fromLL || !toLL){ alert("Başlangıç ve varış seç"); return; }
-  distanceKm = hav(fromLL,toLL);
-  price = Math.round(PRICES[service].open + distanceKm*PRICES[service].km);
-
-  $("priceText").innerText = price + " TL";
-  $("infoText").innerText = distanceKm.toFixed(2) + " km - " + service.toUpperCase();
-  go(4);
-}
-
-/* ===== CREATE JOB ===== */
-function createJob(){
-  fetch(API_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      action:"createJob",
-      service_type:service,
-      user_name:user.name,
-      user_phone:user.phone,
-      pickup_address:$("from").value,
-      pickup_lat:String(fromLL[0]),
-      pickup_lng:String(fromLL[1]),
-      dropoff_address:$("to").value,
-      dropoff_lat:String(toLL[0]),
-      dropoff_lng:String(toLL[1])
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.ok){
-      alert("Çağrı oluşturuldu");
-      // window.location.href = "track.html?job_id=" + res.job_id;
-    }else{
-      alert(res.error || "İş oluşturulamadı");
-    }
-  })
-  .catch(()=> alert("Bağlantı hatası"));
-}
+})();
 </script>
 
 </body>
