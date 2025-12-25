@@ -120,10 +120,26 @@ map.on("click",e=>{
 });
 
 /* ADDRESS */
-function fillAddress(lat,lng,id){
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json())
-    .then(d=>document.getElementById(id).value=d.display_name);
+function fillAddress(lat, lng, inputId) {
+  const cb = "cb_" + Math.random().toString(36).slice(2);
+
+  window[cb] = function (data) {
+    if (data && data.display_name) {
+      document.getElementById(inputId).value = data.display_name;
+    }
+    delete window[cb];
+    script.remove();
+  };
+
+  const script = document.createElement("script");
+  script.src =
+    "https://nominatim.openstreetmap.org/reverse" +
+    "?format=json" +
+    "&lat=" + lat +
+    "&lon=" + lng +
+    "&json_callback=" + cb;
+
+  document.body.appendChild(script);
 }
 
 /* ROUTE + PRICE */
