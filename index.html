@@ -3,130 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SepetTaxi – Hızlı Hesaplama</title>
+<title>SepetTaxi – Kayıt</title>
 
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-:root{
-  --black:#000;
-  --white:#fff;
-  --yellow:#FFD400;
-  --gray:#f4f4f4;
-}
-
+:root{--black:#000;--yellow:#FFD400}
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Inter,Arial,sans-serif;
-  background:#fff;
-  color:#000;
-}
+body{margin:0;font-family:Inter,Arial,sans-serif}
 
 /* HEADER */
-header{
-  padding:14px 16px;
-  font-size:20px;
-  font-weight:800;
-  border-bottom:1px solid #eee;
-}
+header{padding:14px 16px;font-size:20px;font-weight:800;border-bottom:1px solid #eee}
 header span{color:var(--yellow)}
 
 /* MAP */
-#map{
-  height:42vh;
-  width:100%;
-}
+#map{height:42vh}
 
 /* CONTENT */
-.content{
-  padding:16px;
-  background:#fff;
-  border-top-left-radius:22px;
-  border-top-right-radius:22px;
-  margin-top:-20px;
-  position:relative;
-  z-index:2;
-}
+.content{padding:16px;background:#fff;border-radius:22px 22px 0 0;margin-top:-20px}
 
 /* CARD */
-.card{
-  background:#fff;
-  border:1px solid #eee;
-  border-radius:18px;
-  padding:14px;
-  margin-bottom:12px;
-}
+.card{border:1px solid #eee;border-radius:18px;padding:14px;margin-bottom:12px}
 
 /* SERVICES */
-.services{
-  display:flex;
-  gap:10px;
-}
-.service{
-  flex:1;
-  padding:14px;
-  border-radius:14px;
-  text-align:center;
-  border:1px solid #ddd;
-  cursor:pointer;
-  font-weight:700;
-}
-.service.active{
-  background:#000;
-  color:#fff;
-  border-color:#000;
-}
+.services{display:flex;gap:10px}
+.service{flex:1;padding:14px;border-radius:14px;text-align:center;border:1px solid #ddd;cursor:pointer;font-weight:700}
+.service.active{background:#000;color:#fff;border-color:#000}
 
 /* ROW */
-.row{
-  display:flex;
-  justify-content:space-between;
-  margin-top:8px;
-  font-size:15px;
-  gap:10px;
-}
-.row div:last-child{
-  text-align:right;
-  max-width:65%;
-}
+.row{display:flex;justify-content:space-between;margin-top:8px;font-size:15px}
+.row div:last-child{text-align:right;max-width:65%}
 
 /* PRICE */
-.price{
-  font-size:26px;
-  font-weight:900;
-}
+.price{font-size:26px;font-weight:900}
 
 /* BUTTON */
-button{
+button{width:100%;padding:16px;border:none;border-radius:18px;font-size:17px;font-weight:800;cursor:pointer;background:var(--yellow)}
+button:disabled{background:#ccc}
+
+/* MODAL */
+.modal{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.6);
+  display:none;align-items:center;justify-content:center;
+  z-index:999;
+}
+.modal.active{display:flex}
+.modal-box{
+  background:#fff;
+  border-radius:20px;
+  padding:20px;
+  width:90%;
+  max-width:420px;
+}
+.modal-box h3{margin-top:0}
+input{
   width:100%;
-  padding:16px;
-  border:none;
-  border-radius:18px;
-  font-size:17px;
-  font-weight:800;
-  cursor:pointer;
-  background:var(--yellow);
-  color:#000;
+  padding:12px;
+  margin-top:8px;
+  border-radius:12px;
+  border:1px solid #ccc;
+  font-size:15px;
 }
-button:disabled{
-  background:#ccc;
-  cursor:not-allowed;
-}
+label{font-size:14px}
+.small{font-size:13px;color:#555}
 </style>
 </head>
 
 <body>
 
 <header>Sepet<span>Taxi</span></header>
-
 <div id="map"></div>
 
 <div class="content">
 
-  <!-- SERVICES -->
   <div class="card">
     <div class="services">
       <div class="service active" data-service="taxi">Taksi</div>
@@ -135,130 +86,102 @@ button:disabled{
     </div>
   </div>
 
-  <!-- ADDRESSES -->
   <div class="card">
-    <div class="row">
-      <div>📍 Nereden</div>
-      <div id="fromText">Konum alınıyor…</div>
-    </div>
-    <div class="row">
-      <div>🏁 Nereye</div>
-      <div id="toText">Haritadan seç</div>
-    </div>
+    <div class="row"><div>📍 Nereden</div><div id="fromText">Konum alınıyor…</div></div>
+    <div class="row"><div>🏁 Nereye</div><div id="toText">Haritadan seç</div></div>
   </div>
 
-  <!-- DISTANCE & PRICE -->
   <div class="card">
-    <div class="row">
-      <div>📏 Mesafe</div>
-      <div id="distance">–</div>
-    </div>
-    <div class="row">
-      <div>💰 Ücret</div>
-      <div class="price" id="price">–</div>
-    </div>
+    <div class="row"><div>📏 Mesafe</div><div id="distance">–</div></div>
+    <div class="row"><div>💰 Ücret</div><div class="price" id="price">–</div></div>
   </div>
 
   <button id="continueBtn" disabled>Devam Et</button>
+</div>
 
+<!-- MODAL -->
+<div class="modal" id="registerModal">
+  <div class="modal-box">
+    <h3>Kayıt Ol</h3>
+
+    <input id="name" placeholder="Ad Soyad">
+    <input id="phone" placeholder="Telefon (05XXXXXXXXX)" maxlength="11">
+
+    <label><input type="checkbox" id="kvkk"> KVKK Aydınlatma Metni</label><br>
+    <label><input type="checkbox" id="contract"> Hizmet Sözleşmesi</label>
+
+    <button style="margin-top:12px" onclick="submitRegister()">Kayıt Ol ve Devam Et</button>
+  </div>
 </div>
 
 <script>
-/* ---------------- STATE ---------------- */
-let pickup = null;
-let dropoff = null;
-let selectedService = "taxi";
-let pickupMarker = null;
-let dropoffMarker = null;
+/* STATE */
+let pickup=null,dropoff=null,selectedService="taxi";
+let pickupMarker,dropoffMarker;
 
-/* ---------------- MAP ---------------- */
-const map = L.map('map');
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'© OpenStreetMap'
-}).addTo(map);
-
-/* ---------------- GEOLOCATION ---------------- */
+/* MAP */
+const map=L.map("map");
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 map.locate({setView:true,maxZoom:16});
 
-map.on('locationfound', async e=>{
-  pickup = e.latlng;
-
-  if(pickupMarker) map.removeLayer(pickupMarker);
-  pickupMarker = L.marker(pickup).addTo(map);
-
-  const address = await reverseGeocode(pickup.lat, pickup.lng);
-  document.getElementById("fromText").innerText = address;
+map.on("locationfound",async e=>{
+  pickup=e.latlng;
+  pickupMarker=L.marker(pickup).addTo(map);
+  fromText.innerText=await reverseGeocode(pickup.lat,pickup.lng);
 });
 
-/* ---------------- MAP CLICK ---------------- */
-map.on('click', async e=>{
-  if(!pickup) return;
-
-  dropoff = e.latlng;
-
-  if(dropoffMarker) map.removeLayer(dropoffMarker);
-  dropoffMarker = L.marker(dropoff).addTo(map);
-
-  const address = await reverseGeocode(dropoff.lat, dropoff.lng);
-  document.getElementById("toText").innerText = address;
-
+map.on("click",async e=>{
+  if(!pickup)return;
+  dropoff=e.latlng;
+  if(dropoffMarker)map.removeLayer(dropoffMarker);
+  dropoffMarker=L.marker(dropoff).addTo(map);
+  toText.innerText=await reverseGeocode(dropoff.lat,dropoff.lng);
   calculate();
 });
 
-/* ---------------- SERVICE SELECT ---------------- */
-document.querySelectorAll('.service').forEach(el=>{
-  el.onclick=()=>{
-    document.querySelectorAll('.service').forEach(s=>s.classList.remove('active'));
-    el.classList.add('active');
-    selectedService = el.dataset.service;
-    if(dropoff) calculate();
-  }
+/* SERVICES */
+document.querySelectorAll(".service").forEach(s=>{
+  s.onclick=()=>{
+    document.querySelectorAll(".service").forEach(x=>x.classList.remove("active"));
+    s.classList.add("active");
+    selectedService=s.dataset.service;
+    if(dropoff)calculate();
+  };
 });
 
-/* ---------------- GEO FUNCTIONS ---------------- */
-async function reverseGeocode(lat, lng){
-  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
-  const res = await fetch(url,{headers:{"Accept-Language":"tr"}});
-  const data = await res.json();
-  return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+/* GEO */
+async function reverseGeocode(lat,lng){
+  const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,{headers:{"Accept-Language":"tr"}});
+  const j=await r.json();
+  return j.display_name;
 }
-
-function haversine(lat1, lon1, lat2, lon2){
-  const R = 6371;
-  const dLat = (lat2-lat1) * Math.PI/180;
-  const dLon = (lon2-lon1) * Math.PI/180;
-  const a =
-    Math.sin(dLat/2)**2 +
-    Math.cos(lat1*Math.PI/180) *
-    Math.cos(lat2*Math.PI/180) *
-    Math.sin(dLon/2)**2;
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+function haversine(a,b,c,d){
+  const R=6371;
+  const dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*(2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));
 }
-
-/* ---------------- PRICE ---------------- */
-function calculatePrice(service, km){
-  const table={
-    taxi:{base:40,perKm:18},
-    motor:{base:35,perKm:12},
-    carCourier:{base:50,perKm:15}
-  };
-  const p = table[service];
-  return Math.round(p.base + (km * p.perKm));
+function calculatePrice(s,km){
+  const t={taxi:[40,18],motor:[35,12],carCourier:[50,15]};
+  return Math.round(t[s][0]+km*t[s][1]);
 }
-
-/* ---------------- CALCULATE ---------------- */
 function calculate(){
-  const rawKm = haversine(
-    pickup.lat,pickup.lng,
-    dropoff.lat,dropoff.lng
-  );
+  const km=Number(haversine(pickup.lat,pickup.lng,dropoff.lat,dropoff.lng).toFixed(1));
+  distance.innerText=km+" km";
+  price.innerText=calculatePrice(selectedService,km)+" ₺";
+  continueBtn.disabled=false;
+}
 
-  const km = Number(rawKm.toFixed(1));
-  const price = calculatePrice(selectedService, km);
+/* REGISTER */
+continueBtn.onclick=()=>registerModal.classList.add("active");
 
-  document.getElementById("distance").innerText = km + " km";
-  document.getElementById("price").innerText = price + " ₺";
-  document.getElementById("continueBtn").disabled = false;
+function submitRegister(){
+  if(name.value.length<3)return alert("Ad Soyad giriniz");
+  if(!/^\d{11}$/.test(phone.value))return alert("Telefon 11 haneli olmalı");
+  if(!kvkk.checked||!contract.checked)return alert("Onaylar zorunlu");
+
+  alert("Kayıt tamamlandı (FAZ 2)");
+  registerModal.classList.remove("active");
 }
 </script>
 
