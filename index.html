@@ -141,10 +141,26 @@ async function submitJob(){
   const kvkkInput = document.getElementById("kvkk");
   const contractInput = document.getElementById("contract");
 
-  if(!nameInput || !phoneInput){
-    alert("Form elemanları bulunamadı");
-    return;
+ try {
+  const res = await fetch(BACKEND_URL, {
+    method: "POST",
+    body: JSON.stringify(job),
+    headers: { "Content-Type": "application/json" }
+  });
+
+  const json = await res.json();
+
+  if (json.success) {
+    alert("Talep başarıyla alındı\nJob ID: " + (json.job_id || ""));
+    document.getElementById("registerModal").classList.remove("active");
+  } else {
+    alert("Backend hata verdi: " + JSON.stringify(json));
   }
+
+} catch (e) {
+  alert("Backend'e ulaşılamadı: " + e.toString());
+}
+
 
   const nameVal = nameInput.value.trim();
   const phoneVal = phoneInput.value.trim();
