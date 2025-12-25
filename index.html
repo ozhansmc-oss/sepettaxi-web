@@ -135,56 +135,70 @@ function calculate(){
 /* ================= JOB ================= */
 continueBtn.onclick=()=>registerModal.classList.add("active");
 
-async function submitJob(){
+async function submitJob() {
   const nameInput = document.getElementById("name");
   const phoneInput = document.getElementById("phone");
   const kvkkInput = document.getElementById("kvkk");
   const contractInput = document.getElementById("contract");
 
- try {
-  const res = await fetch(BACKEND_URL, {
-    method: "POST",
-    body: JSON.stringify(job),
-    headers: { "Content-Type": "application/json" }
-  });
-
-  const json = await res.json();
-
-  if (json.success) {
-    alert("Talep başarıyla alındı\nJob ID: " + (json.job_id || ""));
-    document.getElementById("registerModal").classList.remove("active");
-  } else {
-    alert("Backend hata verdi: " + JSON.stringify(json));
-  }
-
-} catch (e) {
-  alert("Backend'e ulaşılamadı: " + e.toString());
-}
-
-
   const nameVal = nameInput.value.trim();
   const phoneVal = phoneInput.value.trim();
 
-  if(nameVal.length < 3){
+  if (nameVal.length < 3) {
     alert("Ad Soyad giriniz");
     return;
   }
 
-  if(!/^\d{11}$/.test(phoneVal)){
+  if (!/^\d{11}$/.test(phoneVal)) {
     alert("Telefon 11 haneli olmalı");
     return;
   }
 
-  if(!kvkkInput.checked || !contractInput.checked){
+  if (!kvkkInput.checked || !contractInput.checked) {
     alert("KVKK ve sözleşme onayı zorunlu");
     return;
   }
 
-  // 🔹 Şimdilik backend yok → sadece başarı simülasyonu
-  alert("Talep başarıyla alındı (FAZ 3 frontend tamam)");
+  // 🔒 JOB OBJEKTİ – MUTLAKA BURADA OLMALI
+  const km = Number(distance.innerText.replace(" km", ""));
+  const job = {
+    job_id: "JOB-" + Date.now(),
+    created_at: new Date().toISOString(),
+    service: selectedService,
+    name: nameVal,
+    phone: phoneVal,
+    pickup_address: fromText.innerText,
+    pickup_lat: pickup.lat,
+    pickup_lng: pickup.lng,
+    dropoff_address: toText.innerText,
+    dropoff_lat: dropoff.lat,
+    dropoff_lng: dropoff.lng,
+    distance_km: km,
+    price: Number(price.innerText.replace(" ₺", "")),
+    status: "pending"
+  };
 
-  document.getElementById("registerModal").classList.remove("active");
+  try {
+    const res = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(job)
+    });
+
+    const json = await res.json();
+
+    if (json.success) {
+      alert("Talep başarıyla alındı\nJob ID: " + (json.job_id || job.job_id));
+      document.getElementById("registerModal").classList.remove("active");
+    } else {
+      alert("Backend hata verdi: " + JSON.stringify(json));
+    }
+
+  } catch (e) {
+    alert("Backend'e ulaşılamadı: " + e.toString());
+  }
 }
+
 
 </script>
 
