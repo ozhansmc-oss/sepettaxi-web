@@ -136,41 +136,40 @@ function calculate(){
 continueBtn.onclick=()=>registerModal.classList.add("active");
 
 async function submitJob(){
-  if(name.value.length<3) return alert("Ad Soyad giriniz");
-  if(!/^\d{11}$/.test(phone.value)) return alert("Telefon 11 haneli olmalı");
-  if(!kvkk.checked || !contract.checked) return alert("Onaylar zorunlu");
+  const nameInput = document.getElementById("name");
+  const phoneInput = document.getElementById("phone");
+  const kvkkInput = document.getElementById("kvkk");
+  const contractInput = document.getElementById("contract");
 
-  const km = Number(distance.innerText.replace(" km",""));
-  const job = {
-    job_id: "JOB-"+Date.now(),
-    created_at: new Date().toISOString(),
-    service: selectedService,
-    name: name.value,
-    phone: phone.value,
-    pickup_address: fromText.innerText,
-    pickup_lat: pickup.lat,
-    pickup_lng: pickup.lng,
-    dropoff_address: toText.innerText,
-    dropoff_lat: dropoff.lat,
-    dropoff_lng: dropoff.lng,
-    distance_km: km,
-    price: Number(price.innerText.replace(" ₺","")),
-    status: "pending"
-  };
-
-  const res = await fetch(BACKEND_URL,{
-    method:"POST",
-    body:JSON.stringify(job)
-  });
-  const json = await res.json();
-
-  if(json.success){
-    alert("Talebiniz alındı\nJob ID: "+json.job_id);
-    registerModal.classList.remove("active");
-  }else{
-    alert("Hata oluştu");
+  if(!nameInput || !phoneInput){
+    alert("Form elemanları bulunamadı");
+    return;
   }
+
+  const nameVal = nameInput.value.trim();
+  const phoneVal = phoneInput.value.trim();
+
+  if(nameVal.length < 3){
+    alert("Ad Soyad giriniz");
+    return;
+  }
+
+  if(!/^\d{11}$/.test(phoneVal)){
+    alert("Telefon 11 haneli olmalı");
+    return;
+  }
+
+  if(!kvkkInput.checked || !contractInput.checked){
+    alert("KVKK ve sözleşme onayı zorunlu");
+    return;
+  }
+
+  // 🔹 Şimdilik backend yok → sadece başarı simülasyonu
+  alert("Talep başarıyla alındı (FAZ 3 frontend tamam)");
+
+  document.getElementById("registerModal").classList.remove("active");
 }
+
 </script>
 
 </body>
