@@ -19,6 +19,7 @@ header{height:56px;display:flex;align-items:center;padding:0 16px;font-weight:70
 .btn{flex:1;padding:12px;border-radius:12px;border:none;font-weight:600;cursor:pointer}
 .btn.primary{background:#000;color:#fff}
 .btn.light{background:#f0f0f0}
+.btn.active{background:#000;color:#fff}
 input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd}
 .notice{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:#fff;padding:12px 16px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.2);z-index:1000}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000}
@@ -42,21 +43,23 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd}
   <div class="card">
     <b>Hizmet</b>
     <div class="row" style="margin-top:8px">
-      <button class="btn light" onclick="selectService('taxi')">🚕 Taxi</button>
-      <button class="btn light" onclick="selectService('courier')">📦 Kurye</button>
+      <button class="btn light" id="btnTaxi" onclick="selectService('taxi')">🚕 Taxi</button>
+      <button class="btn light" id="btnCourier" onclick="selectService('courier')">📦 Kurye</button>
     </div>
   </div>
 
   <div class="card"><input id="fromInput" placeholder="Nereden"></div>
   <div class="card"><input id="toInput" placeholder="Nereye"></div>
 
-  <div class="card" id="priceBox" style="font-weight:700">Mesafe: — | Ücret: —</div>
+  <div class="card" id="priceBox" style="font-weight:700">
+    Mesafe: — | Ücret: —
+  </div>
 
-  <button class="btn primary" onclick="createJob()">Çağır</button>
+  <button class="btn primary" id="callBtn" disabled onclick="createJob()">Çağır</button>
 </div>
 </div>
 
-<!-- KAYIT -->
+<!-- ZORUNLU KAYIT -->
 <div class="modal-bg" id="registerModal">
   <div class="modal">
     <h3>Kayıt Ol</h3>
@@ -69,15 +72,19 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd}
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxP7quhTXI2Hia2VVu1lDZIl9D8UmQi3dPf-5XKI3Jl1HMQ7AFyOmClBHTBNYuqTcPS/exec";
 
-let map = L.map("map",{zoomControl:false});
+/* MAP */
+const map = L.map("map",{zoomControl:false});
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 map.setView([39.92,32.85],13);
 
+/* STATE */
 let user = JSON.parse(localStorage.getItem("sepettaxi_user")||"null");
 let service = null;
 let pickup=null, dropoff=null;
-let pMarker,dMarker,routeLine,priceKm=0;
+let pMarker,dMarker,routeLine;
+let distanceKm = 0;
 
+/* LOCATION */
 function acceptLocation(){
   document.getElementById("locationNotice").remove();
   navigator.geolocation.getCurrentPosition(pos=>{
@@ -85,9 +92,11 @@ function acceptLocation(){
     map.setView([pickup.lat,pickup.lng],15);
     pMarker=L.marker([pickup.lat,pickup.lng]).addTo(map);
     fillAddress(pickup.lat,pickup.lng,"fromInput");
+    updateCallState();
   });
 }
 
+/* MAP CLICK */
 map.on("click",e=>{
   const {lat,lng}=e.latlng;
   if(!pickup){
@@ -107,51 +116,59 @@ map.on("click",e=>{
     pMarker=L.marker([lat,lng]).addTo(map);
     fillAddress(lat,lng,"fromInput");
   }
+  updateCallState();
 });
 
+/* ADDRESS */
 function fillAddress(lat,lng,id){
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json()).then(d=>{
-      document.getElementById(id).value=d.display_name;
-    });
+    .then(r=>r.json())
+    .then(d=>document.getElementById(id).value=d.display_name);
 }
 
+/* ROUTE + PRICE */
 function calculateRoute(){
   const url=`https://router.project-osrm.org/route/v1/driving/${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}?overview=full&geometries=geojson`;
   fetch(url).then(r=>r.json()).then(d=>{
     const route=d.routes[0];
-    priceKm=(route.distance/1000).toFixed(2);
+    distanceKm=(route.distance/1000).toFixed(2);
     if(routeLine)map.removeLayer(routeLine);
     routeLine=L.geoJSON(route.geometry).addTo(map);
-    calcPrice();
+    const price=Math.round(50+distanceKm*15);
+    priceBox.innerHTML=`Mesafe: ${distanceKm} km | Ücret: ${price} ₺`;
   });
 }
 
-function calcPrice(){
-  const price=Math.round(50+priceKm*15);
-  document.getElementById("priceBox").innerHTML=`Mesafe: ${priceKm} km | Ücret: ${price} ₺`;
-}
-
-function resetRoute(){
-  pickup=null;dropoff=null;
-  if(pMarker)map.removeLayer(pMarker);
-  if(dMarker)map.removeLayer(dMarker);
-  if(routeLine)map.removeLayer(routeLine);
-}
-
+/* SERVICE */
 function selectService(s){
   service=s;
-  if(!user)document.getElementById("registerModal").style.display="flex";
+  btnTaxi.classList.remove("active");
+  btnCourier.classList.remove("active");
+  if(s==="taxi")btnTaxi.classList.add("active");
+  if(s==="courier")btnCourier.classList.add("active");
+
+  if(!user){
+    registerModal.style.display="flex";
+  }
+  updateCallState();
 }
 
+/* REGISTER */
 function saveUser(){
+  if(!regName.value||!regPhone.value)return alert("Ad ve telefon zorunlu");
   user={name:regName.value,phone:regPhone.value};
   localStorage.setItem("sepettaxi_user",JSON.stringify(user));
-  document.getElementById("registerModal").style.display="none";
+  registerModal.style.display="none";
+  updateCallState();
 }
 
+/* CALL STATE */
+function updateCallState(){
+  callBtn.disabled = !(service && pickup && dropoff && user);
+}
+
+/* CREATE JOB */
 function createJob(){
-  if(!service||!pickup||!dropoff||!user){alert("Eksik bilgi");return;}
   const q=new URLSearchParams({
     path:"createJob",
     service_type:service,
@@ -163,6 +180,15 @@ function createJob(){
     dropoff_address:toInput.value
   });
   fetch(`${API_URL}?${q}`).then(()=>alert("Talep alındı"));
+}
+
+/* RESET */
+function resetRoute(){
+  pickup=null;dropoff=null;
+  if(pMarker)map.removeLayer(pMarker);
+  if(dMarker)map.removeLayer(dMarker);
+  if(routeLine)map.removeLayer(routeLine);
+  priceBox.innerHTML="Mesafe: — | Ücret: —";
 }
 </script>
 </body>
