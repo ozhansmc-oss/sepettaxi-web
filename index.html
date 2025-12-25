@@ -29,12 +29,10 @@ body{
 header{
   padding:14px 16px;
   font-size:20px;
-  font-weight:700;
+  font-weight:800;
   border-bottom:1px solid #eee;
 }
-header span{
-  color:var(--yellow);
-}
+header span{color:var(--yellow)}
 
 /* MAP */
 #map{
@@ -62,7 +60,7 @@ header span{
   margin-bottom:12px;
 }
 
-/* SERVICE */
+/* SERVICES */
 .services{
   display:flex;
   gap:10px;
@@ -74,26 +72,31 @@ header span{
   text-align:center;
   border:1px solid #ddd;
   cursor:pointer;
-  font-weight:600;
+  font-weight:700;
 }
 .service.active{
-  background:var(--black);
-  color:var(--white);
-  border-color:var(--black);
+  background:#000;
+  color:#fff;
+  border-color:#000;
 }
 
-/* INFO ROW */
+/* ROW */
 .row{
   display:flex;
   justify-content:space-between;
   margin-top:8px;
   font-size:15px;
+  gap:10px;
+}
+.row div:last-child{
+  text-align:right;
+  max-width:65%;
 }
 
 /* PRICE */
 .price{
   font-size:26px;
-  font-weight:800;
+  font-weight:900;
 }
 
 /* BUTTON */
@@ -103,7 +106,7 @@ button{
   border:none;
   border-radius:18px;
   font-size:17px;
-  font-weight:700;
+  font-weight:800;
   cursor:pointer;
   background:var(--yellow);
   color:#000;
@@ -123,7 +126,7 @@ button:disabled{
 
 <div class="content">
 
-  <!-- SERVICE -->
+  <!-- SERVICES -->
   <div class="card">
     <div class="services">
       <div class="service active" data-service="taxi">Taksi</div>
@@ -132,15 +135,15 @@ button:disabled{
     </div>
   </div>
 
-  <!-- LOCATION INFO -->
+  <!-- ADDRESSES -->
   <div class="card">
     <div class="row">
       <div>📍 Nereden</div>
-      <div>Mevcut Konum</div>
+      <div id="fromText">Konum alınıyor…</div>
     </div>
     <div class="row">
       <div>🏁 Nereye</div>
-      <div id="toText">Seçilmedi</div>
+      <div id="toText">Haritadan seç</div>
     </div>
   </div>
 
@@ -156,46 +159,53 @@ button:disabled{
     </div>
   </div>
 
-  <!-- ACTION -->
   <button id="continueBtn" disabled>Devam Et</button>
 
 </div>
 
 <script>
-/* STATE */
+/* ---------------- STATE ---------------- */
 let pickup = null;
 let dropoff = null;
 let selectedService = "taxi";
+let pickupMarker = null;
+let dropoffMarker = null;
 
-/* MAP */
+/* ---------------- MAP ---------------- */
 const map = L.map('map');
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
   attribution:'© OpenStreetMap'
 }).addTo(map);
 
-/* MARKERS */
-let pickupMarker = null;
-let dropoffMarker = null;
-
-/* GEOLOCATION */
+/* ---------------- GEOLOCATION ---------------- */
 map.locate({setView:true,maxZoom:16});
-map.on('locationfound', e=>{
+
+map.on('locationfound', async e=>{
   pickup = e.latlng;
-  pickupMarker = L.marker(pickup).addTo(map).bindPopup("Nereden").openPopup();
+
+  if(pickupMarker) map.removeLayer(pickupMarker);
+  pickupMarker = L.marker(pickup).addTo(map);
+
+  const address = await reverseGeocode(pickup.lat, pickup.lng);
+  document.getElementById("fromText").innerText = address;
 });
 
-/* MAP CLICK = DESTINATION */
-map.on('click', e=>{
+/* ---------------- MAP CLICK ---------------- */
+map.on('click', async e=>{
   if(!pickup) return;
 
   dropoff = e.latlng;
+
   if(dropoffMarker) map.removeLayer(dropoffMarker);
-  dropoffMarker = L.marker(dropoff).addTo(map).bindPopup("Nereye").openPopup();
+  dropoffMarker = L.marker(dropoff).addTo(map);
+
+  const address = await reverseGeocode(dropoff.lat, dropoff.lng);
+  document.getElementById("toText").innerText = address;
 
   calculate();
 });
 
-/* SERVICE SELECT */
+/* ---------------- SERVICE SELECT ---------------- */
 document.querySelectorAll('.service').forEach(el=>{
   el.onclick=()=>{
     document.querySelectorAll('.service').forEach(s=>s.classList.remove('active'));
@@ -205,19 +215,27 @@ document.querySelectorAll('.service').forEach(el=>{
   }
 });
 
-/* DISTANCE */
-function haversine(lat1, lon1, lat2, lon2) {
+/* ---------------- GEO FUNCTIONS ---------------- */
+async function reverseGeocode(lat, lng){
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+  const res = await fetch(url,{headers:{"Accept-Language":"tr"}});
+  const data = await res.json();
+  return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1) * Math.PI/180;
   const dLon = (lon2-lon1) * Math.PI/180;
   const a =
-    Math.sin(dLat/2) ** 2 +
-    Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
-    Math.sin(dLon/2) ** 2;
+    Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) *
+    Math.cos(lat2*Math.PI/180) *
+    Math.sin(dLon/2)**2;
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-/* PRICE */
+/* ---------------- PRICE ---------------- */
 function calculatePrice(service, km){
   const table={
     taxi:{base:40,perKm:18},
@@ -228,19 +246,19 @@ function calculatePrice(service, km){
   return Math.round(p.base + (km * p.perKm));
 }
 
-/* CALCULATE */
+/* ---------------- CALCULATE ---------------- */
 function calculate(){
-  const km = haversine(
+  const rawKm = haversine(
     pickup.lat,pickup.lng,
     dropoff.lat,dropoff.lng
-  ).toFixed(1);
+  );
 
-  const price = calculatePrice(selectedService,km);
+  const km = Number(rawKm.toFixed(1));
+  const price = calculatePrice(selectedService, km);
 
-  document.getElementById("toText").innerText="Seçildi";
-  document.getElementById("distance").innerText=km+" km";
-  document.getElementById("price").innerText=price+" ₺";
-  document.getElementById("continueBtn").disabled=false;
+  document.getElementById("distance").innerText = km + " km";
+  document.getElementById("price").innerText = price + " ₺";
+  document.getElementById("continueBtn").disabled = false;
 }
 </script>
 
