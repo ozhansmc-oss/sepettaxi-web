@@ -179,7 +179,8 @@ function createJob(){
     pickup_address:fromInput.value,
     dropoff_address:toInput.value
   });
-  fetch(`${API_URL}?${q}`).then(()=>alert("Talep alındı"));
+  fetch(`${API_URL}?${q}`, { mode: "no-cors" });
+alert("Talep alındı");
 }
 
 /* RESET */
