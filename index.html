@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SepetTaxi – Kayıt</title>
+<title>SepetTaxi – Talep Oluştur</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,62 +12,24 @@
 :root{--black:#000;--yellow:#FFD400}
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,Arial,sans-serif}
-
-/* HEADER */
 header{padding:14px 16px;font-size:20px;font-weight:800;border-bottom:1px solid #eee}
 header span{color:var(--yellow)}
-
-/* MAP */
 #map{height:42vh}
-
-/* CONTENT */
 .content{padding:16px;background:#fff;border-radius:22px 22px 0 0;margin-top:-20px}
-
-/* CARD */
 .card{border:1px solid #eee;border-radius:18px;padding:14px;margin-bottom:12px}
-
-/* SERVICES */
 .services{display:flex;gap:10px}
 .service{flex:1;padding:14px;border-radius:14px;text-align:center;border:1px solid #ddd;cursor:pointer;font-weight:700}
 .service.active{background:#000;color:#fff;border-color:#000}
-
-/* ROW */
 .row{display:flex;justify-content:space-between;margin-top:8px;font-size:15px}
 .row div:last-child{text-align:right;max-width:65%}
-
-/* PRICE */
 .price{font-size:26px;font-weight:900}
-
-/* BUTTON */
 button{width:100%;padding:16px;border:none;border-radius:18px;font-size:17px;font-weight:800;cursor:pointer;background:var(--yellow)}
 button:disabled{background:#ccc}
-
-/* MODAL */
-.modal{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,.6);
-  display:none;align-items:center;justify-content:center;
-  z-index:999;
-}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:999}
 .modal.active{display:flex}
-.modal-box{
-  background:#fff;
-  border-radius:20px;
-  padding:20px;
-  width:90%;
-  max-width:420px;
-}
-.modal-box h3{margin-top:0}
-input{
-  width:100%;
-  padding:12px;
-  margin-top:8px;
-  border-radius:12px;
-  border:1px solid #ccc;
-  font-size:15px;
-}
+.modal-box{background:#fff;border-radius:20px;padding:20px;width:90%;max-width:420px}
+input{width:100%;padding:12px;margin-top:8px;border-radius:12px;border:1px solid #ccc;font-size:15px}
 label{font-size:14px}
-.small{font-size:13px;color:#555}
 </style>
 </head>
 
@@ -77,7 +39,6 @@ label{font-size:14px}
 <div id="map"></div>
 
 <div class="content">
-
   <div class="card">
     <div class="services">
       <div class="service active" data-service="taxi">Taksi</div>
@@ -99,57 +60,56 @@ label{font-size:14px}
   <button id="continueBtn" disabled>Devam Et</button>
 </div>
 
-<!-- MODAL -->
+<!-- REGISTER MODAL -->
 <div class="modal" id="registerModal">
   <div class="modal-box">
-    <h3>Kayıt Ol</h3>
-
+    <h3>Kayıt & Talep</h3>
     <input id="name" placeholder="Ad Soyad">
     <input id="phone" placeholder="Telefon (05XXXXXXXXX)" maxlength="11">
-
     <label><input type="checkbox" id="kvkk"> KVKK Aydınlatma Metni</label><br>
     <label><input type="checkbox" id="contract"> Hizmet Sözleşmesi</label>
-
-    <button style="margin-top:12px" onclick="submitRegister()">Kayıt Ol ve Devam Et</button>
+    <button style="margin-top:12px" onclick="submitJob()">Talebi Gönder</button>
   </div>
 </div>
 
 <script>
-/* STATE */
-let pickup=null,dropoff=null,selectedService="taxi";
-let pickupMarker,dropoffMarker;
+/* ================= CONFIG ================= */
+const BACKEND_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HEREhttps://script.google.com/macros/s/AKfycbwxZaKhAR3XTCjWXhTHjoXM2vv9AnCdGjXbAbr0Udwd3CNu8WefJIdfZbJfQUsaMbox/exec
+/* ================= STATE ================= */
+let pickup=null, dropoff=null, selectedService="taxi";
+let pickupMarker, dropoffMarker;
 
-/* MAP */
+/* ================= MAP ================= */
 const map=L.map("map");
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 map.locate({setView:true,maxZoom:16});
 
-map.on("locationfound",async e=>{
+map.on("locationfound", async e=>{
   pickup=e.latlng;
   pickupMarker=L.marker(pickup).addTo(map);
   fromText.innerText=await reverseGeocode(pickup.lat,pickup.lng);
 });
 
-map.on("click",async e=>{
-  if(!pickup)return;
+map.on("click", async e=>{
+  if(!pickup) return;
   dropoff=e.latlng;
-  if(dropoffMarker)map.removeLayer(dropoffMarker);
+  if(dropoffMarker) map.removeLayer(dropoffMarker);
   dropoffMarker=L.marker(dropoff).addTo(map);
   toText.innerText=await reverseGeocode(dropoff.lat,dropoff.lng);
   calculate();
 });
 
-/* SERVICES */
+/* ================= SERVICES ================= */
 document.querySelectorAll(".service").forEach(s=>{
   s.onclick=()=>{
     document.querySelectorAll(".service").forEach(x=>x.classList.remove("active"));
     s.classList.add("active");
     selectedService=s.dataset.service;
-    if(dropoff)calculate();
+    if(dropoff) calculate();
   };
 });
 
-/* GEO */
+/* ================= GEO ================= */
 async function reverseGeocode(lat,lng){
   const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,{headers:{"Accept-Language":"tr"}});
   const j=await r.json();
@@ -157,8 +117,8 @@ async function reverseGeocode(lat,lng){
 }
 function haversine(a,b,c,d){
   const R=6371;
-  const dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  const dLat=(c-a)*Math.PI/180, dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*(2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));
 }
 function calculatePrice(s,km){
@@ -172,16 +132,44 @@ function calculate(){
   continueBtn.disabled=false;
 }
 
-/* REGISTER */
+/* ================= JOB ================= */
 continueBtn.onclick=()=>registerModal.classList.add("active");
 
-function submitRegister(){
-  if(name.value.length<3)return alert("Ad Soyad giriniz");
-  if(!/^\d{11}$/.test(phone.value))return alert("Telefon 11 haneli olmalı");
-  if(!kvkk.checked||!contract.checked)return alert("Onaylar zorunlu");
+async function submitJob(){
+  if(name.value.length<3) return alert("Ad Soyad giriniz");
+  if(!/^\d{11}$/.test(phone.value)) return alert("Telefon 11 haneli olmalı");
+  if(!kvkk.checked || !contract.checked) return alert("Onaylar zorunlu");
 
-  alert("Kayıt tamamlandı (FAZ 2)");
-  registerModal.classList.remove("active");
+  const km = Number(distance.innerText.replace(" km",""));
+  const job = {
+    job_id: "JOB-"+Date.now(),
+    created_at: new Date().toISOString(),
+    service: selectedService,
+    name: name.value,
+    phone: phone.value,
+    pickup_address: fromText.innerText,
+    pickup_lat: pickup.lat,
+    pickup_lng: pickup.lng,
+    dropoff_address: toText.innerText,
+    dropoff_lat: dropoff.lat,
+    dropoff_lng: dropoff.lng,
+    distance_km: km,
+    price: Number(price.innerText.replace(" ₺","")),
+    status: "pending"
+  };
+
+  const res = await fetch(BACKEND_URL,{
+    method:"POST",
+    body:JSON.stringify(job)
+  });
+  const json = await res.json();
+
+  if(json.success){
+    alert("Talebiniz alındı\nJob ID: "+json.job_id);
+    registerModal.classList.remove("active");
+  }else{
+    alert("Hata oluştu");
+  }
 }
 </script>
 
