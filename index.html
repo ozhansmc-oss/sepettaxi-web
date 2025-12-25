@@ -3,6 +3,1019 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>SepetTaxi – MVP</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --fg:#e9eef5;
+      --muted:#9fb0c3;
+      --line:rgba(255,255,255,.12);
+      --card:rgba(15,22,32,.90);
+      --shadow:0 14px 38px rgba(0,0,0,.45);
+      --r:18px;
+
+      --yellow:#f7c600;
+      --danger:#ff5a6a;
+      --ok:#43d17a;
+
+      --btn:#ffffff;
+      --btnText:#0b0f14;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      overflow:hidden; /* scroll yok (kilit) */
+    }
+
+    /* Screens */
+    .screen{position:fixed; inset:0; display:none; overflow:hidden;}
+    .screen.active{display:flex;}
+
+    /* Landing (sadece görsel) */
+    #landing{
+      width:100%; height:100%;
+      background: url("./assets/landing.png") center center / cover no-repeat;
+      display:flex; align-items:flex-end; justify-content:center;
+      padding:18px;
+    }
+    .landingCta{
+      width:min(520px, 100%);
+      background: rgba(15,22,32,.35);
+      border:1px solid var(--line);
+      border-radius: 22px;
+      padding:14px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    button{
+      appearance:none; border:none; cursor:pointer;
+      border-radius: 16px;
+      padding:14px 14px;
+      font-weight:900;
+      font-size:15px;
+      line-height:1;
+    }
+    button:disabled{opacity:.45; cursor:not-allowed;}
+    .btnPrimary{background:var(--btn); color:var(--btnText); width:100%;}
+    .btnGhost{background:transparent; color:var(--fg); border:1px solid var(--line);}
+
+    /* App Layout */
+    .app{width:100%; height:100%; display:flex; flex-direction:column;}
+    .topbar{
+      height:54px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 14px;
+      border-bottom:1px solid var(--line);
+      background: rgba(11,15,20,.70);
+      backdrop-filter: blur(10px);
+      flex:0 0 auto;
+    }
+    .brand{font-weight:950; letter-spacing:-.2px}
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--line);
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
+      display:flex; align-items:center; gap:8px;
+    }
+    .dot{width:7px; height:7px; border-radius:999px; background:rgba(255,255,255,.25);}
+    .dot.ok{background:var(--ok);}
+    .dot.warn{background:var(--yellow);}
+    .dot.bad{background:var(--danger);}
+
+    .mapWrap{flex: 1 1 auto; min-height:0;}
+    #map{width:100%; height:100%; background:#0a0f16;}
+
+    /* Bottom Panel (scroll yok, kompakt) */
+    .panel{
+      flex:0 0 auto;
+      padding:12px 12px 14px;
+      border-top:1px solid var(--line);
+      background: rgba(11,15,20,.75);
+      backdrop-filter: blur(10px);
+    }
+    .card{
+      background: var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      padding:12px;
+    }
+
+    .row{display:flex; gap:10px; align-items:center;}
+    .row.between{justify-content:space-between;}
+    .muted{color:var(--muted); font-size:12px; line-height:1.35;}
+
+    /* Services */
+    .services{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+    .svc{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      border-radius: 16px;
+      padding:12px;
+      cursor:pointer;
+      user-select:none;
+      min-height:70px;
+      display:flex; flex-direction:column; justify-content:space-between;
+    }
+    .svc strong{font-size:14px; letter-spacing:-.15px}
+    .svc .meta{font-size:12px; color:var(--muted)}
+    .svc.selected{border-color: rgba(247,198,0,.55); background: rgba(247,198,0,.10);}
+    .svc.disabled{opacity:.35; cursor:not-allowed;}
+
+    /* Address inputs */
+    .addrGrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+    .field{display:flex; flex-direction:column; gap:6px;}
+    label{font-size:12px; color:var(--muted);}
+    input{
+      width:100%;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.20);
+      color:var(--fg);
+      border-radius: 14px;
+      padding:10px 10px;
+      outline:none;
+      font-size:13px;
+    }
+    .miniBtns{display:flex; gap:8px; margin-top:8px;}
+    .miniBtn{
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color:var(--fg);
+      font-weight:900;
+      font-size:12px;
+      flex:1;
+    }
+    .miniBtn.yellow{
+      background: var(--yellow);
+      color:#101317;
+      border-color: transparent;
+    }
+
+    /* Distance/Price */
+    .statGrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+    .stat{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      border-radius: 16px;
+      padding:10px;
+    }
+    .stat .k{font-size:12px; color:var(--muted)}
+    .stat .v{font-size:16px; font-weight:950; margin-top:4px;}
+
+    /* Call */
+    .callRow{display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px;}
+    .callBtn{
+      background: var(--btn);
+      color: var(--btnText);
+      border-radius: 18px;
+      padding:16px 14px;
+      font-weight:950;
+      font-size:16px;
+    }
+
+    /* Overlay (registration modal) */
+    .overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.60);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+      z-index:50;
+    }
+    .overlay.show{display:flex;}
+    .modal{
+      width:min(560px, 100%);
+      background: rgba(15,22,32,.96);
+      border:1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .modal h3{margin:0 0 6px 0; font-size:16px;}
+    .modal .muted{margin-bottom:10px;}
+    .kvkk{
+      display:flex; gap:10px; align-items:flex-start;
+      margin-top:10px;
+      padding:10px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background: rgba(255,255,255,.04);
+    }
+    .kvkk input{width:18px; height:18px; margin-top:2px;}
+    .err{color:var(--danger); font-size:12px; margin-top:8px; display:none;}
+    .ok{color:var(--ok); font-size:12px; margin-top:8px; display:none;}
+
+    /* Toast */
+    .toast{
+      position:fixed;
+      left:50%; transform:translateX(-50%);
+      bottom:14px;
+      width:min(560px, calc(100% - 24px));
+      z-index:100;
+      background: rgba(15,22,32,.92);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      padding:12px 14px;
+      display:none;
+    }
+    .toast.show{display:block;}
+    .toastTitle{font-weight:950; margin:0 0 4px 0;}
+    .toastMsg{margin:0; color:var(--muted); font-size:13px; line-height:1.45;}
+
+    .spinner{
+      display:inline-block; width:14px; height:14px;
+      border:2px solid rgba(255,255,255,.25);
+      border-top-color: rgba(255,255,255,.95);
+      border-radius:50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align:-2px;
+      margin-right:8px;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Responsiveness */
+    @media (max-width: 420px){
+      .addrGrid{grid-template-columns:1fr;}
+      .services{grid-template-columns:1fr 1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- SCREEN: Landing -->
+<section id="scrLanding" class="screen active">
+  <div id="landing">
+    <div class="landingCta">
+      <button id="btnStart" class="btnPrimary">Başla</button>
+    </div>
+  </div>
+</section>
+
+<!-- SCREEN: Main (tek ekran) -->
+<section id="scrMain" class="screen">
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">SepetTa<span style="color:var(--yellow)">x</span>i</div>
+      <div class="pill" id="pillStatus">
+        <span class="dot warn" id="dot"></span>
+        <span id="pillText">Konum bekleniyor</span>
+      </div>
+    </div>
+
+    <div class="mapWrap">
+      <div id="map"></div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <div class="row between">
+          <div class="muted">Hizmet</div>
+          <button id="btnChangeService" class="btnGhost" style="padding:10px 12px;border-radius:14px;font-weight:950;font-size:12px;" disabled>
+            Seçimi Değiştir
+          </button>
+        </div>
+
+        <div class="services">
+          <div class="svc" id="svcTaxi" data-svc="taxi">
+            <strong>Taksi</strong>
+            <div class="meta">Hızlı şehir içi</div>
+          </div>
+          <div class="svc" id="svcCourier" data-svc="courier">
+            <strong>Kurye</strong>
+            <div class="meta">Motorlu teslimat</div>
+          </div>
+        </div>
+
+        <div class="addrGrid">
+          <div class="field">
+            <label for="fromAddr">Nereden</label>
+            <input id="fromAddr" type="text" placeholder="Konum alınca dolacak" />
+            <div class="miniBtns">
+              <button id="btnPickFromMap" class="miniBtn">Haritadan Seç</button>
+              <button id="btnUseMyLoc" class="miniBtn yellow">Konumum</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="toAddr">Nereye</label>
+            <input id="toAddr" type="text" list="toHistory" placeholder="Haritadan seç veya geçmişten" />
+            <datalist id="toHistory"></datalist>
+            <div class="miniBtns">
+              <button id="btnPickToMap" class="miniBtn">Haritadan Seç</button>
+              <button id="btnSaveTo" class="miniBtn yellow">Geçmişe Ekle</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="statGrid">
+          <div class="stat">
+            <div class="k">Mesafe</div>
+            <div class="v" id="distText">-</div>
+          </div>
+          <div class="stat">
+            <div class="k">Ücret</div>
+            <div class="v" id="priceText">-</div>
+          </div>
+        </div>
+
+        <div class="callRow">
+          <button id="btnCall" class="callBtn" disabled>Taksi Çağır</button>
+        </div>
+
+        <div class="muted" id="hint" style="margin-top:8px;">
+          Hizmet seç → Nereden/Nereye belirle → Mesafe/Ücret çıksın → Çağır aktif olsun.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Registration Overlay (yalnızca yeni müşteri ise) -->
+<div id="regOverlay" class="overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3>Kayıt</h3>
+    <div class="muted">Yeni müşteriyseniz kayıt zorunludur. Mevcut müşteride bu ekran açılmaz.</div>
+
+    <label for="regPhone">Telefon (11 hane, 0 ile başlar)</label>
+    <input id="regPhone" type="tel" inputmode="tel" placeholder="0XXXXXXXXXX" />
+
+    <div id="regNameWrap" style="display:none;">
+      <label for="regName">Ad Soyad</label>
+      <input id="regName" type="text" placeholder="Örn: Özhan Samurcu" />
+    </div>
+
+    <div id="kvkkWrap" style="display:none;">
+      <div class="kvkk">
+        <input id="regKvkk" type="checkbox" />
+        <div>
+          <div style="font-weight:950;">KVKK & Sözleşme okudum, onaylıyorum.</div>
+          <div class="muted">Onay olmadan devam edemezsiniz.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="err" id="regErr"></div>
+    <div class="ok" id="regOk"></div>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="btnRegCancel" class="btnGhost" style="flex:1;">Vazgeç</button>
+      <button id="btnRegContinue" class="btnPrimary" style="flex:1;" disabled>Devam</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast" aria-live="polite">
+  <div class="toastTitle" id="toastTitle">Bilgi</div>
+  <p class="toastMsg" id="toastMsg"></p>
+</div>
+
+<script>
+/* =========================
+   CONFIG
+========================= */
+const DEBUG = false;
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwxZaKhAR3XTCjWXhTHjoXM2vv9AnCdGjXbAbr0Udwd3CNu8WefJIdfZbJfQUsaMbox/exec"; // /exec URL'nizi yapıştırın
+
+const GEO_TIMEOUT_MS = 12000;
+const API_TIMEOUT_MS = 15000;
+
+// Price rules (MVP)
+const SERVICE_RULES = {
+  taxi:    { label:"Taksi",  base:60, perKm:18, min:90 },
+  courier: { label:"Kurye",  base:55, perKm:16, min:85 }
+};
+
+// History key
+const LS_TO_HISTORY = "sepettaxi_to_history_v1";
+
+/* =========================
+   STATE
+========================= */
+let map, markerFrom, markerTo;
+let pickMode = null; // "from" | "to" | null
+let selectedService = null;
+
+let from = null; // {lat,lng,addr}
+let to = null;   // {lat,lng,addr}
+
+let computed = {km:null, price:null};
+
+let user = {
+  phone: null,
+  name: null,
+  exists: null,
+  user_id: null
+};
+
+/* =========================
+   DOM
+========================= */
+const $ = (id)=>document.getElementById(id);
+const el = {
+  scrLanding: $("scrLanding"),
+  scrMain: $("scrMain"),
+  btnStart: $("btnStart"),
+
+  dot: $("dot"),
+  pillText: $("pillText"),
+
+  svcTaxi: $("svcTaxi"),
+  svcCourier: $("svcCourier"),
+  btnChangeService: $("btnChangeService"),
+
+  fromAddr: $("fromAddr"),
+  toAddr: $("toAddr"),
+  toHistory: $("toHistory"),
+
+  btnPickFromMap: $("btnPickFromMap"),
+  btnPickToMap: $("btnPickToMap"),
+  btnUseMyLoc: $("btnUseMyLoc"),
+  btnSaveTo: $("btnSaveTo"),
+
+  distText: $("distText"),
+  priceText: $("priceText"),
+  btnCall: $("btnCall"),
+  hint: $("hint"),
+
+  regOverlay: $("regOverlay"),
+  regPhone: $("regPhone"),
+  regNameWrap: $("regNameWrap"),
+  regName: $("regName"),
+  kvkkWrap: $("kvkkWrap"),
+  regKvkk: $("regKvkk"),
+  regErr: $("regErr"),
+  regOk: $("regOk"),
+  btnRegCancel: $("btnRegCancel"),
+  btnRegContinue: $("btnRegContinue"),
+
+  toast: $("toast"),
+  toastTitle: $("toastTitle"),
+  toastMsg: $("toastMsg")
+};
+
+function showToast(title, msg){
+  el.toastTitle.textContent = title;
+  el.toastMsg.textContent = msg;
+  el.toast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>el.toast.classList.remove("show"), 3800);
+}
+
+/* =========================
+   SCREEN
+========================= */
+function showMain(){
+  el.scrLanding.classList.remove("active");
+  el.scrMain.classList.add("active");
+  setTimeout(()=>map && map.invalidateSize(), 80);
+}
+
+/* =========================
+   MAP + GEO
+========================= */
+function initMap(){
+  map = L.map("map", { zoomControl:true });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:19, attribution:"&copy; OpenStreetMap" }).addTo(map);
+  map.setView([40.195, 29.060], 13); // Bursa fallback
+
+  map.on("click", async (e)=>{
+    if(!pickMode) return;
+
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+
+    const addr = await reverseGeocode(lat, lng).catch(()=> "");
+    if(pickMode === "from"){
+      setFrom(lat, lng, addr || "Seçilen konum");
+    } else if(pickMode === "to"){
+      setTo(lat, lng, addr || "Seçilen hedef");
+    }
+    pickMode = null;
+    showToast("Seçildi", "Haritadan seçim yapıldı.");
+    computeAndRender();
+  });
+}
+
+function setStatusDot(kind, text){
+  el.dot.classList.remove("ok","warn","bad");
+  el.dot.classList.add(kind);
+  el.pillText.textContent = text;
+}
+
+function requestGeolocation(){
+  return new Promise((resolve,reject)=>{
+    if(!navigator.geolocation) return reject(new Error("Konum desteği yok."));
+    let done=false;
+    const t=setTimeout(()=>{ if(done) return; done=true; reject(new Error("Konum alınamadı (timeout).")); }, GEO_TIMEOUT_MS);
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{ if(done) return; done=true; clearTimeout(t); resolve(pos); },
+      (err)=>{ if(done) return; done=true; clearTimeout(t); reject(new Error(err.message||"Konum alınamadı.")); },
+      { enableHighAccuracy:true, timeout:GEO_TIMEOUT_MS, maximumAge:5000 }
+    );
+  });
+}
+
+async function reverseGeocode(lat,lng){
+  // Nominatim (OpenStreetMap) reverse geocode
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+  const res = await fetch(url, { headers: { "Accept":"application/json" } });
+  if(!res.ok) throw new Error("Reverse geocode failed");
+  const data = await res.json();
+  return data && data.display_name ? data.display_name : "";
+}
+
+function setFrom(lat,lng,addr){
+  from = {lat,lng,addr: addr || ""};
+  el.fromAddr.value = from.addr || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+  if(!markerFrom){
+    markerFrom = L.marker([lat,lng]).addTo(map).bindPopup("Nereden");
+  } else markerFrom.setLatLng([lat,lng]);
+
+  map.setView([lat,lng], 15);
+}
+
+function setTo(lat,lng,addr){
+  to = {lat,lng,addr: addr || ""};
+  el.toAddr.value = to.addr || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+  if(!markerTo){
+    markerTo = L.marker([lat,lng]).addTo(map).bindPopup("Nereye");
+  } else markerTo.setLatLng([lat,lng]);
+}
+
+/* =========================
+   SERVICE SELECTION + REG FLOW
+========================= */
+function lockServices(selected){
+  const all = [el.svcTaxi, el.svcCourier];
+  all.forEach(card=>{
+    const key = card.dataset.svc;
+    card.classList.toggle("selected", key===selected);
+    card.classList.toggle("disabled", key!==selected);
+  });
+  el.btnChangeService.disabled = false;
+}
+
+function unlockServices(){
+  [el.svcTaxi, el.svcCourier].forEach(card=>{
+    card.classList.remove("selected","disabled");
+  });
+  el.btnChangeService.disabled = true;
+}
+
+function setCallLabel(){
+  if(!selectedService){
+    el.btnCall.textContent = "Çağır";
+    return;
+  }
+  el.btnCall.textContent = (selectedService==="taxi") ? "Taksi Çağır" : "Kurye Çağır";
+}
+
+function openRegOverlay(){
+  el.regErr.style.display="none";
+  el.regOk.style.display="none";
+  el.regErr.textContent="";
+  el.regOk.textContent="";
+  el.regPhone.value = user.phone || "";
+  el.regName.value = user.name || "";
+  el.regNameWrap.style.display = "none";
+  el.kvkkWrap.style.display = "none";
+  el.regKvkk.checked = false;
+  el.btnRegContinue.disabled = true;
+  el.regOverlay.classList.add("show");
+  el.regPhone.focus();
+}
+
+function closeRegOverlay(){
+  el.regOverlay.classList.remove("show");
+}
+
+function isPhoneValid(v){ return /^0[0-9]{10}$/.test((v||"").trim()); }
+
+async function checkUserByPhone(phone){
+  if(!BACKEND_URL || BACKEND_URL.includes("PASTE_YOUR_EXEC_URL_HERE")){
+    throw new Error("BACKEND_URL tanımlı değil.");
+  }
+  const data = await postJsonPlain(BACKEND_URL, { action:"check_user", phone }, API_TIMEOUT_MS);
+  if(!data || !data.ok) throw new Error(data && (data.error||data.message) ? (data.error||data.message) : "check_user hata");
+  return data;
+}
+
+function setRegError(msg){
+  el.regErr.textContent = msg;
+  el.regErr.style.display = "block";
+  el.regOk.style.display = "none";
+}
+
+function setRegOk(msg){
+  el.regOk.textContent = msg;
+  el.regOk.style.display = "block";
+  el.regErr.style.display = "none";
+}
+
+async function regFlowStartIfNeeded(){
+  // Hizmet seçildiğinde, önce müşteri kontrolü yapılacak
+  // Kullanıcı telefonsa var → overlay açmadan devam (spec: yeni ise kayıt)
+  // Bu akış için: overlay açılır, telefon girilir, check_user ile karar verilir.
+  openRegOverlay();
+}
+
+/* =========================
+   HISTORY (NEREYE)
+========================= */
+function loadToHistory(){
+  const raw = localStorage.getItem(LS_TO_HISTORY);
+  let list = [];
+  try { list = raw ? JSON.parse(raw) : []; } catch { list = []; }
+  if(!Array.isArray(list)) list = [];
+  return list;
+}
+
+function saveToHistoryItem(item){
+  // item: {addr, lat, lng}
+  const list = loadToHistory();
+  const key = `${item.addr}|${item.lat.toFixed(5)}|${item.lng.toFixed(5)}`;
+  const filtered = list.filter(x => `${x.addr}|${Number(x.lat).toFixed(5)}|${Number(x.lng).toFixed(5)}` !== key);
+  filtered.unshift({ addr:item.addr, lat:item.lat, lng:item.lng });
+  const out = filtered.slice(0, 8);
+  localStorage.setItem(LS_TO_HISTORY, JSON.stringify(out));
+  renderToHistory();
+}
+
+function renderToHistory(){
+  const list = loadToHistory();
+  el.toHistory.innerHTML = "";
+  list.forEach(x=>{
+    const opt = document.createElement("option");
+    opt.value = x.addr;
+    el.toHistory.appendChild(opt);
+  });
+}
+
+/* =========================
+   DISTANCE + PRICE
+========================= */
+function haversineKm(a,b){
+  const R=6371;
+  const toRad=(x)=>x*Math.PI/180;
+  const dLat=toRad(b.lat-a.lat);
+  const dLon=toRad(b.lng-a.lng);
+  const lat1=toRad(a.lat), lat2=toRad(b.lat);
+  const s=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  const c=2*Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+  return R*c;
+}
+
+function computeAndRender(){
+  computed = {km:null, price:null};
+
+  if(selectedService && from && to){
+    const km = haversineKm(from, to);
+    const rule = SERVICE_RULES[selectedService];
+    let price = rule.base + km * rule.perKm;
+    price = Math.max(price, rule.min);
+    computed = {km, price};
+  }
+
+  el.distText.textContent = computed.km==null ? "-" : `${computed.km.toFixed(2)} km`;
+  el.priceText.textContent = computed.price==null ? "-" : `${Math.round(computed.price)} TL`;
+
+  // Call active rules: service + from + to + computed + user ok
+  const hasRoute = computed.km!=null && computed.price!=null;
+  const hasService = !!selectedService;
+  const userOk = (user.exists===true) || (user.exists===false && user.phone && user.name && user.kvkk===true);
+
+  // Burada “çağır” butonu: mesafe+ücret çıkmadan aktif olmaz (kilit)
+  el.btnCall.disabled = !(hasService && hasRoute && userOk);
+
+  setCallLabel();
+}
+
+/* =========================
+   API
+========================= */
+async function postJsonPlain(url, payload, timeoutMs){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, {
+      method:"POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type":"text/plain;charset=utf-8" },
+      signal: ctrl.signal
+    });
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch { return { ok:false, error:"Backend JSON dönmedi", raw:txt }; }
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/* =========================
+   CALL
+========================= */
+async function createRequest(){
+  if(!BACKEND_URL || BACKEND_URL.includes("PASTE_YOUR_EXEC_URL_HERE")){
+    showToast("Hata", DEBUG ? "BACKEND_URL tanımlı değil." : "Servis şu anda kullanılamıyor.");
+    return;
+  }
+  if(!(selectedService && from && to && computed.km!=null && computed.price!=null)){
+    showToast("Eksik", "Hizmet + nereden/nereye + mesafe/ücret gerekli.");
+    return;
+  }
+
+  const payload = {
+    action: "create_request",
+    client: { name: user.name || "", phone: user.phone || "" },
+    service: selectedService,
+    from: { lat: from.lat, lng: from.lng, addr: from.addr || "" },
+    to: { lat: to.lat, lng: to.lng, addr: to.addr || "" },
+    distance_km: Number(computed.km.toFixed(3)),
+    price: Math.round(computed.price),
+    kvkk_accepted: true,
+    ts: new Date().toISOString()
+  };
+
+  el.btnCall.disabled = true;
+  el.btnCall.innerHTML = `<span class="spinner"></span>${selectedService==="taxi" ? "Taksi Çağır" : "Kurye Çağır"}`;
+
+  const data = await postJsonPlain(BACKEND_URL, payload, API_TIMEOUT_MS).catch(e=>({ok:false, error:e.name==="AbortError" ? "Zaman aşımı" : (e.message||"İstek başarısız")}));
+
+  el.btnCall.textContent = (selectedService==="taxi") ? "Taksi Çağır" : "Kurye Çağır";
+
+  if(data && data.ok){
+    showToast("Başarılı", `Çağrı oluşturuldu. Job: ${data.job_id}`);
+    // nereye geçmişe ekle
+    if(to && to.addr) saveToHistoryItem({addr: to.addr, lat: to.lat, lng: to.lng});
+  }else{
+    const err = data && (data.error||data.message) ? (data.error||data.message) : "Bilinmeyen hata";
+    showToast("Hata", err);
+  }
+
+  computeAndRender();
+}
+
+/* =========================
+   WIRES
+========================= */
+el.btnStart.addEventListener("click", async ()=>{
+  showMain();
+  if(!map) initMap();
+  renderToHistory();
+
+  setStatusDot("warn","Konum isteniyor");
+  try{
+    const pos = await requestGeolocation();
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const addr = await reverseGeocode(lat, lng).catch(()=> "");
+    setFrom(lat, lng, addr || "Konumum");
+    setStatusDot("ok","Konum alındı");
+  }catch(_){
+    setStatusDot("bad","Konum alınamadı");
+    // fallback: Bursa center as from if user wants
+    if(!from) setFrom(40.195, 29.060, "Bursa (varsayılan)");
+  }
+  computeAndRender();
+});
+
+el.svcTaxi.addEventListener("click", async ()=>{
+  if(selectedService) return;
+  selectedService = "taxi";
+  lockServices("taxi");
+  setCallLabel();
+  // Hizmet seçince önce müşteri kontrol akışı (kilit)
+  await regFlowStartIfNeeded();
+});
+
+el.svcCourier.addEventListener("click", async ()=>{
+  if(selectedService) return;
+  selectedService = "courier";
+  lockServices("courier");
+  setCallLabel();
+  await regFlowStartIfNeeded();
+});
+
+el.btnChangeService.addEventListener("click", ()=>{
+  selectedService = null;
+  unlockServices();
+  setCallLabel();
+  computeAndRender();
+});
+
+el.btnPickFromMap.addEventListener("click", ()=>{
+  pickMode = "from";
+  showToast("Nereden", "Haritadan nereden noktasını seçin.");
+});
+
+el.btnPickToMap.addEventListener("click", ()=>{
+  pickMode = "to";
+  showToast("Nereye", "Haritadan hedef (nereye) seçin.");
+});
+
+el.btnUseMyLoc.addEventListener("click", async ()=>{
+  setStatusDot("warn","Konum güncelleniyor");
+  try{
+    const pos = await requestGeolocation();
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const addr = await reverseGeocode(lat,lng).catch(()=> "");
+    setFrom(lat,lng,addr||"Konumum");
+    setStatusDot("ok","Konum alındı");
+  }catch(_){
+    setStatusDot("bad","Konum alınamadı");
+    showToast("Konum", "Konum alınamadı.");
+  }
+  computeAndRender();
+});
+
+el.btnSaveTo.addEventListener("click", ()=>{
+  if(to && to.addr){
+    saveToHistoryItem({addr: to.addr, lat: to.lat, lng: to.lng});
+    showToast("Kaydedildi", "Nereye geçmişe eklendi.");
+  }else{
+    showToast("Eksik", "Önce nereye seçin.");
+  }
+});
+
+el.fromAddr.addEventListener("change", ()=>{
+  // sadece metin değiştiyse koordinat yok; haritadan seçim öner
+  if(from){
+    from.addr = el.fromAddr.value.trim();
+  }
+  computeAndRender();
+});
+
+el.toAddr.addEventListener("change", ()=>{
+  // Eğer kullanıcı geçmişten seçtiyse, listeden koordinat bulup set edelim
+  const v = el.toAddr.value.trim();
+  const list = loadToHistory();
+  const hit = list.find(x => (x.addr||"").trim() === v);
+  if(hit){
+    setTo(Number(hit.lat), Number(hit.lng), hit.addr);
+    computeAndRender();
+  }else{
+    // sadece metin girildiyse koordinat yok: haritadan seçmeli
+    if(to) to.addr = v;
+    computeAndRender();
+  }
+});
+
+el.btnCall.addEventListener("click", createRequest);
+
+/* =========================
+   REG OVERLAY WIRES
+========================= */
+el.btnRegCancel.addEventListener("click", ()=>{
+  // Hizmet seçilmişken kayıt iptal edilirse: hizmeti de sıfırla (akış net)
+  closeRegOverlay();
+  selectedService = null;
+  unlockServices();
+  user = { phone:null, name:null, exists:null, user_id:null };
+  computeAndRender();
+  showToast("İptal", "Hizmet seçimi sıfırlandı.");
+});
+
+function setRegBusy(isBusy, msg){
+  if(isBusy){
+    el.btnRegContinue.disabled = true;
+    el.btnRegContinue.innerHTML = `<span class="spinner"></span>${msg||"Bekleyin"}`;
+  }else{
+    el.btnRegContinue.textContent = "Devam";
+  }
+}
+
+el.regPhone.addEventListener("input", async ()=>{
+  const phone = el.regPhone.value.trim();
+  el.regErr.style.display="none";
+  el.regOk.style.display="none";
+  el.btnRegContinue.disabled = true;
+
+  // telefon geçerli değilse form açma
+  if(!phone){
+    el.regNameWrap.style.display="none";
+    el.kvkkWrap.style.display="none";
+    return;
+  }
+  if(!isPhoneValid(phone)){
+    setRegError("Telefon formatı hatalı. Örn: 05320000000");
+    el.regNameWrap.style.display="none";
+    el.kvkkWrap.style.display="none";
+    return;
+  }
+
+  // check_user
+  setRegBusy(true, "Kontrol ediliyor");
+  try{
+    const res = await checkUserByPhone(phone);
+    user.phone = phone;
+    user.exists = !!res.exists;
+    user.user_id = res.user_id || null;
+
+    if(res.exists){
+      // mevcut müşteri: kayıt ekranı kapanır (kilit)
+      user.name = res.name || "";
+      user.kvkk = true; // mevcut kullanıcı için KVKK tekrar istemiyoruz (yeni müşteri şartı)
+      setRegOk("Mevcut müşteri bulundu. Devam edebilirsiniz.");
+      el.regNameWrap.style.display="none";
+      el.kvkkWrap.style.display="none";
+      el.btnRegContinue.disabled = false;
+    }else{
+      // yeni müşteri: ad + kvkk zorunlu
+      setRegOk("Yeni müşteri. Kayıt bilgilerini tamamlayın.");
+      el.regNameWrap.style.display="block";
+      el.kvkkWrap.style.display="block";
+      validateNewReg();
+    }
+  }catch(e){
+    setRegError(DEBUG ? (e.message||"Kontrol edilemedi") : "Servis geçici olarak kullanılamıyor.");
+  }finally{
+    setRegBusy(false);
+    el.btnRegContinue.textContent = "Devam";
+  }
+});
+
+function validateNewReg(){
+  const name = el.regName.value.trim();
+  const okName = name.length >= 2;
+  const okKvkk = el.regKvkk.checked;
+  el.btnRegContinue.disabled = !(okName && okKvkk);
+}
+
+el.regName.addEventListener("input", ()=>{
+  if(user.exists===false) validateNewReg();
+});
+
+el.regKvkk.addEventListener("change", ()=>{
+  if(user.exists===false) validateNewReg();
+});
+
+el.btnRegContinue.addEventListener("click", ()=>{
+  if(user.exists===true){
+    closeRegOverlay();
+    computeAndRender();
+    return;
+  }
+  // new user
+  const phone = el.regPhone.value.trim();
+  const name = el.regName.value.trim();
+
+  if(!isPhoneValid(phone)){
+    setRegError("Telefon formatı hatalı. Örn: 05320000000");
+    return;
+  }
+  if(name.length < 2){
+    setRegError("Ad Soyad zorunlu.");
+    return;
+  }
+  if(!el.regKvkk.checked){
+    setRegError("KVKK onayı zorunlu.");
+    return;
+  }
+
+  user.phone = phone;
+  user.name = name;
+  user.kvkk = true;
+  user.exists = false;
+
+  closeRegOverlay();
+  computeAndRender();
+  showToast("Hazır", "Rota ve ücret uygunsa çağırabilirsiniz.");
+});
+
+/* Init */
+setCallLabel();
+renderToHistory();
+computeAndRender();
+</script>
+</body>
+</html>
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>SepetTaxi – MVP v1.1</title>
 
   <!-- Leaflet -->
