@@ -1,160 +1,410 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, İnitial-scale=1">
-<title>SepetTaxi – Admin</title>
-
-<style>
-:root{
-  --bg:#0b0b0b; --card:#151515; --border:rgba(255,255,255,.12);
-  --text:#fff; --muted:#a8a8a8; --ok:#7CFF9B; --err:#FF7C7C;
-}
-body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
-.container{max-width:980px;margin:0 auto;padding:20px}
-.card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:16px;
-  box-shadow:0 0 0 1px var(--border) inset}
-h1{margin:0 0 6px;font-size:22px}
-h2{margin:0 0 10px;font-size:18px}
-.badge{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px}
-.ok{color:var(--ok)} .err{color:var(--err)}
-select,button{width:100%;padding:14px;border-radius:14px;border:1px solid var(--border);
-  background:#0f0f0f;color:#fff;font-size:15px}
-button{background:#fff;color:#000;font-weight:700;border:none;margin-top:10px;cursor:pointer}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.job{border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:10px}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SepetTaxi Admin v1.1</title>
+  <style>
+    :root { --bg:#0b0f17; --card:#121a27; --muted:#8aa0bf; --text:#eaf1ff; --line:#223049; --good:#27c07d; --warn:#f0b429; --bad:#ff5b6e; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    header{position:sticky;top:0;background:rgba(11,15,23,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line);z-index:10}
+    .wrap{max-width:1100px;margin:0 auto;padding:14px 16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    h1{font-size:18px;margin:0}
+    .pill{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:6px 10px;border-radius:999px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    select,input,button{border-radius:12px;border:1px solid var(--line);background:#0f1623;color:var(--text);padding:10px 12px;font-size:14px;outline:none}
+    button{cursor:pointer}
+    button.primary{background:#1b2a44}
+    button.danger{background:#3a1320;border-color:#5a2435}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+    th{color:var(--muted);font-weight:600}
+    .status{font-weight:700}
+    .status.pending{color:var(--warn)}
+    .status.assigned{color:#7db3ff}
+    .status.accepted{color:#a78bfa}
+    .status.on_the_way{color:#22c55e}
+    .status.arrived{color:#10b981}
+    .status.completed{color:var(--good)}
+    .status.cancelled{color:var(--bad)}
+    .muted{color:var(--muted)}
+    .split{display:grid;grid-template-columns:1fr 340px;gap:12px}
+    @media(max-width:920px){.split{grid-template-columns:1fr}}
+    .side{padding:12px}
+    .side h2{margin:0 0 10px 0;font-size:14px;color:var(--muted);font-weight:700}
+    .kv{display:grid;grid-template-columns:120px 1fr;gap:6px;font-size:13px}
+    .kv div:nth-child(odd){color:var(--muted)}
+    .modalBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
+    .modal{max-width:760px;width:100%;padding:14px}
+    .modalHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .toast{position:fixed;bottom:14px;left:14px;right:14px;max-width:1100px;margin:0 auto;display:none;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(18,26,39,.95)}
+    .toast.ok{border-color:#1f6f4b}
+    .toast.bad{border-color:#7b2432}
+  </style>
 </head>
-
 <body>
-<div class="container">
+<header>
+  <div class="wrap">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <h1>SepetTaxi Admin</h1>
+        <span class="pill">v1.1 — Job lifecycle + manuel atama</span>
+      </div>
+      <div class="row">
+        <span class="pill" id="clock">—</span>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;justify-content:space-between">
+      <div class="controls">
+        <select id="statusFilter">
+          <option value="">Tümü</option>
+          <option value="pending" selected>pending</option>
+          <option value="assigned">assigned</option>
+          <option value="accepted">accepted</option>
+          <option value="on_the_way">on_the_way</option>
+          <option value="arrived">arrived</option>
+          <option value="completed">completed</option>
+          <option value="cancelled">cancelled</option>
+        </select>
+        <input id="search" placeholder="job_id / telefon / isim ara" />
+        <button class="primary" id="refreshBtn">Yenile</button>
+        <button id="autoBtn">Auto: Açık</button>
+      </div>
+      <div class="controls">
+        <span class="pill">Toplam: <b id="count">0</b></span>
+        <span class="pill">Son güncelleme: <b id="last">—</b></span>
+      </div>
+    </div>
+  </div>
+</header>
 
-<div class="card">
-  <h1>SepetTaxi – Admin Paneli</h1>
-  <span class="badge" id="backend">Backend kontrol ediliyor…</span>
+<main class="wrap" style="padding-top:14px">
+  <div class="split">
+    <div class="card">
+      <div style="padding:10px 12px;border-bottom:1px solid var(--line)" class="row">
+        <b>İş Listesi</b>
+        <span class="muted" id="hint">pending işler varsayılan gelir.</span>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Created</th>
+              <th>Job</th>
+              <th>Service</th>
+              <th>Müşteri</th>
+              <th>Telefon</th>
+              <th>Status</th>
+              <th>Driver</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card side">
+      <h2>Hızlı İşlem</h2>
+      <div class="kv">
+        <div>Seçili Job</div><div class="mono" id="selJob">—</div>
+        <div>Status</div><div id="selStatus">—</div>
+        <div>Driver</div><div id="selDriver">—</div>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <div class="row" style="gap:8px">
+        <select id="driverSelect" style="flex:1">
+          <option value="">Sürücü seç…</option>
+        </select>
+        <button class="primary" id="assignBtn" disabled>Atama</button>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <div class="row" style="gap:8px">
+        <select id="statusSelect" style="flex:1">
+          <option value="">Status seç…</option>
+        </select>
+        <button class="primary" id="statusBtn" disabled>Güncelle</button>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <button class="danger" id="openBtn" disabled>Detay</button>
+
+      <div style="margin-top:12px" class="muted">
+        Not: Bu panel admin_token ile korunur. Üretimde token’ı değiştirin.
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modalBackdrop" id="backdrop">
+  <div class="card modal">
+    <div class="modalHeader">
+      <div>
+        <b>Job Detay</b>
+        <div class="muted mono" id="mJobId">—</div>
+      </div>
+      <button id="closeModal">Kapat</button>
+    </div>
+    <div class="kv" id="mKv"></div>
+    <div style="margin-top:10px">
+      <b class="muted">Raw JSON</b>
+      <pre class="card" style="padding:10px;border-radius:14px;overflow:auto" id="mJson"></pre>
+    </div>
+  </div>
 </div>
 
-<div class="card">
-  <h2>1) İş Seç</h2>
-  <select id="jobSelect"></select>
-</div>
-
-<div class="card">
-  <h2>2) Sürücü Seç</h2>
-  <select id="driverSelect"></select>
-</div>
-
-<div class="card">
-  <h2>3) Ata</h2>
-  <button onclick="assign()">Sürücüye Ata</button>
-  <div id="msg"></div>
-</div>
-
-<div class="card">
-  <h2>Bekleyen İşler</h2>
-  <div id="jobsBox">Yükleniyor…</div>
-</div>
-
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-/* ================= CONFIG ================= */
-const API_BASE =
-"https://script.google.com/macros/s/AKfycbyXfyQG4ZYPmsLF94hbYt9nKSIdta6wW9pfEDX4blNFCAsgbyR72kGwzZ5yO_zRzme2/exec";
+/** === CONFIG: Burayı doldurun === */
+const WEBAPP_URL  = "https://script.google.com/macros/s/AKfycbzJ0blcuIXlOES8qswE5-xBwN5L4DAtDzkEgDPefH4t6uG6EOQT1-ir_zpeiRnAswAeSg/exec"; // .../exec
+const ADMIN_TOKEN = "sepettaxi_admin_2025";                 // Code.gs ile aynı
 
-/* ================= HELPERS ================= */
-async function get(params){
-  const u = new URL(API_BASE);
-  Object.keys(params).forEach(k=>u.searchParams.set(k,params[k]));
-  const r = await fetch(u.toString());
-  return await r.json();
+/** === State === */
+let jobs = [];
+let drivers = [];
+let selectedJob = null;
+let auto = true;
+let timer = null;
+
+const el = (id)=>document.getElementById(id);
+
+function toast(msg, ok=true){
+  const t = el("toast");
+  t.className = "toast " + (ok ? "ok":"bad");
+  t.textContent = msg;
+  t.style.display = "block";
+  setTimeout(()=> t.style.display="none", 2600);
 }
-async function post(action, body){
-  const r = await fetch(`${API_BASE}?action=${action}`,{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(body)
+
+function fmt(v){ return (v===null||v===undefined||v==="") ? "—" : String(v); }
+
+function statusClass(s){ return "status " + String(s||"").toLowerCase(); }
+
+function setClock(){
+  const d = new Date();
+  el("clock").textContent = d.toLocaleString("tr-TR");
+}
+setInterval(setClock, 1000); setClock();
+
+async function api(path, payload=null, method="POST"){
+  const url = `${WEBAPP_URL}?path=${encodeURIComponent(path)}`;
+  const body = Object.assign({}, payload||{}, { admin_token: ADMIN_TOKEN });
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type":"application/json" },
+    body: method === "GET" ? null : JSON.stringify(body),
   });
-  return await r.json();
-}
-
-/* ================= PING ================= */
-(async()=>{
-  const b = document.getElementById("backend");
-  try{
-    const r = await get({action:"ping"});
-    if(r.ok){ b.textContent="Backend bağlı"; b.classList.add("ok"); }
-    else throw "";
-  }catch{
-    b.textContent="Backend yok"; b.classList.add("err");
-  }
-})();
-
-/* ================= LOAD DATA ================= */
-async function load(){
-  await loadJobs();
-  await loadDrivers();
-}
-load();
-
-async function loadJobs(){
-  const box = document.getElementById("jobsBox");
-  const sel = document.getElementById("jobSelect");
-  box.innerHTML = "Yükleniyor…";
-  sel.innerHTML = "";
-
-  const r = await get({action:"listJobs"});
-  if(!r.ok || !r.jobs || r.jobs.length===0){
-    box.textContent="İş yok"; return;
-  }
-
-  const pending = r.jobs.filter(j=>j.status==="pending");
-  if(pending.length===0){ box.textContent="Bekleyen iş yok"; return; }
-
-  box.innerHTML="";
-  pending.forEach(j=>{
-    const d=document.createElement("div");
-    d.className="job";
-    d.innerHTML=`<b>${j.job_id}</b> – ${j.service_type} – ${j.pickup_address} → ${j.dropoff_address}`;
-    box.appendChild(d);
-
-    const o=document.createElement("option");
-    o.value=j.job_id;
-    o.textContent=`${j.job_id} (${j.service_type})`;
-    sel.appendChild(o);
-  });
+  const data = await res.json().catch(()=>({ok:false,error:"Invalid JSON"}));
+  if (!data.ok) throw data;
+  return data;
 }
 
 async function loadDrivers(){
-  const sel=document.getElementById("driverSelect");
-  sel.innerHTML="";
-  const r = await get({action:"listDrivers"});
-  if(!r.ok || !r.drivers) return;
+  const d = await api("listDrivers", {});
+  drivers = d.drivers || [];
+  const sel = el("driverSelect");
+  sel.innerHTML = `<option value="">Sürücü seç…</option>` + drivers.map(dr=>{
+    const label = `${dr.driver_id} — ${dr.name || ""} (${dr.status || ""})`;
+    return `<option value="${dr.driver_id}">${label}</option>`;
+  }).join("");
+}
 
-  r.drivers.forEach(d=>{
-    const o=document.createElement("option");
-    o.value=d.driver_id;
-    o.textContent=`${d.driver_id} – ${d.name||""}`;
-    sel.appendChild(o);
+async function loadJobs(){
+  const status = el("statusFilter").value;
+  const d = await api("listJobs", { status, limit: 300 });
+  jobs = d.jobs || [];
+
+  const q = el("search").value.trim().toLowerCase();
+  let filtered = jobs;
+  if (q){
+    filtered = jobs.filter(j=>{
+      const hay = [
+        j.job_id, j.user_name, j.user_phone,
+        j.pickup_address, j.dropoff_address
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  renderTable(filtered);
+  el("count").textContent = String(filtered.length);
+  el("last").textContent = new Date().toLocaleTimeString("tr-TR");
+}
+
+function renderTable(list){
+  const tb = el("tbody");
+  tb.innerHTML = "";
+  list.forEach(j=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="muted">${fmt(j.created_at)}</td>
+      <td class="mono">${fmt(j.job_id)}</td>
+      <td>${fmt(j.service_type)}</td>
+      <td>${fmt(j.user_name)}</td>
+      <td class="mono">${fmt(j.user_phone)}</td>
+      <td><span class="${statusClass(j.status)}">${fmt(j.status)}</span></td>
+      <td class="mono">${fmt(j.driver_id)}</td>
+      <td><button data-id="${j.job_id}">Seç</button></td>
+    `;
+    tr.querySelector("button").addEventListener("click", ()=> selectJob(j.job_id));
+    tb.appendChild(tr);
   });
 }
 
-/* ================= ASSIGN ================= */
-async function assign(){
-  const msg=document.getElementById("msg");
-  msg.textContent="";
-  const job_id=document.getElementById("jobSelect").value;
-  const driver_id=document.getElementById("driverSelect").value;
-  if(!job_id||!driver_id){
-    msg.innerHTML=`<div class="err">İş ve sürücü seç</div>`; return;
-  }
-  const r = await post("assignJob",{job_id,driver_id});
-  if(r.ok){
-    msg.innerHTML=`<div class="ok">Atandı</div>`;
-    load();
-  }else{
-    msg.innerHTML=`<div class="err">${r.error||"Hata"}</div>`;
+function selectJob(jobId){
+  selectedJob = jobs.find(x=> String(x.job_id)===String(jobId)) || null;
+  el("selJob").textContent = selectedJob ? selectedJob.job_id : "—";
+  el("selStatus").textContent = selectedJob ? selectedJob.status : "—";
+  el("selDriver").textContent = selectedJob ? (selectedJob.driver_id || "—") : "—";
+
+  el("assignBtn").disabled = !selectedJob;
+  el("statusBtn").disabled = !selectedJob;
+  el("openBtn").disabled   = !selectedJob;
+
+  fillStatusSelect();
+}
+
+function fillStatusSelect(){
+  const ss = el("statusSelect");
+  const cur = selectedJob ? String(selectedJob.status||"").toLowerCase() : "";
+  const transitions = {
+    pending:    ["assigned", "cancelled"],
+    assigned:   ["accepted", "cancelled", "pending"],
+    accepted:   ["on_the_way", "cancelled"],
+    on_the_way: ["arrived", "cancelled"],
+    arrived:    ["completed", "cancelled"],
+    completed:  [],
+    cancelled:  []
+  };
+  const allowed = transitions[cur] || [];
+  ss.innerHTML = `<option value="">Status seç…</option>` + allowed.map(s=>`<option value="${s}">${s}</option>`).join("");
+}
+
+async function assignDriver(){
+  if (!selectedJob) return;
+  const driverId = el("driverSelect").value;
+  if (!driverId) return toast("Sürücü seçin.", false);
+
+  // Optimistic UI
+  const old = { ...selectedJob };
+  selectedJob.driver_id = driverId;
+  selectedJob.status = "assigned";
+  loadJobs().catch(()=>{});
+  selectJob(selectedJob.job_id);
+
+  try{
+    await api("assignDriver", { job_id: selectedJob.job_id, driver_id: driverId });
+    toast("Atama yapıldı.");
+    await loadJobs();
+    selectJob(selectedJob.job_id);
+  }catch(err){
+    // rollback
+    Object.assign(selectedJob, old);
+    toast(err.message || err.error || "Atama hatası", false);
+    await loadJobs();
+    selectJob(selectedJob.job_id);
   }
 }
+
+async function updateStatus(){
+  if (!selectedJob) return;
+  const next = el("statusSelect").value;
+  if (!next) return toast("Status seçin.", false);
+
+  // Optimistic UI
+  const old = { ...selectedJob };
+  selectedJob.status = next;
+  loadJobs().catch(()=>{});
+  selectJob(selectedJob.job_id);
+
+  try{
+    const r = await api("updateStatus", {
+      job_id: selectedJob.job_id,
+      next_status: next,
+      expected_status: String(old.status||"")
+    });
+    if (r.conflict){
+      toast("Çakışma: Server status farklı. Liste yenileniyor.", false);
+    } else {
+      toast("Status güncellendi.");
+    }
+    await loadJobs();
+    selectJob(selectedJob.job_id);
+  }catch(err){
+    Object.assign(selectedJob, old);
+    toast(err.message || err.error || "Status güncelleme hatası", false);
+    await loadJobs();
+    selectJob(selectedJob.job_id);
+  }
+}
+
+function openModal(){
+  if (!selectedJob) return;
+  el("mJobId").textContent = selectedJob.job_id;
+  const kv = el("mKv");
+  kv.innerHTML = "";
+
+  const keys = [
+    "created_at","service_type","user_name","user_phone",
+    "pickup_address","dropoff_address","distance_km","estimated_price",
+    "status","driver_id","assigned_at","updated_at","notes"
+  ];
+  keys.forEach(k=>{
+    kv.insertAdjacentHTML("beforeend", `<div>${k}</div><div>${fmt(selectedJob[k])}</div>`);
+  });
+
+  el("mJson").textContent = JSON.stringify(selectedJob, null, 2);
+  el("backdrop").style.display = "flex";
+}
+function closeModal(){ el("backdrop").style.display = "none"; }
+
+function startAuto(){
+  if (timer) clearInterval(timer);
+  if (!auto) return;
+  timer = setInterval(()=> loadJobs().catch(()=>{}), 6000);
+}
+function toggleAuto(){
+  auto = !auto;
+  el("autoBtn").textContent = "Auto: " + (auto ? "Açık" : "Kapalı");
+  startAuto();
+}
+
+async function boot(){
+  try{
+    await loadDrivers();
+    await loadJobs();
+    toast("Admin hazır.");
+    startAuto();
+  }catch(err){
+    console.error(err);
+    toast((err && (err.message||err.error)) ? (err.message||err.error) : "Bağlantı hatası", false);
+  }
+}
+
+/** UI events */
+el("refreshBtn").addEventListener("click", ()=> loadJobs().catch(()=>{}));
+el("statusFilter").addEventListener("change", ()=> loadJobs().catch(()=>{}));
+el("search").addEventListener("input", ()=> loadJobs().catch(()=>{}));
+el("assignBtn").addEventListener("click", ()=> assignDriver());
+el("statusBtn").addEventListener("click", ()=> updateStatus());
+el("openBtn").addEventListener("click", ()=> openModal());
+el("closeModal").addEventListener("click", ()=> closeModal());
+el("backdrop").addEventListener("click", (e)=>{ if(e.target.id==="backdrop") closeModal(); });
+el("autoBtn").addEventListener("click", ()=> toggleAuto());
+
+boot();
 </script>
 </body>
 </html>
