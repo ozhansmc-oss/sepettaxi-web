@@ -169,18 +169,29 @@ function updateCallState(){
 
 /* CREATE JOB */
 function createJob(){
-  const q=new URLSearchParams({
-    path:"createJob",
-    service_type:service,
-    user_name:user.name,
-    user_phone:user.phone,
-    pickup_lat:pickup.lat,
-    pickup_lng:pickup.lng,
-    pickup_address:fromInput.value,
-    dropoff_address:toInput.value
-  });
-  fetch(`${API_URL}?${q}`, { mode: "no-cors" });
-alert("Talep alındı");
+  if(!service || !pickup || !dropoff || !user){
+    alert("Eksik bilgi");
+    return;
+  }
+
+  const q = new URLSearchParams({
+    path: "createJob",
+    service_type: service,
+    user_name: user.name,
+    user_phone: user.phone,
+    pickup_lat: pickup.lat,
+    pickup_lng: pickup.lng,
+    pickup_address: fromInput.value,
+    dropoff_address: toInput.value
+  }).toString();
+
+  // CORS'suz, garantili gönderim
+  const img = new Image();
+  img.src = `${API_URL}?${q}`;
+
+  alert("Talep alındı");
+}
+
 }
 
 /* RESET */
