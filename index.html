@@ -184,11 +184,28 @@ function updateCallState(){
 }
 
 /* CREATE JOB */
-function createJob(){
-  if(!service || !pickup || !dropoff || !user){
+function createJob() {
+  if (!service || !pickup || !dropoff || !user) {
     alert("Eksik bilgi");
     return;
   }
+
+  const data = new URLSearchParams({
+    path: "createJob",
+    service_type: service,
+    user_name: user.name,
+    user_phone: user.phone,
+    pickup_lat: pickup.lat,
+    pickup_lng: pickup.lng,
+    pickup_address: fromInput.value,
+    dropoff_address: toInput.value
+  }).toString();
+
+  // ✅ GARANTİLİ GÖNDERİM
+  navigator.sendBeacon(API_URL + "?" + data);
+
+  alert("Talep alındı");
+}
 
   const q = new URLSearchParams({
     path: "createJob",
