@@ -5,7 +5,252 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi</title>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SepetTaxi</title>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root{
+  --yellow:#f5c400;
+  --dark:#0e0e0e;
+  --card:#1b1b1b;
+  --text:#ffffff;
+  --muted:#b5b5b5;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:var(--dark);
+  color:var(--text);
+}
+
+/* ===== SPLASH ===== */
+#splash{
+  height:100vh;
+  background:
+    linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,.2)),
+    url("https://images.unsplash.com/photo-1504384308090-c894fdcc538d");
+  background-size:cover;
+  background-position:center;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+#splash h1{
+  font-size:44px;
+  margin:0;
+}
+#splash h1 span{color:var(--yellow)}
+#startBtn{
+  margin-top:40px;
+  padding:18px 48px;
+  font-size:20px;
+  font-weight:800;
+  border:none;
+  border-radius:30px;
+  background:var(--yellow);
+  cursor:pointer;
+}
+
+/* ===== APP ===== */
+#app{display:none;height:100vh}
+
+/* TOP BAR */
+.topbar{
+  height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 16px;
+  background:rgba(0,0,0,.85);
+  backdrop-filter:blur(6px);
+}
+.topbar .logo{
+  font-size:22px;
+  font-weight:800;
+}
+.topbar .logo span{color:var(--yellow)}
+.icon{font-size:22px}
+
+/* MAP */
+#map{
+  height:36vh;
+  filter:brightness(.8) contrast(1.1);
+}
+
+/* CONTENT */
+.panel{
+  margin-top:-18px;
+  padding:16px;
+}
+
+/* SERVICE */
+.services{
+  display:flex;
+  gap:12px;
+}
+.service{
+  flex:1;
+  background:var(--card);
+  padding:14px;
+  border-radius:18px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  border:1px solid transparent;
+}
+.service.active{
+  border-color:var(--yellow);
+}
+.service img{
+  width:42px;
+}
+.service b{display:block}
+.service small{color:var(--muted)}
+
+/* ADDRESS */
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:14px;
+  margin-top:14px;
+}
+.row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:8px;
+}
+.row input{
+  flex:1;
+  background:#000;
+  border:none;
+  padding:12px;
+  border-radius:12px;
+  color:#fff;
+}
+
+/* INFO */
+.info{
+  display:flex;
+  gap:12px;
+  margin-top:14px;
+}
+.info div{
+  flex:1;
+  background:var(--card);
+  border-radius:18px;
+  padding:16px;
+}
+.info small{color:var(--muted)}
+.info b{font-size:22px}
+
+/* CTA */
+#callBtn{
+  margin-top:18px;
+  width:100%;
+  padding:18px;
+  font-size:18px;
+  font-weight:900;
+  border:none;
+  border-radius:26px;
+  background:var(--yellow);
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <h1>Sepet<span>Taxi</span></h1>
+  <button id="startBtn">Başla</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <div class="topbar">
+    <div class="icon">☰</div>
+    <div class="logo">Sepet<span>Taxi</span></div>
+    <div class="icon">🔔</div>
+  </div>
+
+  <div id="map"></div>
+
+  <div class="panel">
+
+    <div class="services">
+      <div class="service active">
+        <img src="https://cdn-icons-png.flaticon.com/512/744/744465.png">
+        <div>
+          <b>Taksi</b>
+          <small>Hızlı ve güvenilir</small>
+        </div>
+      </div>
+
+      <div class="service">
+        <img src="https://cdn-icons-png.flaticon.com/512/1046/1046857.png">
+        <div>
+          <b>Kurye</b>
+          <small>Hızlı teslimat</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        📍 <input placeholder="Nereden">
+      </div>
+      <div class="row">
+        🔎 <input placeholder="Gideceğiniz yeri seçin">
+      </div>
+    </div>
+
+    <div class="info">
+      <div>
+        <small>Mesafe</small>
+        <b>5.6 km</b>
+      </div>
+      <div>
+        <small>Ücret</small>
+        <b>132 TL</b>
+      </div>
+    </div>
+
+    <button id="callBtn">Taksi Çağır</button>
+
+  </div>
+</div>
+
+<script>
+const splash=document.getElementById("splash");
+const app=document.getElementById("app");
+document.getElementById("startBtn").onclick=()=>{
+  splash.style.display="none";
+  app.style.display="block";
+};
+</script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map=L.map("map",{zoomControl:false}).setView([41.015,28.979],13);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png").addTo(map);
+</script>
+
+</body>
+</html>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
