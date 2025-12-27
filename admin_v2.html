@@ -57,29 +57,26 @@ input{
 </div>
 
 <script>
-const BACKEND_URL =
-"https://script.google.com/macros/s/AKfycbz4seYfFW8fWiNne1T1BiE0-huu8iuYY8yAXY1a0b93LBaUwMSxu51Np5Toa4XlBjc-Fg/exec";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbz4seYfFW8fWiNne1T1BiE0-huu8iuYY8yAXY1a0b93LBaUwMSxu51Np5Toa4XlBjc-Fg/exec";
 
-/* === LOAD (JSONP) === */
 function loadJobs(){
-  const s=document.createElement("script");
+  const s = document.createElement("script");
   s.src = BACKEND_URL + "?action=list&callback=renderJobs&t=" + Date.now();
   document.body.appendChild(s);
 }
 
-/* === RENDER === */
 function renderJobs(list){
-  const wrap=document.getElementById("jobs");
-  wrap.innerHTML="";
+  const wrap = document.getElementById("jobs");
+  wrap.innerHTML = "";
 
   if(!list || !list.length){
-    wrap.innerHTML="<div class='card'>Aktif iş yok</div>";
+    wrap.innerHTML = "<div class='card'>Aktif iş yok</div>";
     return;
   }
 
   list.forEach(j=>{
-    const div=document.createElement("div");
-    div.className="card";
+    const div = document.createElement("div");
+    div.className = "card";
     div.innerHTML = `
       <div class="row">
         <b>${j.job_id}</b>
@@ -101,12 +98,10 @@ function renderJobs(list){
   });
 }
 
-/* JSONP global */
 window.renderJobs = renderJobs;
 
-/* === ACTIONS === */
 function assign(jobId){
-  const drv=document.getElementById("drv-"+jobId).value.trim();
+  const drv = document.getElementById("drv-"+jobId).value.trim();
   if(!drv) return alert("driver_id gir");
   update(jobId,"assigned",drv);
 }
@@ -124,12 +119,9 @@ function update(jobId,status,driverId){
       status:status,
       driver_id:driverId
     })
-  })
-  .then(()=>setTimeout(loadJobs,500))
-  .catch(()=>alert("Güncelleme hatası"));
+  }).then(()=>setTimeout(loadJobs,500));
 }
 
-/* init */
 loadJobs();
 </script>
 
