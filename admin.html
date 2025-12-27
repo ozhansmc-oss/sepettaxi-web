@@ -1,410 +1,126 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SepetTaxi Admin v1.1</title>
-  <style>
-    :root { --bg:#0b0f17; --card:#121a27; --muted:#8aa0bf; --text:#eaf1ff; --line:#223049; --good:#27c07d; --warn:#f0b429; --bad:#ff5b6e; }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
-    header{position:sticky;top:0;background:rgba(11,15,23,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line);z-index:10}
-    .wrap{max-width:1100px;margin:0 auto;padding:14px 16px}
-    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-    h1{font-size:18px;margin:0}
-    .pill{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:6px 10px;border-radius:999px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:16px}
-    .controls{display:flex;gap:10px;flex-wrap:wrap}
-    select,input,button{border-radius:12px;border:1px solid var(--line);background:#0f1623;color:var(--text);padding:10px 12px;font-size:14px;outline:none}
-    button{cursor:pointer}
-    button.primary{background:#1b2a44}
-    button.danger{background:#3a1320;border-color:#5a2435}
-    button:disabled{opacity:.55;cursor:not-allowed}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
-    th{color:var(--muted);font-weight:600}
-    .status{font-weight:700}
-    .status.pending{color:var(--warn)}
-    .status.assigned{color:#7db3ff}
-    .status.accepted{color:#a78bfa}
-    .status.on_the_way{color:#22c55e}
-    .status.arrived{color:#10b981}
-    .status.completed{color:var(--good)}
-    .status.cancelled{color:var(--bad)}
-    .muted{color:var(--muted)}
-    .split{display:grid;grid-template-columns:1fr 340px;gap:12px}
-    @media(max-width:920px){.split{grid-template-columns:1fr}}
-    .side{padding:12px}
-    .side h2{margin:0 0 10px 0;font-size:14px;color:var(--muted);font-weight:700}
-    .kv{display:grid;grid-template-columns:120px 1fr;gap:6px;font-size:13px}
-    .kv div:nth-child(odd){color:var(--muted)}
-    .modalBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
-    .modal{max-width:760px;width:100%;padding:14px}
-    .modalHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    .toast{position:fixed;bottom:14px;left:14px;right:14px;max-width:1100px;margin:0 auto;display:none;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(18,26,39,.95)}
-    .toast.ok{border-color:#1f6f4b}
-    .toast.bad{border-color:#7b2432}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SepetTaxi – Admin</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#0f0f0f;color:#fff}
+header{
+  height:56px;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:bold
+}
+header span{color:#f5c400}
+
+.container{padding:16px}
+.card{
+  background:#1b1b1b;border-radius:14px;padding:16px;margin-bottom:12px
+}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.badge{
+  padding:4px 8px;border-radius:8px;font-size:12px
+}
+.pending{background:#444}
+.assigned{background:#f5c400;color:#000}
+.completed{background:#2ecc71;color:#000}
+.cancelled{background:#e74c3c}
+
+input,select,button{
+  background:#000;border:1px solid #333;color:#fff;
+  padding:10px;border-radius:8px
+}
+button{
+  background:#f5c400;color:#000;border:none;cursor:pointer
+}
+.small{font-size:12px;opacity:.8}
+.actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+</style>
 </head>
+
 <body>
-<header>
-  <div class="wrap">
-    <div class="row" style="justify-content:space-between">
-      <div class="row">
-        <h1>SepetTaxi Admin</h1>
-        <span class="pill">v1.1 — Job lifecycle + manuel atama</span>
-      </div>
-      <div class="row">
-        <span class="pill" id="clock">—</span>
-      </div>
-    </div>
-    <div class="row" style="margin-top:10px;justify-content:space-between">
-      <div class="controls">
-        <select id="statusFilter">
-          <option value="">Tümü</option>
-          <option value="pending" selected>pending</option>
-          <option value="assigned">assigned</option>
-          <option value="accepted">accepted</option>
-          <option value="on_the_way">on_the_way</option>
-          <option value="arrived">arrived</option>
-          <option value="completed">completed</option>
-          <option value="cancelled">cancelled</option>
-        </select>
-        <input id="search" placeholder="job_id / telefon / isim ara" />
-        <button class="primary" id="refreshBtn">Yenile</button>
-        <button id="autoBtn">Auto: Açık</button>
-      </div>
-      <div class="controls">
-        <span class="pill">Toplam: <b id="count">0</b></span>
-        <span class="pill">Son güncelleme: <b id="last">—</b></span>
-      </div>
-    </div>
-  </div>
-</header>
 
-<main class="wrap" style="padding-top:14px">
-  <div class="split">
-    <div class="card">
-      <div style="padding:10px 12px;border-bottom:1px solid var(--line)" class="row">
-        <b>İş Listesi</b>
-        <span class="muted" id="hint">pending işler varsayılan gelir.</span>
-      </div>
-      <div style="overflow:auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Created</th>
-              <th>Job</th>
-              <th>Service</th>
-              <th>Müşteri</th>
-              <th>Telefon</th>
-              <th>Status</th>
-              <th>Driver</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-    </div>
+<header>Sepet<span>Taxi</span> Admin</header>
 
-    <div class="card side">
-      <h2>Hızlı İşlem</h2>
-      <div class="kv">
-        <div>Seçili Job</div><div class="mono" id="selJob">—</div>
-        <div>Status</div><div id="selStatus">—</div>
-        <div>Driver</div><div id="selDriver">—</div>
-      </div>
+<div class="container">
+  <button onclick="loadJobs()">🔄 Yenile</button>
 
-      <div style="height:10px"></div>
-
-      <div class="row" style="gap:8px">
-        <select id="driverSelect" style="flex:1">
-          <option value="">Sürücü seç…</option>
-        </select>
-        <button class="primary" id="assignBtn" disabled>Atama</button>
-      </div>
-
-      <div style="height:10px"></div>
-
-      <div class="row" style="gap:8px">
-        <select id="statusSelect" style="flex:1">
-          <option value="">Status seç…</option>
-        </select>
-        <button class="primary" id="statusBtn" disabled>Güncelle</button>
-      </div>
-
-      <div style="height:10px"></div>
-
-      <button class="danger" id="openBtn" disabled>Detay</button>
-
-      <div style="margin-top:12px" class="muted">
-        Not: Bu panel admin_token ile korunur. Üretimde token’ı değiştirin.
-      </div>
-    </div>
-  </div>
-</main>
-
-<!-- Modal -->
-<div class="modalBackdrop" id="backdrop">
-  <div class="card modal">
-    <div class="modalHeader">
-      <div>
-        <b>Job Detay</b>
-        <div class="muted mono" id="mJobId">—</div>
-      </div>
-      <button id="closeModal">Kapat</button>
-    </div>
-    <div class="kv" id="mKv"></div>
-    <div style="margin-top:10px">
-      <b class="muted">Raw JSON</b>
-      <pre class="card" style="padding:10px;border-radius:14px;overflow:auto" id="mJson"></pre>
-    </div>
-  </div>
+  <div id="jobs"></div>
 </div>
 
-<div class="toast" id="toast"></div>
-
 <script>
-/** === CONFIG: Burayı doldurun === */
-const WEBAPP_URL  = "https://script.google.com/macros/s/AKfycbzJ0blcuIXlOES8qswE5-xBwN5L4DAtDzkEgDPefH4t6uG6EOQT1-ir_zpeiRnAswAeSg/exec"; // .../exec
-const ADMIN_TOKEN = "sepettaxi_admin_2025";                 // Code.gs ile aynı
+/* === CONFIG === */
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbz4seYfFW8fWiNne1T1BiE0-huu8iuYY8yAXY1a0b93LBaUwMSxu51Np5Toa4XlBjc-Fg/exec";
 
-/** === State === */
-let jobs = [];
-let drivers = [];
-let selectedJob = null;
-let auto = true;
-let timer = null;
-
-const el = (id)=>document.getElementById(id);
-
-function toast(msg, ok=true){
-  const t = el("toast");
-  t.className = "toast " + (ok ? "ok":"bad");
-  t.textContent = msg;
-  t.style.display = "block";
-  setTimeout(()=> t.style.display="none", 2600);
+/* === LOAD JOBS === */
+function loadJobs(){
+  fetch(BACKEND_URL + "?action=list")
+    .then(r=>r.json())
+    .then(renderJobs)
+    .catch(()=>alert("Backend bağlantı hatası"));
 }
 
-function fmt(v){ return (v===null||v===undefined||v==="") ? "—" : String(v); }
-
-function statusClass(s){ return "status " + String(s||"").toLowerCase(); }
-
-function setClock(){
-  const d = new Date();
-  el("clock").textContent = d.toLocaleString("tr-TR");
-}
-setInterval(setClock, 1000); setClock();
-
-async function api(path, payload=null, method="POST"){
-  const url = `${WEBAPP_URL}?path=${encodeURIComponent(path)}`;
-  const body = Object.assign({}, payload||{}, { admin_token: ADMIN_TOKEN });
-  const res = await fetch(url, {
-    method,
-    headers: { "Content-Type":"application/json" },
-    body: method === "GET" ? null : JSON.stringify(body),
-  });
-  const data = await res.json().catch(()=>({ok:false,error:"Invalid JSON"}));
-  if (!data.ok) throw data;
-  return data;
-}
-
-async function loadDrivers(){
-  const d = await api("listDrivers", {});
-  drivers = d.drivers || [];
-  const sel = el("driverSelect");
-  sel.innerHTML = `<option value="">Sürücü seç…</option>` + drivers.map(dr=>{
-    const label = `${dr.driver_id} — ${dr.name || ""} (${dr.status || ""})`;
-    return `<option value="${dr.driver_id}">${label}</option>`;
-  }).join("");
-}
-
-async function loadJobs(){
-  const status = el("statusFilter").value;
-  const d = await api("listJobs", { status, limit: 300 });
-  jobs = d.jobs || [];
-
-  const q = el("search").value.trim().toLowerCase();
-  let filtered = jobs;
-  if (q){
-    filtered = jobs.filter(j=>{
-      const hay = [
-        j.job_id, j.user_name, j.user_phone,
-        j.pickup_address, j.dropoff_address
-      ].join(" ").toLowerCase();
-      return hay.includes(q);
-    });
+function renderJobs(list){
+  const wrap=document.getElementById("jobs");
+  wrap.innerHTML="";
+  if(!list.length){
+    wrap.innerHTML="<div class='card'>İş yok</div>";
+    return;
   }
 
-  renderTable(filtered);
-  el("count").textContent = String(filtered.length);
-  el("last").textContent = new Date().toLocaleTimeString("tr-TR");
-}
-
-function renderTable(list){
-  const tb = el("tbody");
-  tb.innerHTML = "";
   list.forEach(j=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="muted">${fmt(j.created_at)}</td>
-      <td class="mono">${fmt(j.job_id)}</td>
-      <td>${fmt(j.service_type)}</td>
-      <td>${fmt(j.user_name)}</td>
-      <td class="mono">${fmt(j.user_phone)}</td>
-      <td><span class="${statusClass(j.status)}">${fmt(j.status)}</span></td>
-      <td class="mono">${fmt(j.driver_id)}</td>
-      <td><button data-id="${j.job_id}">Seç</button></td>
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`
+      <div class="row">
+        <b>${j.job_id}</b>
+        <span class="badge ${j.status}">${j.status}</span>
+      </div>
+      <div class="small">${j.created_at}</div>
+      <div><b>${j.service_type.toUpperCase()}</b> – ${j.customer_first} ${j.customer_last}</div>
+      <div>${j.from_address} → ${j.to_address}</div>
+      <div>${j.distance_km} | <b>${j.price}</b></div>
+
+      <div class="actions">
+        <input placeholder="driver_id" id="drv-${j.job_id}">
+        <button onclick="assign('${j.job_id}')">Ata</button>
+        <button onclick="setStatus('${j.job_id}','completed')">Tamamlandı</button>
+        <button onclick="setStatus('${j.job_id}','cancelled')">İptal</button>
+      </div>
     `;
-    tr.querySelector("button").addEventListener("click", ()=> selectJob(j.job_id));
-    tb.appendChild(tr);
+    wrap.appendChild(div);
   });
 }
 
-function selectJob(jobId){
-  selectedJob = jobs.find(x=> String(x.job_id)===String(jobId)) || null;
-  el("selJob").textContent = selectedJob ? selectedJob.job_id : "—";
-  el("selStatus").textContent = selectedJob ? selectedJob.status : "—";
-  el("selDriver").textContent = selectedJob ? (selectedJob.driver_id || "—") : "—";
-
-  el("assignBtn").disabled = !selectedJob;
-  el("statusBtn").disabled = !selectedJob;
-  el("openBtn").disabled   = !selectedJob;
-
-  fillStatusSelect();
+function assign(jobId){
+  const driverId=document.getElementById("drv-"+jobId).value.trim();
+  if(!driverId) return alert("driver_id gir");
+  update(jobId,"assigned",driverId);
 }
 
-function fillStatusSelect(){
-  const ss = el("statusSelect");
-  const cur = selectedJob ? String(selectedJob.status||"").toLowerCase() : "";
-  const transitions = {
-    pending:    ["assigned", "cancelled"],
-    assigned:   ["accepted", "cancelled", "pending"],
-    accepted:   ["on_the_way", "cancelled"],
-    on_the_way: ["arrived", "cancelled"],
-    arrived:    ["completed", "cancelled"],
-    completed:  [],
-    cancelled:  []
-  };
-  const allowed = transitions[cur] || [];
-  ss.innerHTML = `<option value="">Status seç…</option>` + allowed.map(s=>`<option value="${s}">${s}</option>`).join("");
+function setStatus(jobId,status){
+  update(jobId,status,"");
 }
 
-async function assignDriver(){
-  if (!selectedJob) return;
-  const driverId = el("driverSelect").value;
-  if (!driverId) return toast("Sürücü seçin.", false);
-
-  // Optimistic UI
-  const old = { ...selectedJob };
-  selectedJob.driver_id = driverId;
-  selectedJob.status = "assigned";
-  loadJobs().catch(()=>{});
-  selectJob(selectedJob.job_id);
-
-  try{
-    await api("assignDriver", { job_id: selectedJob.job_id, driver_id: driverId });
-    toast("Atama yapıldı.");
-    await loadJobs();
-    selectJob(selectedJob.job_id);
-  }catch(err){
-    // rollback
-    Object.assign(selectedJob, old);
-    toast(err.message || err.error || "Atama hatası", false);
-    await loadJobs();
-    selectJob(selectedJob.job_id);
-  }
+function update(jobId,status,driverId){
+  fetch(BACKEND_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"update",
+      job_id:jobId,
+      status:status,
+      driver_id:driverId
+    })
+  })
+  .then(()=>loadJobs())
+  .catch(()=>alert("Güncelleme hatası"));
 }
 
-async function updateStatus(){
-  if (!selectedJob) return;
-  const next = el("statusSelect").value;
-  if (!next) return toast("Status seçin.", false);
-
-  // Optimistic UI
-  const old = { ...selectedJob };
-  selectedJob.status = next;
-  loadJobs().catch(()=>{});
-  selectJob(selectedJob.job_id);
-
-  try{
-    const r = await api("updateStatus", {
-      job_id: selectedJob.job_id,
-      next_status: next,
-      expected_status: String(old.status||"")
-    });
-    if (r.conflict){
-      toast("Çakışma: Server status farklı. Liste yenileniyor.", false);
-    } else {
-      toast("Status güncellendi.");
-    }
-    await loadJobs();
-    selectJob(selectedJob.job_id);
-  }catch(err){
-    Object.assign(selectedJob, old);
-    toast(err.message || err.error || "Status güncelleme hatası", false);
-    await loadJobs();
-    selectJob(selectedJob.job_id);
-  }
-}
-
-function openModal(){
-  if (!selectedJob) return;
-  el("mJobId").textContent = selectedJob.job_id;
-  const kv = el("mKv");
-  kv.innerHTML = "";
-
-  const keys = [
-    "created_at","service_type","user_name","user_phone",
-    "pickup_address","dropoff_address","distance_km","estimated_price",
-    "status","driver_id","assigned_at","updated_at","notes"
-  ];
-  keys.forEach(k=>{
-    kv.insertAdjacentHTML("beforeend", `<div>${k}</div><div>${fmt(selectedJob[k])}</div>`);
-  });
-
-  el("mJson").textContent = JSON.stringify(selectedJob, null, 2);
-  el("backdrop").style.display = "flex";
-}
-function closeModal(){ el("backdrop").style.display = "none"; }
-
-function startAuto(){
-  if (timer) clearInterval(timer);
-  if (!auto) return;
-  timer = setInterval(()=> loadJobs().catch(()=>{}), 6000);
-}
-function toggleAuto(){
-  auto = !auto;
-  el("autoBtn").textContent = "Auto: " + (auto ? "Açık" : "Kapalı");
-  startAuto();
-}
-
-async function boot(){
-  try{
-    await loadDrivers();
-    await loadJobs();
-    toast("Admin hazır.");
-    startAuto();
-  }catch(err){
-    console.error(err);
-    toast((err && (err.message||err.error)) ? (err.message||err.error) : "Bağlantı hatası", false);
-  }
-}
-
-/** UI events */
-el("refreshBtn").addEventListener("click", ()=> loadJobs().catch(()=>{}));
-el("statusFilter").addEventListener("change", ()=> loadJobs().catch(()=>{}));
-el("search").addEventListener("input", ()=> loadJobs().catch(()=>{}));
-el("assignBtn").addEventListener("click", ()=> assignDriver());
-el("statusBtn").addEventListener("click", ()=> updateStatus());
-el("openBtn").addEventListener("click", ()=> openModal());
-el("closeModal").addEventListener("click", ()=> closeModal());
-el("backdrop").addEventListener("click", (e)=>{ if(e.target.id==="backdrop") closeModal(); });
-el("autoBtn").addEventListener("click", ()=> toggleAuto());
-
-boot();
+/* init */
+loadJobs();
 </script>
+
 </body>
 </html>
