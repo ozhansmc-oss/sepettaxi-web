@@ -13,39 +13,127 @@
 body{margin:0;font-family:Arial;background:#000;color:#fff}
 
 /* LANDING */
-#landing{height:100vh;background:#000 url("assets/landing.png") center/cover no-repeat;display:flex;align-items:center;justify-content:center}
-.overlay{background:rgba(0,0,0,.6);width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
-h1{font-size:42px} h1 span{color:#f5c400}
-.primary-btn{background:#f5c400;color:#000;border:none;border-radius:28px;padding:16px 42px;font-size:18px;font-weight:bold;cursor:pointer}
+#landing{
+  height:100vh;
+  background:#000 url("assets/landing.png") center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.overlay{
+  background:rgba(0,0,0,.6);
+  width:100%;height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+h1{font-size:42px}
+h1 span{color:#f5c400}
+.primary-btn{
+  background:#f5c400;
+  color:#000;
+  border:none;
+  border-radius:28px;
+  padding:16px 42px;
+  font-size:18px;
+  font-weight:bold;
+  cursor:pointer;
+}
 
 /* APP */
 #app{display:none;background:#111;min-height:100vh}
-.app-header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold}
+.app-header{
+  height:56px;
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  font-weight:bold;
+}
 .app-header span{color:#f5c400}
-#map{height:38vh;margin:12px 16px;border-radius:16px}
+
+#map{
+  height:38vh;
+  margin:12px 16px;
+  border-radius:16px;
+}
 
 .container{padding:16px}
-.card{background:#1b1b1b;border-radius:14px;padding:16px;margin-bottom:12px}
-.input{width:100%;background:#000;border:1px solid #333;color:#fff;padding:14px;border-radius:10px}
+.card{
+  background:#1b1b1b;
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:12px;
+}
+.input{
+  width:100%;
+  background:#000;
+  border:1px solid #333;
+  color:#fff;
+  padding:14px;
+  border-radius:10px;
+}
 .row{display:flex;gap:12px}
 .row .card{flex:1;text-align:center}
 .big{font-size:22px;font-weight:bold}
-.call-btn{width:100%;background:#f5c400;color:#000;border:none;border-radius:28px;padding:18px;font-size:18px;font-weight:bold;cursor:pointer}
+.call-btn{
+  width:100%;
+  background:#f5c400;
+  color:#000;
+  border:none;
+  border-radius:28px;
+  padding:18px;
+  font-size:18px;
+  font-weight:bold;
+  cursor:pointer;
+}
 
 /* SERVICE CARDS */
-.service-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.service-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:12px;
+}
 .service-card{
-  background:#1b1b1b;border-radius:14px;padding:18px;
-  text-align:center;cursor:pointer;border:2px solid transparent
+  background:#1b1b1b;
+  border-radius:14px;
+  padding:18px;
+  text-align:center;
+  cursor:pointer;
+  border:2px solid transparent;
 }
 .service-card.active{border-color:#f5c400}
-.service-card h3{margin:6px 0 4px 0}
-.service-card small{opacity:.7}
 
-/* REGISTER MODAL */
-#registerModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:10}
-.modal{background:#111;border-radius:16px;padding:20px;width:90%;max-width:420px}
-.error{color:#ff5c5c;font-size:13px;display:none}
+/* REGISTER MODAL – FIXED, NO SCROLL */
+#registerModal{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  background:rgba(0,0,0,.75);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+#registerModal.active{display:flex}
+.modal{
+  background:#111;
+  border-radius:16px;
+  padding:20px;
+  width:92%;
+  max-width:420px;
+  max-height:90vh;
+  overflow-y:auto;
+}
+.error{
+  color:#ff5c5c;
+  font-size:13px;
+  display:none;
+}
 </style>
 </head>
 
@@ -66,15 +154,13 @@ h1{font-size:42px} h1 span{color:#f5c400}
 
   <div class="container">
 
-    <!-- FAZ-5: HİZMET KARTLARI (HER ZAMAN GÖRÜNÜR) -->
+    <!-- SERVICE CARDS -->
     <div class="service-grid">
       <div class="service-card" id="taxiCard" onclick="selectService('taxi')">
-        <h3>🚕 Taksi</h3>
-        <small>Yolcu taşıma</small>
+        🚕 <b>Taksi</b>
       </div>
       <div class="service-card" id="courierCard" onclick="selectService('courier')">
-        <h3>📦 Kurye</h3>
-        <small>Paket gönderimi</small>
+        📦 <b>Kurye</b>
       </div>
     </div>
 
@@ -119,7 +205,7 @@ h1{font-size:42px} h1 span{color:#f5c400}
   </div>
 </section>
 
-<!-- REGISTER -->
+<!-- REGISTER MODAL -->
 <div id="registerModal">
   <div class="modal">
     <div class="card">
@@ -143,19 +229,18 @@ h1{font-size:42px} h1 span{color:#f5c400}
 </div>
 
 <script>
-/* ===== STATE ===== */
 let map, fromMarker, toMarker;
 let user=null;
 let serviceType="";
 
-/* ===== START ===== */
+/* START */
 function startApp(){
   landing.style.display="none";
   app.style.display="block";
   initMap();
 }
 
-/* ===== MAP + LIVE LOCATION ===== */
+/* MAP + LIVE LOCATION */
 function initMap(){
   map=L.map("map").setView([41,29],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
@@ -165,7 +250,9 @@ function initMap(){
     if(!fromMarker){
       fromMarker=L.marker([latitude,longitude],{draggable:true}).addTo(map);
       map.setView([latitude,longitude],15);
-    } else fromMarker.setLatLng([latitude,longitude]);
+    } else {
+      fromMarker.setLatLng([latitude,longitude]);
+    }
     reverse(latitude,longitude,fromInput);
     calculate();
   });
@@ -178,23 +265,31 @@ function initMap(){
   });
 }
 
-/* ===== FAZ-5: SERVICE CARDS ===== */
+/* SERVICE */
 function selectService(type){
   if(!user){
-    serviceType=""; // kilit
-    registerModal.style.display="flex";
+    openRegister();
     return;
   }
   serviceType=type;
-  taxiCard.classList.toggle("active", type==="taxi");
-  courierCard.classList.toggle("active", type==="courier");
-  courierFields.style.display = type==="courier" ? "block":"none";
+  taxiCard.classList.toggle("active",type==="taxi");
+  courierCard.classList.toggle("active",type==="courier");
+  courierFields.style.display=type==="courier"?"block":"none";
   fromInput.removeAttribute("readonly");
   toInput.removeAttribute("readonly");
   calculate();
 }
 
-/* ===== REGISTER ===== */
+/* REGISTER MODAL */
+function openRegister(){
+  document.body.style.overflow="hidden";
+  registerModal.classList.add("active");
+}
+function closeRegister(){
+  document.body.style.overflow="";
+  registerModal.classList.remove("active");
+}
+
 function register(){
   const f=firstName.value.trim();
   const l=lastName.value.trim();
@@ -204,10 +299,10 @@ function register(){
   }
   user={first_name:f,last_name:l,phone:p};
   regErr.style.display="none";
-  registerModal.style.display="none";
+  closeRegister();
 }
 
-/* ===== CALC ===== */
+/* CALC */
 function calculate(){
   if(!user||!serviceType||!fromMarker||!toMarker) return;
   const a=fromMarker.getLatLng(), b=toMarker.getLatLng();
@@ -219,24 +314,28 @@ function calculate(){
   price.textContent=Math.round(priceVal)+" TL";
 }
 
-/* ===== FAZ-6 READY: JOB CREATE (frontend kilit) ===== */
+/* JOB (frontend test) */
 function createJob(){
-  if(!user) return alert("Kayıt gerekli");
-  if(!serviceType) return alert("Hizmet seçin");
-  if(!fromMarker||!toMarker) return alert("Adresleri seçin");
-  alert("Job oluşturuldu (FAZ-6 admin/driver paneline bağlanacak)");
+  if(!user||!serviceType||!fromMarker||!toMarker){
+    alert("Eksik bilgi var"); return;
+  }
+  alert("Job oluşturuldu (backend bir sonraki faz)");
 }
 
-/* ===== HELPERS ===== */
+/* HELPERS */
 function haversine(a,b,c,d){
   const R=6371;
-  const dLat=(c-a)*Math.PI/180, dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+
+    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
+    Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 function reverse(lat,lng,input){
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json()).then(d=>{if(d?.display_name)input.value=d.display_name});
+    .then(r=>r.json())
+    .then(d=>{if(d?.display_name)input.value=d.display_name});
 }
 </script>
 
