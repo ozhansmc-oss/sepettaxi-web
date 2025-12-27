@@ -5,193 +5,272 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SepetTaxi</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 :root{
-  --yellow:#f5c400;
-  --dark:#0b0b0b;
-  --card:#1a1a1a;
+  --bg:#0b0b0b;
+  --card:#151515;
+  --yellow:#FFD200;
   --text:#fff;
-  --muted:#aaa;
+  --muted:#9a9a9a;
+  --radius:16px;
 }
+
 *{box-sizing:border-box}
 body{
   margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
-  background:var(--dark);
+  font-family:Inter,system-ui,Arial;
+  background:var(--bg);
   color:var(--text);
 }
 
-/* HERO */
-.hero{
-  height:70vh;
-  background:
-    linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,.3)),
-    url("assets/hero.jpg");
-  background-size:cover;
-  background-position:center;
+/* ---------- LANDING ---------- */
+#landing{
+  position:fixed;
+  inset:0;
+  background:url("assets/landing.png") center/cover no-repeat;
   display:flex;
-  flex-direction:column;
-  justify-content:center;
   align-items:center;
+  justify-content:center;
+  z-index:10;
+}
+#landing::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.55);
+}
+#landing .box{
+  position:relative;
   text-align:center;
 }
-.hero h1{
-  font-size:42px;
-  margin:0;
+#landing h1{
+  font-size:40px;
+  margin-bottom:20px;
 }
-.hero h1 span{color:var(--yellow)}
-.hero button{
-  margin-top:32px;
-  padding:18px 48px;
-  font-size:20px;
-  font-weight:900;
-  border:none;
-  border-radius:30px;
+#landing h1 span{color:var(--yellow)}
+#startBtn{
   background:var(--yellow);
+  border:none;
+  padding:18px 40px;
+  border-radius:999px;
+  font-size:18px;
+  font-weight:700;
+  cursor:pointer;
 }
 
-/* MAP */
-#map{
-  height:35vh;
-}
+/* ---------- APP ---------- */
+#app{display:none}
 
-/* PANEL */
-.panel{
-  padding:16px;
-}
-
-/* SERVICES */
-.services{
+header{
+  height:56px;
   display:flex;
-  gap:12px;
-  margin-top:-28px;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 16px;
+  background:#111;
 }
-.service{
-  flex:1;
-  background:var(--card);
-  padding:16px;
-  border-radius:18px;
-  border:1px solid transparent;
-}
-.service.active{
-  border-color:var(--yellow);
-}
-.service b{display:block}
-.service small{color:var(--muted)}
+header h2 span{color:var(--yellow)}
 
-/* CARD */
+#map{height:42vh}
+
+.section{
+  padding:16px;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 .card{
   background:var(--card);
-  border-radius:18px;
+  border-radius:var(--radius);
   padding:14px;
-  margin-top:14px;
+  text-align:center;
+  border:2px solid transparent;
+  cursor:pointer;
 }
-.row{
-  display:flex;
-  gap:10px;
-  margin-top:8px;
-}
-.row input{
-  flex:1;
-  background:#000;
-  border:none;
-  padding:14px;
-  border-radius:14px;
-  color:#fff;
-}
+.card.active{border-color:var(--yellow)}
+.card small{color:var(--muted)}
 
-/* INFO */
-.info{
-  display:flex;
-  gap:12px;
-  margin-top:14px;
-}
-.info div{
-  flex:1;
+.field{
   background:var(--card);
-  border-radius:18px;
-  padding:16px;
+  border-radius:var(--radius);
+  padding:14px;
+  margin-top:12px;
 }
-.info b{
-  font-size:22px;
+.field label{
+  display:block;
+  font-size:12px;
+  color:var(--muted);
+}
+.field input{
+  width:100%;
+  background:none;
+  border:none;
+  outline:none;
+  color:#fff;
+  font-size:15px;
+  margin-top:6px;
 }
 
-/* CTA */
-.cta{
-  margin-top:18px;
+.stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:12px;
+}
+.stat{
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:14px;
+}
+.stat b{font-size:20px}
+
+.action{
+  margin:16px;
+}
+.action button{
   width:100%;
-  padding:20px;
-  font-size:18px;
-  font-weight:900;
-  border:none;
-  border-radius:28px;
   background:var(--yellow);
+  border:none;
+  padding:18px;
+  font-size:18px;
+  font-weight:700;
+  border-radius:999px;
+  cursor:pointer;
+}
+
+/* ---------- MODAL ---------- */
+#modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+.modal-box{
+  background:#fff;
+  color:#000;
+  width:90%;
+  max-width:380px;
+  border-radius:20px;
+  padding:20px;
+}
+.modal-box h3{margin-top:0}
+.modal-box input{
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border-radius:12px;
+  border:1px solid #ccc;
+}
+.modal-box label{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+  font-size:14px;
+}
+.modal-box button{
+  width:100%;
+  margin-top:14px;
+  padding:16px;
+  border:none;
+  border-radius:999px;
+  background:var(--yellow);
+  font-weight:700;
 }
 </style>
 </head>
-
 <body>
 
-<!-- HERO -->
-<section class="hero">
-  <h1>Sepet<span>Taxi</span></h1>
-  <button onclick="document.getElementById('map').scrollIntoView({behavior:'smooth'})">
-    Başla
-  </button>
-</section>
+<!-- LANDING -->
+<div id="landing">
+  <div class="box">
+    <h1>Sepet<span>Taxi</span></h1>
+    <button id="startBtn">Başla</button>
+  </div>
+</div>
 
-<!-- MAP -->
-<div id="map"></div>
+<!-- APP -->
+<div id="app">
+  <header>
+    <h2>Sepet<span>Taxi</span></h2>
+    🔔
+  </header>
 
-<!-- CONTENT -->
-<div class="panel">
+  <div id="map"></div>
 
-  <div class="services">
-    <div class="service active">
-      <b>Taksi</b>
-      <small>Hızlı ve güvenilir ulaşım</small>
+  <div class="section">
+    <div class="cards">
+      <div class="card active" id="taxiCard">🚕<br><b>Taksi</b><br><small>Hızlı ve güvenli</small></div>
+      <div class="card" id="courierCard">📦<br><b>Kurye</b><br><small>Hızlı teslimat</small></div>
     </div>
-    <div class="service">
-      <b>Kurye</b>
-      <small>Hızlı teslimat</small>
+
+    <div class="field">
+      <label>Nereden</label>
+      <input value="İhlamur Sk. No:45, Beşiktaş / İstanbul" readonly>
+    </div>
+
+    <div class="field">
+      <label>Nereye</label>
+      <input value="Astoria AVM, Şişli / İstanbul" readonly>
+    </div>
+
+    <div class="stats">
+      <div class="stat">Mesafe<br><b>5.6 km</b></div>
+      <div class="stat">Ücret<br><b>132 TL</b></div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="row">
-      <input placeholder="Nereden">
-    </div>
-    <div class="row">
-      <input placeholder="Gideceğiniz yeri seçin">
-    </div>
+  <div class="action">
+    <button id="callBtn">Taksi Çağır</button>
   </div>
+</div>
 
-  <div class="info">
-    <div>
-      <small>Mesafe</small>
-      <b>5.6 km</b>
-    </div>
-    <div>
-      <small>Ücret</small>
-      <b>132 TL</b>
-    </div>
+<!-- MODAL -->
+<div id="modal">
+  <div class="modal-box">
+    <h3>Kayıt & Talep</h3>
+    <input placeholder="Ad Soyad">
+    <input placeholder="Telefon (05xxxxxxxxx)">
+    <label><input type="checkbox"> KVKK Aydınlatma</label>
+    <label><input type="checkbox"> Hizmet Sözleşmesi</label>
+    <button id="modalOk">Talebi Gönder</button>
   </div>
-
-  <button class="cta">Taksi Çağır</button>
-
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const map = L.map("map",{zoomControl:false})
-  .setView([41.015,28.979],13);
+const landing = document.getElementById("landing");
+const app = document.getElementById("app");
+const modal = document.getElementById("modal");
 
-L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-).addTo(map);
+document.getElementById("startBtn").onclick = ()=>{
+  landing.style.display="none";
+  app.style.display="block";
+  initMap();
+};
+
+document.getElementById("callBtn").onclick = ()=>{
+  modal.style.display="flex";
+};
+document.getElementById("modalOk").onclick = ()=>{
+  modal.style.display="none";
+  alert("Talep alındı (frontend demo)");
+};
+
+let map;
+function initMap(){
+  if(map) return;
+  map = L.map('map').setView([41.042,29.009],13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  L.marker([41.042,29.009]).addTo(map);
+  L.marker([41.047,29.02]).addTo(map);
+}
 </script>
-
 </body>
 </html>
