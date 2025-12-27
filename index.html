@@ -232,6 +232,8 @@ h1 span{color:#f5c400}
 let map, fromMarker, toMarker;
 let user=null;
 let serviceType="";
+  
+  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbz4seYfFW8fWiNne1T1BiE0-huu8iuYY8yAXY1a0b93LBaUwMSxu51Np5Toa4XlBjc-Fg/exec";
 
 /* START */
 function startApp(){
@@ -314,13 +316,40 @@ function calculate(){
   price.textContent=Math.round(priceVal)+" TL";
 }
 
-/* JOB (frontend test) */
 function createJob(){
-  if(!user||!serviceType||!fromMarker||!toMarker){
-    alert("Eksik bilgi var"); return;
+  if(!user || !serviceType || !fromMarker || !toMarker){
+    alert("Eksik bilgi var");
+    return;
   }
-  alert("Job oluşturuldu (backend bir sonraki faz)");
+
+  const payload = {
+    service_type: serviceType,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    phone: user.phone,
+    from: fromInput.value,
+    to: toInput.value,
+    distance: distance.textContent,
+    price: price.textContent,
+    package_type: packageType?.value || "",
+    receiver_name: receiverName?.value || "",
+    receiver_phone: receiverPhone?.value || ""
+  };
+
+  fetch(BACKEND_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(res => {
+    alert("Talep alındı ✔\nJob ID: " + res.job_id);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Backend bağlantı hatası");
+  });
 }
+
 
 /* HELPERS */
 function haversine(a,b,c,d){
