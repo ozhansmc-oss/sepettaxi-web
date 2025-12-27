@@ -164,14 +164,23 @@ document.getElementById("startBtn").onclick = () => {
   setTimeout(initMap, 150);
 };
 
-/* ===== MAP + FAZ 2 ===== */
+/* ===== FAZ 2 + FAZ 3 ===== */
 let map;
 let fromMarker = null;
 let toMarker = null;
-let selecting = "from"; // ilk tık nereden
+let selecting = "from";
 
 const fromInput = document.getElementById("fromInput");
 const toInput   = document.getElementById("toInput");
+const distanceEl = document.getElementById("distance");
+const priceEl    = document.getElementById("price");
+
+/* ===== FİYAT MODELİ (DEĞİŞTİRİLEBİLİR) ===== */
+const PRICING = {
+  baseFare: 60,     // açılış
+  perKm: 22,        // km başı
+  minFare: 120      // minimum
+};
 
 function initMap() {
   if (map) return;
@@ -183,10 +192,8 @@ function initMap() {
   }).addTo(map);
 
   map.invalidateSize();
-
   map.on("click", onMapClick);
 
-  // kullanıcı konumu
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       map.setView([pos.coords.latitude, pos.coords.longitude], 15);
@@ -204,6 +211,7 @@ function onMapClick(e) {
     toMarker = createMarker(e.latlng, "Nereye", toInput);
     selecting = "from";
   }
+  calculate();
 }
 
 function createMarker(latlng, label, inputEl) {
@@ -214,6 +222,7 @@ function createMarker(latlng, label, inputEl) {
 
   marker.on("dragend", () => {
     reverseGeocode(marker.getLatLng(), inputEl);
+    calculate();
   });
 
   return marker;
@@ -222,12 +231,46 @@ function createMarker(latlng, label, inputEl) {
 function reverseGeocode(latlng, inputEl) {
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
     .then(r => r.json())
-    .then(d => {
-      if (d && d.display_name) {
-        inputEl.value = d.display_name;
-      }
-    })
-    .catch(() => {});
+    .then(d => { if (d && d.display_name) inputEl.value = d.display_name; })
+    .catch(()=>{});
+}
+
+/* ===== FAZ 3: MESAFE + ÜCRET ===== */
+function calculate() {
+  if (!fromMarker || !toMarker) {
+    distanceEl.textContent = "— km";
+    priceEl.textContent = "— TL";
+    return;
+  }
+
+  const a = fromMarker.getLatLng();
+  const b = toMarker.getLatLng();
+
+  const km = haversine(a.lat, a.lng, b.lat, b.lng);
+  const roundedKm = Math.max(0.1, km);
+
+  const price = Math.max(
+    PRICING.minFare,
+    PRICING.baseFare + (roundedKm * PRICING.perKm)
+  );
+
+  distanceEl.textContent = roundedKm.toFixed(2) + " km";
+  priceEl.textContent = Math.round(price) + " TL";
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI/180) *
+    Math.cos(lat2 * Math.PI/180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 }
 </script>
 
