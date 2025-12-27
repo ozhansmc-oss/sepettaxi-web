@@ -91,6 +91,16 @@ function loadJobs(){
 window.renderJobs = function(list){
   const wrap=document.getElementById("jobs");
   wrap.innerHTML="";
+  <script>
+function renderJobs(list){
+  const wrap = document.getElementById("jobs");
+  wrap.innerHTML = "";
+  ...
+}
+
+window.renderJobs = renderJobs; // <-- BU SATIR KRİTİK
+</script>
+
 
   if(!list || !list.length){
     wrap.innerHTML="<div class='card'>Aktif iş yok</div>";
