@@ -1,136 +1,96 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SepetTaxi</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-* { box-sizing:border-box; }
-body {
-  margin:0;
-  font-family:Arial, Helvetica, sans-serif;
-  background:#000;
-  color:#fff;
-}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
 
-/* ===== LANDING ===== */
-#landing {
+/* LANDING */
+#landing{
   height:100vh;
-  background:url("assets/landing.png") center / cover no-repeat;
+  background:#000 url("assets/landing.png") center/cover no-repeat;
   display:flex;
   align-items:center;
   justify-content:center;
 }
-#landing .overlay {
-  background:rgba(0,0,0,0.55);
-  width:100%;
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
+.overlay{
+  background:rgba(0,0,0,.6);
+  width:100%;height:100%;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
 }
-#landing h1 { font-size:42px; margin-bottom:24px; }
-#landing h1 span { color:#f5c400; }
-.primary-btn {
-  background:#f5c400;
-  color:#000;
-  border:none;
-  border-radius:28px;
-  padding:16px 42px;
-  font-size:18px;
-  font-weight:bold;
-  cursor:pointer;
+h1{font-size:42px}
+h1 span{color:#f5c400}
+.primary-btn{
+  background:#f5c400;color:#000;
+  border:none;border-radius:28px;
+  padding:16px 42px;font-size:18px;
+  font-weight:bold;cursor:pointer;
 }
 
-/* ===== APP ===== */
-#app { display:none; min-height:100vh; background:#111; }
-
-.app-header {
-  height:56px;
-  background:#000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-  font-weight:bold;
+/* APP */
+#app{display:none;background:#111;min-height:100vh}
+.app-header{
+  height:56px;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:bold;
 }
-.app-header span { color:#f5c400; }
+.app-header span{color:#f5c400}
 
-.map-wrap { padding:12px 16px 0 16px; }
-#map {
-  width:100%;
-  height:42vh;
-  min-height:260px;
-  border-radius:18px;
+#map{
+  height:40vh;
+  margin:12px 16px;
+  border-radius:16px;
 }
 
-.container { padding:16px; }
-
-.card {
+.container{padding:16px}
+.card{
   background:#1b1b1b;
   border-radius:14px;
   padding:16px;
   margin-bottom:12px;
 }
-.label { font-size:14px; opacity:.7; margin-bottom:6px; }
-.input {
+.input,select{
   width:100%;
   background:#000;
   border:1px solid #333;
   color:#fff;
   padding:14px;
   border-radius:10px;
-  font-size:15px;
 }
-.row { display:flex; gap:12px; }
-.row .card { flex:1; text-align:center; }
-.big { font-size:22px; font-weight:bold; }
-
-.call-btn {
-  margin-top:16px;
+.row{display:flex;gap:12px}
+.row .card{flex:1;text-align:center}
+.big{font-size:22px;font-weight:bold}
+.call-btn{
   width:100%;
-  background:#f5c400;
-  color:#000;
-  border:none;
-  border-radius:28px;
-  padding:18px;
-  font-size:18px;
-  font-weight:bold;
-  cursor:pointer;
+  background:#f5c400;color:#000;
+  border:none;border-radius:28px;
+  padding:18px;font-size:18px;font-weight:bold;
 }
 
-/* ===== MODAL (KAYIT) ===== */
-#registerModal {
-  display:none;
-  position:fixed;
-  inset:0;
+/* REGISTER MODAL */
+#registerModal{
+  display:none;position:fixed;inset:0;
   background:rgba(0,0,0,.7);
-  z-index:999;
-  align-items:center;
-  justify-content:center;
+  align-items:center;justify-content:center;
+  z-index:10;
 }
-#registerModal .modal {
-  width:92%;
-  max-width:420px;
+.modal{
   background:#111;
   border-radius:16px;
   padding:20px;
+  width:90%;max-width:420px;
 }
-.checkbox {
-  display:flex;
-  gap:8px;
-  font-size:13px;
-  opacity:.9;
-}
-.error {
+.error{
   color:#ff5c5c;
   font-size:13px;
-  margin-top:8px;
   display:none;
 }
 </style>
@@ -138,121 +98,169 @@ body {
 
 <body>
 
+<!-- LANDING -->
 <section id="landing">
   <div class="overlay">
     <h1>Sepet<span>Taxi</span></h1>
-    <button class="primary-btn" id="startBtn">Başla</button>
+    <button class="primary-btn" onclick="startApp()">Başla</button>
   </div>
 </section>
 
+<!-- APP -->
 <section id="app">
   <div class="app-header">Sepet<span>Taxi</span></div>
-
-  <div class="map-wrap">
-    <div id="map"></div>
-  </div>
+  <div id="map"></div>
 
   <div class="container">
+
+    <!-- SERVICE -->
     <div class="card">
-      <div class="label">Nereden</div>
-      <input id="fromInput" class="input" placeholder="Haritadan seçin">
+      <div>Hizmet Türü</div>
+      <select id="serviceType">
+        <option value="">Seçiniz</option>
+        <option value="taxi">🚕 Taksi</option>
+        <option value="courier">📦 Kurye</option>
+      </select>
     </div>
 
     <div class="card">
-      <div class="label">Nereye</div>
-      <input id="toInput" class="input" placeholder="Haritadan seçin">
+      <div>Nereden</div>
+      <input id="fromInput" class="input" readonly>
+    </div>
+
+    <div class="card">
+      <div>Nereye</div>
+      <input id="toInput" class="input" readonly>
+    </div>
+
+    <!-- COURIER EXTRA -->
+    <div id="courierFields" style="display:none">
+      <div class="card">
+        <div>Paket Türü</div>
+        <input id="packageType" class="input">
+      </div>
+      <div class="card">
+        <div>Alıcı Adı</div>
+        <input id="receiverName" class="input">
+      </div>
+      <div class="card">
+        <div>Alıcı Telefon</div>
+        <input id="receiverPhone" class="input">
+      </div>
     </div>
 
     <div class="row">
       <div class="card">
-        <div class="label">Mesafe</div>
-        <div class="big" id="distance">— km</div>
+        <div>Mesafe</div>
+        <div id="distance" class="big">—</div>
       </div>
       <div class="card">
-        <div class="label">Ücret</div>
-        <div class="big" id="price">— TL</div>
+        <div>Ücret</div>
+        <div id="price" class="big">—</div>
       </div>
     </div>
 
-    <button class="call-btn" id="callBtn">Taksi Çağır</button>
+    <button class="call-btn">Çağır</button>
   </div>
 </section>
 
-<!-- ===== REGISTER MODAL ===== -->
+<!-- REGISTER -->
 <div id="registerModal">
   <div class="modal">
     <div class="card">
-      <div class="label">Telefon Numaranız</div>
-      <input id="phoneInput" class="input" placeholder="05XXXXXXXXX">
+      <div>Ad</div>
+      <input id="firstName" class="input">
     </div>
-
-    <div class="checkbox">
-      <input type="checkbox" id="kvkk">
-      <label for="kvkk">KVKK ve Hizmet Sözleşmesini kabul ediyorum</label>
+    <div class="card">
+      <div>Soyad</div>
+      <input id="lastName" class="input">
     </div>
-
-    <div class="error" id="regError">Lütfen bilgileri doğru girin.</div>
-
-    <button class="call-btn" id="registerBtn">Kaydı Tamamla</button>
+    <div class="card">
+      <div>Telefon</div>
+      <input id="phone" class="input" placeholder="05XXXXXXXXX">
+    </div>
+    <label>
+      <input type="checkbox" id="kvkk"> KVKK ve sözleşmeyi kabul ediyorum
+    </label>
+    <div class="error" id="regErr">Bilgileri doğru girin</div>
+    <button class="call-btn" onclick="register()">Kaydı Tamamla</button>
   </div>
 </div>
 
 <script>
-/* ===== LANDING ===== */
-startBtn.onclick = () => {
+let map, fromMarker, toMarker;
+let user = null;
+
+/* START */
+function startApp(){
   landing.style.display="none";
   app.style.display="block";
-  setTimeout(initMap,150);
+  initMap();
+}
+
+/* MAP + LIVE LOCATION */
+function initMap(){
+  map = L.map("map").setView([41,29],13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
+
+  navigator.geolocation.watchPosition(pos=>{
+    const {latitude,longitude}=pos.coords;
+    if(!fromMarker){
+      fromMarker=L.marker([latitude,longitude],{draggable:true}).addTo(map);
+      map.setView([latitude,longitude],15);
+    } else {
+      fromMarker.setLatLng([latitude,longitude]);
+    }
+    reverse(latitude,longitude,fromInput);
+    calculate();
+  });
+
+  map.on("click",e=>{
+    if(!toMarker){
+      toMarker=L.marker(e.latlng,{draggable:true}).addTo(map);
+    } else {
+      toMarker.setLatLng(e.latlng);
+    }
+    reverse(e.latlng.lat,e.latlng.lng,toInput);
+    calculate();
+  });
+}
+
+/* SERVICE SELECTION */
+serviceType.onchange = ()=>{
+  if(!user){
+    serviceType.value="";
+    registerModal.style.display="flex";
+    return;
+  }
+  courierFields.style.display = serviceType.value==="courier" ? "block":"none";
+  fromInput.removeAttribute("readonly");
+  toInput.removeAttribute("readonly");
 };
 
-/* ===== MAP + FAZ 1-2-3 ===== */
-let map, fromMarker, toMarker, selecting="from";
-const fromInput = document.getElementById("fromInput");
-const toInput   = document.getElementById("toInput");
-const distanceEl = document.getElementById("distance");
-const priceEl = document.getElementById("price");
-
-const PRICING = { base:60, perKm:22, min:120 };
-
-function initMap(){
-  if(map) return;
-  map = L.map("map").setView([41.0082,28.9784],12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
-  map.on("click",onMapClick);
-}
-
-function onMapClick(e){
-  if(selecting==="from"){
-    if(fromMarker) map.removeLayer(fromMarker);
-    fromMarker = createMarker(e.latlng, fromInput);
-    selecting="to";
-  } else {
-    if(toMarker) map.removeLayer(toMarker);
-    toMarker = createMarker(e.latlng, toInput);
-    selecting="from";
+/* REGISTER */
+function register(){
+  const f=firstName.value.trim();
+  const l=lastName.value.trim();
+  const p=phone.value.trim();
+  if(f.length<2||l.length<2||!/^05\d{9}$/.test(p)||!kvkk.checked){
+    regErr.style.display="block";return;
   }
-  calculate();
+  user={first_name:f,last_name:l,phone:p};
+  regErr.style.display="none";
+  registerModal.style.display="none";
 }
 
-function createMarker(latlng,input){
-  const m=L.marker(latlng,{draggable:true}).addTo(map);
-  reverseGeocode(latlng,input);
-  m.on("dragend",()=>{reverseGeocode(m.getLatLng(),input);calculate();});
-  return m;
-}
-
-function reverseGeocode(latlng,input){
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
-    .then(r=>r.json()).then(d=>{if(d?.display_name)input.value=d.display_name;});
-}
-
+/* CALC */
 function calculate(){
-  if(!fromMarker||!toMarker) return;
+  if(!user||!serviceType.value||!fromMarker||!toMarker) return;
   const a=fromMarker.getLatLng(), b=toMarker.getLatLng();
   const km=haversine(a.lat,a.lng,b.lat,b.lng);
-  const price=Math.max(PRICING.min,PRICING.base+km*PRICING.perKm);
-  distanceEl.textContent=km.toFixed(2)+" km";
-  priceEl.textContent=Math.round(price)+" TL";
+  distance.textContent=km.toFixed(2)+" km";
+  const priceVal = serviceType.value==="courier"
+    ? Math.max(80,40+km*15)
+    : Math.max(120,60+km*22);
+  price.textContent=Math.round(priceVal)+" TL";
 }
 
 function haversine(a,b,c,d){
@@ -260,32 +268,16 @@ function haversine(a,b,c,d){
   const dLat=(c-a)*Math.PI/180;
   const dLon=(d-b)*Math.PI/180;
   const x=Math.sin(dLat/2)**2+
-    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
+    Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-/* ===== FAZ 4: ZORUNLU KAYIT ===== */
-let user=null;
-
-callBtn.onclick=()=>{
-  if(!fromMarker||!toMarker) return alert("Lütfen adresleri seçin");
-  if(!user) return registerModal.style.display="flex";
-  alert("Çağrı oluşturuldu (FAZ-5 backend bağlanacak)");
-};
-
-registerBtn.onclick=()=>{
-  const phone=phoneInput.value.trim();
-  const kvkkOk=kvkk.checked;
-
-  if(!/^05\d{9}$/.test(phone)||!kvkkOk){
-    regError.style.display="block";
-    return;
-  }
-  regError.style.display="none";
-  user={phone};
-  registerModal.style.display="none";
-  alert("Kayıt tamamlandı, devam edebilirsiniz");
-};
+function reverse(lat,lng,input){
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    .then(r=>r.json())
+    .then(d=>{if(d?.display_name)input.value=d.display_name});
+}
 </script>
 
 </body>
