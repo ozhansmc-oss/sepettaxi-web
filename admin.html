@@ -7,105 +7,41 @@
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:#0f0f0f;
-  color:#fff;
-}
-header{
-  height:56px;
-  background:#000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-  font-weight:bold;
-}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#0f0f0f;color:#fff}
+header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold}
 header span{color:#f5c400}
-
 .container{padding:16px;max-width:1200px;margin:auto}
 
-.kpis{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-  gap:12px;
-  margin-bottom:16px;
-}
-.kpi{
-  background:#1b1b1b;
-  border-radius:12px;
-  padding:14px;
-  text-align:center;
-}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tabs button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;background:#222;color:#fff}
+.tabs button.active{background:#f5c400;color:#000;font-weight:bold}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#1b1b1b;border-radius:12px;padding:14px;text-align:center}
 .kpi h3{margin:0;font-size:14px;color:#aaa}
 .kpi div{margin-top:6px;font-size:22px;font-weight:bold}
 
-.filters{
-  display:flex;
-  gap:8px;
-  margin-bottom:12px;
-  flex-wrap:wrap;
-}
-.filters button{
-  padding:10px 14px;
-  border-radius:10px;
-  border:none;
-  cursor:pointer;
-  background:#222;
-  color:#fff;
-}
-.filters button.active{
-  background:#f5c400;
-  color:#000;
-  font-weight:bold;
-}
+.filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.filters button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;background:#222;color:#fff}
+.filters button.active{background:#f5c400;color:#000;font-weight:bold}
 
-.card{
-  background:#1b1b1b;
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:12px;
-}
-.row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-}
+.card{background:#1b1b1b;border-radius:14px;padding:14px;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px}
 .col{flex:1;min-width:160px}
 
 .label{font-size:12px;color:#aaa}
 .value{margin-top:2px;font-size:14px}
 
-input,select,button.action{
-  width:100%;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  margin-top:6px;
-}
-input,select{
-  background:#0f0f0f;
-  color:#fff;
-  border:1px solid #333;
-}
-button.action{
-  background:#f5c400;
-  color:#000;
-  font-weight:bold;
-  cursor:pointer;
-}
-button.secondary{
-  background:#333;
-  color:#fff;
-}
+input,select,button.action{width:100%;padding:10px;border-radius:10px;border:none;margin-top:6px}
+input,select{background:#0f0f0f;color:#fff;border:1px solid #333}
+button.action{background:#f5c400;color:#000;font-weight:bold;cursor:pointer}
+button.secondary{background:#333;color:#fff}
 
-.footer-note{
-  text-align:center;
-  color:#777;
-  font-size:12px;
-  margin:20px 0 10px;
-}
+.timeline{display:flex;gap:6px;margin-top:8px;font-size:12px}
+.timeline span{padding:4px 8px;border-radius:6px;background:#222;color:#aaa}
+.timeline span.done{background:#2ecc71;color:#000}
+
+.footer-note{text-align:center;color:#777;font-size:12px;margin:20px 0 10px}
 </style>
 </head>
 
@@ -114,158 +50,154 @@ button.secondary{
 
 <div class="container">
 
-  <!-- KPI -->
-  <div class="kpis">
-    <div class="kpi"><h3>Toplam</h3><div id="kpiTotal">0</div></div>
-    <div class="kpi"><h3>Pending</h3><div id="kpiPending">0</div></div>
-    <div class="kpi"><h3>Active</h3><div id="kpiActive">0</div></div>
-    <div class="kpi"><h3>Completed</h3><div id="kpiCompleted">0</div></div>
+  <!-- TABS -->
+  <div class="tabs">
+    <button id="tabJobsBtn" class="active" onclick="showTab('jobs')">Jobs</button>
+    <button id="tabDriversBtn" onclick="showTab('drivers')">Driver Başvuruları</button>
   </div>
 
-  <!-- Filters -->
-  <div class="filters">
-    <button onclick="setFilter('all')" id="f-all" class="active">Tümü</button>
-    <button onclick="setFilter('pending')" id="f-pending">Pending</button>
-    <button onclick="setFilter('assigned')" id="f-assigned">Assigned</button>
-    <button onclick="setFilter('active')" id="f-active">Active</button>
-    <button onclick="setFilter('completed')" id="f-completed">Completed</button>
+  <!-- JOBS TAB -->
+  <div id="tabJobs">
+
+    <div class="kpis">
+      <div class="kpi"><h3>Toplam</h3><div id="kpiTotal">0</div></div>
+      <div class="kpi"><h3>Pending</h3><div id="kpiPending">0</div></div>
+      <div class="kpi"><h3>Active</h3><div id="kpiActive">0</div></div>
+      <div class="kpi"><h3>Completed</h3><div id="kpiCompleted">0</div></div>
+    </div>
+
+    <div class="filters">
+      <button onclick="setFilter('all')" id="f-all" class="active">Tümü</button>
+      <button onclick="setFilter('pending')" id="f-pending">Pending</button>
+      <button onclick="setFilter('assigned')" id="f-assigned">Assigned</button>
+      <button onclick="setFilter('active')" id="f-active">Active</button>
+      <button onclick="setFilter('completed')" id="f-completed">Completed</button>
+    </div>
+
+    <div id="jobs"></div>
   </div>
 
-  <!-- Jobs -->
-  <div id="jobs"></div>
+  <!-- DRIVERS TAB -->
+  <div id="tabDrivers" style="display:none"></div>
 
-  <div class="footer-note">
-    SepetTaxi • Admin Panel
-  </div>
+  <div class="footer-note">SepetTaxi • Admin Panel</div>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyO5XfdS3gdihD2SYMUVBVIo65uxaDYdqXEq7L0e82AWTnQPSVjhwcgZvddf5GpoZHS3g/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzwBkwGeFK323Y_y4C_GDPmzMVk2cFsV3KBA9kUcE4rBmQPrljNkhSXSUY5QgEodwOYow/exec";
 
 let allJobs = [];
 let currentFilter = "all";
 
+/* TAB */
+function showTab(t){
+  tabJobs.style.display = t==="jobs"?"block":"none";
+  tabDrivers.style.display = t==="drivers"?"block":"none";
+  tabJobsBtn.classList.toggle("active",t==="jobs");
+  tabDriversBtn.classList.toggle("active",t==="drivers");
+  if(t==="drivers") loadDrivers();
+}
+
+/* JOBS */
 function setFilter(f){
-  currentFilter = f;
+  currentFilter=f;
   document.querySelectorAll(".filters button").forEach(b=>b.classList.remove("active"));
   document.getElementById("f-"+f).classList.add("active");
   renderJobs();
 }
 
 async function loadJobs(){
-  try{
-    const res = await fetch(API_URL + "?action=listJobs");
-    const data = await res.json();
-    allJobs = Array.isArray(data) ? data : [];
-    updateKPI();
-    renderJobs();
-  }catch(e){
-    alert("Jobs yüklenemedi");
-    console.error(e);
-  }
+  const r = await fetch(API_URL+"?action=listJobs");
+  allJobs = await r.json();
+  updateKPI(); renderJobs();
 }
 
 function updateKPI(){
-  const total = allJobs.length;
-  const pending = allJobs.filter(j=>j.status==="pending").length;
-  const active = allJobs.filter(j=>j.status==="active").length;
-  const completed = allJobs.filter(j=>j.status==="completed").length;
-
-  kpiTotal.innerText = total;
-  kpiPending.innerText = pending;
-  kpiActive.innerText = active;
-  kpiCompleted.innerText = completed;
+  kpiTotal.innerText = allJobs.length;
+  kpiPending.innerText = allJobs.filter(j=>j.status==="pending").length;
+  kpiActive.innerText = allJobs.filter(j=>j.status==="active").length;
+  kpiCompleted.innerText = allJobs.filter(j=>j.status==="completed").length;
 }
 
 function renderJobs(){
-  const box = document.getElementById("jobs");
-  box.innerHTML = "";
+  jobs.innerHTML="";
+  let list = currentFilter==="all"?allJobs:allJobs.filter(j=>j.status===currentFilter);
+  if(!list.length){ jobs.innerHTML="<div class='card'>Kayıt yok</div>"; return; }
 
-  let jobs = allJobs;
-  if(currentFilter!=="all"){
-    jobs = allJobs.filter(j=>j.status===currentFilter);
-  }
+  list.forEach(j=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`
+      <b>${j.customer_first||""} ${j.customer_last||""}</b> • ${j.customer_phone||""}<br>
+      ${j.from_address||""} → ${j.to_address||""}<br>
+      Mesafe: ${j.distance_km||0} km<br><br>
 
-  if(jobs.length===0){
-    box.innerHTML = "<div class='card'>Kayıt yok</div>";
-    return;
-  }
-
-  jobs.forEach(j=>{
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
       <div class="row">
         <div class="col">
-          <div class="label">Job ID</div>
-          <div class="value">${j.job_id || "-"}</div>
+          <div class="label">Driver ID</div>
+          <input id="d-${j.job_id}" value="${j.driver_id||""}">
         </div>
         <div class="col">
-          <div class="label">Service</div>
-          <div class="value">${j.service_type || "-"}</div>
-        </div>
-        <div class="col">
-          <div class="label">User</div>
-          <div class="value">${j.user_name || ""} ${j.user_phone || ""}</div>
+          <div class="label">Final Price</div>
+          <input id="p-${j.job_id}" value="${j.final_price||j.price||""}">
         </div>
         <div class="col">
           <div class="label">Status</div>
-          <div class="value">${j.status}</div>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div class="col">
-          <div class="label">Driver ID</div>
-          <input placeholder="driver_id" value="${j.driver_id || ""}" id="d-${j.job_id}">
-        </div>
-        <div class="col">
-          <div class="label">Yeni Status</div>
           <select id="s-${j.job_id}">
-            <option value="pending">pending</option>
-            <option value="assigned">assigned</option>
-            <option value="active">active</option>
-            <option value="completed">completed</option>
+            <option ${j.status==="pending"?"selected":""}>pending</option>
+            <option ${j.status==="assigned"?"selected":""}>assigned</option>
+            <option ${j.status==="active"?"selected":""}>active</option>
+            <option ${j.status==="completed"?"selected":""}>completed</option>
           </select>
         </div>
       </div>
 
-      <div class="row" style="margin-top:10px">
-        <div class="col">
-          <button class="action" onclick="assignDriver('${j.job_id}')">Driver Ata</button>
-        </div>
-        <div class="col">
-          <button class="secondary action" onclick="updateStatus('${j.job_id}')">Status Güncelle</button>
-        </div>
+      <div class="row" style="margin-top:8px">
+        <div class="col"><button class="action" onclick="assignDriver('${j.job_id}')">Driver Ata</button></div>
+        <div class="col"><button class="secondary action" onclick="updateStatus('${j.job_id}')">Status Güncelle</button></div>
+        <div class="col"><button class="secondary action" onclick="updatePrice('${j.job_id}')">Fiyat Güncelle</button></div>
+      </div>
+
+      <div class="timeline">
+        <span class="${j.created_at?'done':''}">Created</span>
+        <span class="${j.assigned_at?'done':''}">Assigned</span>
+        <span class="${j.active_at?'done':''}">Active</span>
+        <span class="${j.completed_at?'done':''}">Completed</span>
       </div>
     `;
-    box.appendChild(div);
+    jobs.appendChild(c);
   });
 }
 
-async function assignDriver(jobId){
-  const driverId = document.getElementById("d-"+jobId).value;
-  if(!driverId){ alert("driver_id gir"); return; }
-
-  await postAction("assignDriver",{job_id:jobId,driver_id:driverId});
+async function post(action,payload){
+  await fetch(API_URL,{method:"POST",body:JSON.stringify({action,...payload})});
+  loadJobs();
 }
 
-async function updateStatus(jobId){
-  const status = document.getElementById("s-"+jobId).value;
-  await postAction("updateStatus",{job_id:jobId,status});
+function assignDriver(id){ post("assignDriver",{job_id:id,driver_id:document.getElementById("d-"+id).value}); }
+function updateStatus(id){ post("updateStatus",{job_id:id,status:document.getElementById("s-"+id).value}); }
+function updatePrice(id){ post("updatePrice",{job_id:id,final_price:document.getElementById("p-"+id).value}); }
+
+/* DRIVERS */
+async function loadDrivers(){
+  const r=await fetch(API_URL+"?action=listDrivers");
+  const data=await r.json();
+  tabDrivers.innerHTML="";
+  data.filter(d=>d.status==="pending").forEach(d=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`
+      <b>${d.first_name} ${d.last_name}</b><br>
+      ${d.phone} • ${d.vehicle_type}<br><br>
+      <button class="action" onclick="driverAction('approveDriver','${d.driver_id}')">Onayla</button>
+      <button class="secondary action" onclick="driverAction('rejectDriver','${d.driver_id}')">Reddet</button>
+    `;
+    tabDrivers.appendChild(c);
+  });
 }
 
-async function postAction(action,payload){
-  try{
-    await fetch(API_URL,{
-      method:"POST",
-      body: JSON.stringify({action,...payload})
-    });
-    await loadJobs();
-  }catch(e){
-    alert("İşlem hatası");
-    console.error(e);
-  }
+function driverAction(a,id){
+  fetch(API_URL,{method:"POST",body:JSON.stringify({action:a,driver_id:id})}).then(loadDrivers);
 }
 
 loadJobs();
