@@ -41,23 +41,57 @@ button{background:#f5c400;color:#000;font-weight:900}
 </div>
 
 <script>
-// 🔴 TEK DOĞRU BACKEND URL
+// 🔴 BACKEND URL (AYNI)
 const BACKEND =
   "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
 
+// ================= UTIL =================
 function showErr(msg){
   const e=document.getElementById("err");
   e.innerText=msg; e.style.display="block";
 }
 function hideErr(){ document.getElementById("err").style.display="none"; }
 
+// ================= GPS (B3) =================
+let gpsTimer = null;
+
+function startGPS(jobId){
+  if(!navigator.geolocation){
+    alert("GPS desteklenmiyor");
+    return;
+  }
+  if(gpsTimer) clearInterval(gpsTimer);
+
+  gpsTimer = setInterval(()=>{
+    navigator.geolocation.getCurrentPosition(pos=>{
+      fetch(BACKEND, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          action: "pushLocation",
+          job_id: jobId,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        })
+      });
+    });
+  }, 5000); // 5 sn
+}
+
+function stopGPS(){
+  if(gpsTimer){
+    clearInterval(gpsTimer);
+    gpsTimer = null;
+  }
+}
+
+// ================= JOBS =================
 async function loadJobs(){
   hideErr();
   const driverId = document.getElementById("driverId").value.trim();
   if(!driverId) return showErr("Driver ID gir");
 
   try{
-    // 👉 GET kullanıyoruz (CORS yok)
     const r = await fetch(`${BACKEND}?action=getJobs`);
     const jobs = await r.json();
 
@@ -81,7 +115,8 @@ async function loadJobs(){
         <b>${j.service_type}</b><br>
         <div class="muted">${j.from_address} → ${j.to_address}</div><br>
         <div>Durum: <b>${j.status}</b></div><br>
-        ${j.status==="assigned"
+        ${
+          j.status==="assigned"
           ? `<button onclick="accept('${j.job_id}')">Kabul Et</button>`
           : `<button onclick="complete('${j.job_id}')">Tamamlandı</button>`
         }
@@ -91,16 +126,36 @@ async function loadJobs(){
 
     document.getElementById("last").innerText=new Date().toLocaleTimeString();
   }catch(e){
-    showErr("Failed to fetch (driver.html GET mode çalışmadı)");
+    showErr("Failed to fetch");
   }
 }
 
+// ================= STATUS =================
 async function accept(job_id){
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${job_id}&status=on_route`);
+  await fetch(BACKEND, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      action:"updateStatus",
+      job_id:job_id,
+      status:"on_route"
+    })
+  });
+  startGPS(job_id);   // 🔥 GPS BAŞLAR
   loadJobs();
 }
+
 async function complete(job_id){
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${job_id}&status=completed`);
+  await fetch(BACKEND, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      action:"updateStatus",
+      job_id:job_id,
+      status:"completed"
+    })
+  });
+  stopGPS();          // 🔥 GPS DURUR
   loadJobs();
 }
 </script>
