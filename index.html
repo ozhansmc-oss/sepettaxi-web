@@ -12,6 +12,34 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#000;color:#fff}
 
+/* HAMBURGER */
+#hamburger{
+  position:fixed;
+  top:14px;
+  left:14px;
+  font-size:26px;
+  cursor:pointer;
+  z-index:1001;
+}
+#hamburgerMenu{
+  position:fixed;
+  top:0;
+  left:-240px;
+  width:220px;
+  height:100vh;
+  background:#111;
+  padding:20px;
+  transition:.25s;
+  z-index:1000;
+}
+#hamburgerMenu a{
+  display:block;
+  color:#fff;
+  text-decoration:none;
+  padding:14px 0;
+  border-bottom:1px solid #222;
+}
+
 /* LANDING */
 #landing{
   height:100vh;
@@ -31,113 +59,74 @@ body{margin:0;font-family:Arial;background:#000;color:#fff}
 h1{font-size:42px}
 h1 span{color:#f5c400}
 .primary-btn{
-  background:#f5c400;
-  color:#000;
-  border:none;
-  border-radius:28px;
-  padding:16px 42px;
-  font-size:18px;
-  font-weight:bold;
-  cursor:pointer;
+  background:#f5c400;color:#000;border:none;
+  border-radius:28px;padding:16px 42px;
+  font-size:18px;font-weight:bold;cursor:pointer;
 }
 
 /* APP */
 #app{display:none;background:#111;min-height:100vh}
 .app-header{
-  height:56px;
-  background:#000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-  font-weight:bold;
+  height:56px;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:bold;
 }
 .app-header span{color:#f5c400}
 
-#map{
-  height:38vh;
-  margin:12px 16px;
-  border-radius:16px;
-}
+#map{height:38vh;margin:12px 16px;border-radius:16px}
 
 .container{padding:16px}
 .card{
-  background:#1b1b1b;
-  border-radius:14px;
-  padding:16px;
-  margin-bottom:12px;
+  background:#1b1b1b;border-radius:14px;
+  padding:16px;margin-bottom:12px;
 }
 .input{
-  width:100%;
-  background:#000;
-  border:1px solid #333;
-  color:#fff;
-  padding:14px;
-  border-radius:10px;
+  width:100%;background:#000;border:1px solid #333;
+  color:#fff;padding:14px;border-radius:10px;
 }
 .row{display:flex;gap:12px}
 .row .card{flex:1;text-align:center}
 .big{font-size:22px;font-weight:bold}
 .call-btn{
-  width:100%;
-  background:#f5c400;
-  color:#000;
-  border:none;
-  border-radius:28px;
-  padding:18px;
-  font-size:18px;
-  font-weight:bold;
-  cursor:pointer;
+  width:100%;background:#f5c400;color:#000;
+  border:none;border-radius:28px;
+  padding:18px;font-size:18px;font-weight:bold;cursor:pointer;
 }
 
-/* SERVICE CARDS */
+/* SERVICE */
 .service-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-bottom:12px;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:12px;margin-bottom:12px;
 }
 .service-card{
-  background:#1b1b1b;
-  border-radius:14px;
-  padding:18px;
-  text-align:center;
-  cursor:pointer;
+  background:#1b1b1b;border-radius:14px;
+  padding:18px;text-align:center;cursor:pointer;
   border:2px solid transparent;
 }
 .service-card.active{border-color:#f5c400}
 
-/* REGISTER MODAL – FIXED, NO SCROLL */
+/* REGISTER */
 #registerModal{
-  position:fixed;
-  inset:0;
-  width:100vw;
-  height:100vh;
-  background:rgba(0,0,0,.75);
-  display:none;
-  align-items:center;
-  justify-content:center;
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  display:none;align-items:center;justify-content:center;
   z-index:9999;
 }
 #registerModal.active{display:flex}
 .modal{
-  background:#111;
-  border-radius:16px;
-  padding:20px;
-  width:92%;
-  max-width:420px;
-  max-height:90vh;
-  overflow-y:auto;
+  background:#111;border-radius:16px;
+  padding:20px;width:92%;max-width:420px;
 }
-.error{
-  color:#ff5c5c;
-  font-size:13px;
-  display:none;
-}
+.error{color:#ff5c5c;font-size:13px;display:none}
 </style>
 </head>
 
 <body>
+
+<div id="hamburger" onclick="toggleMenu()">☰</div>
+<div id="hamburgerMenu">
+  <a href="./index.html">🏠 Ana Sayfa</a>
+  <a href="./driver-apply.html">🚗 Sürücü Ol</a>
+</div>
 
 <!-- LANDING -->
 <section id="landing">
@@ -154,111 +143,68 @@ h1 span{color:#f5c400}
 
   <div class="container">
 
-    <!-- SERVICE CARDS -->
     <div class="service-grid">
-      <div class="service-card" id="taxiCard" onclick="selectService('taxi')">
-        🚕 <b>Taksi</b>
-      </div>
-      <div class="service-card" id="courierCard" onclick="selectService('courier')">
-        📦 <b>Kurye</b>
-      </div>
+      <div class="service-card" id="taxiCard" onclick="selectService('taxi')">🚕 <b>Taksi</b></div>
+      <div class="service-card" id="courierCard" onclick="selectService('courier')">📦 <b>Kurye</b></div>
     </div>
 
-    <div class="card">
-      <div>Nereden</div>
-      <input id="fromInput" class="input" readonly>
-    </div>
+    <div class="card"><div>Nereden</div><input id="fromInput" class="input" readonly></div>
+    <div class="card"><div>Nereye</div><input id="toInput" class="input" readonly></div>
 
-    <div class="card">
-      <div>Nereye</div>
-      <input id="toInput" class="input" readonly>
-    </div>
-
-    <!-- COURIER EXTRA -->
     <div id="courierFields" style="display:none">
-      <div class="card">
-        <div>Paket Türü</div>
-        <input id="packageType" class="input">
-      </div>
-      <div class="card">
-        <div>Alıcı Adı</div>
-        <input id="receiverName" class="input">
-      </div>
-      <div class="card">
-        <div>Alıcı Telefon</div>
-        <input id="receiverPhone" class="input">
-      </div>
+      <div class="card"><div>Paket Türü</div><input id="packageType" class="input"></div>
+      <div class="card"><div>Alıcı Adı</div><input id="receiverName" class="input"></div>
+      <div class="card"><div>Alıcı Telefon</div><input id="receiverPhone" class="input"></div>
     </div>
 
     <div class="row">
-      <div class="card">
-        <div>Mesafe</div>
-        <div id="distance" class="big">—</div>
-      </div>
-      <div class="card">
-        <div>Ücret</div>
-        <div id="price" class="big">—</div>
-      </div>
+      <div class="card"><div>Mesafe</div><div id="distance" class="big">—</div></div>
+      <div class="card"><div>Ücret</div><div id="price" class="big">—</div></div>
     </div>
 
     <button class="call-btn" onclick="createJob()">Çağır</button>
   </div>
 </section>
 
-<!-- REGISTER MODAL -->
+<!-- REGISTER -->
 <div id="registerModal">
   <div class="modal">
-    <div class="card">
-      <div>Ad</div>
-      <input id="firstName" class="input">
-    </div>
-    <div class="card">
-      <div>Soyad</div>
-      <input id="lastName" class="input">
-    </div>
-    <div class="card">
-      <div>Telefon</div>
-      <input id="phone" class="input" placeholder="05XXXXXXXXX">
-    </div>
-    <label>
-      <input type="checkbox" id="kvkk"> KVKK ve sözleşmeyi kabul ediyorum
-    </label>
+    <div class="card"><div>Ad</div><input id="firstName" class="input"></div>
+    <div class="card"><div>Soyad</div><input id="lastName" class="input"></div>
+    <div class="card"><div>Telefon</div><input id="phone" class="input" placeholder="05XXXXXXXXX"></div>
+    <label><input type="checkbox" id="kvkk"> KVKK kabul</label>
     <div class="error" id="regErr">Bilgileri doğru girin</div>
     <button class="call-btn" onclick="register()">Kaydı Tamamla</button>
   </div>
 </div>
 
 <script>
-let map, fromMarker, toMarker;
-let user=null;
-let serviceType="";
-  
-  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzwBkwGeFK323Y_y4C_GDPmzMVk2cFsV3KBA9kUcE4rBmQPrljNkhSXSUY5QgEodwOYow/exec";
+let map,fromMarker,toMarker,user=null,serviceType="";
+const BACKEND_URL="https://script.google.com/macros/s/AKfycbzwBkwGeFK323Y_y4C_GDPmzMVk2cFsV3KBA9kUcE4rBmQPrljNkhSXSUY5QgEodwOYow/exec";
 
-/* START */
+function toggleMenu(){
+  hamburgerMenu.style.left =
+    hamburgerMenu.style.left==="0px"?"-240px":"0px";
+}
+
 function startApp(){
   landing.style.display="none";
   app.style.display="block";
   initMap();
 }
 
-/* MAP + LIVE LOCATION */
 function initMap(){
   map=L.map("map").setView([41,29],13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
-
-  navigator.geolocation.watchPosition(pos=>{
-    const {latitude,longitude}=pos.coords;
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  navigator.geolocation.watchPosition(p=>{
+    const {latitude,longitude}=p.coords;
     if(!fromMarker){
       fromMarker=L.marker([latitude,longitude],{draggable:true}).addTo(map);
       map.setView([latitude,longitude],15);
-    } else {
-      fromMarker.setLatLng([latitude,longitude]);
-    }
+    } else fromMarker.setLatLng([latitude,longitude]);
     reverse(latitude,longitude,fromInput);
     calculate();
   });
-
   map.on("click",e=>{
     if(!toMarker) toMarker=L.marker(e.latlng,{draggable:true}).addTo(map);
     else toMarker.setLatLng(e.latlng);
@@ -267,104 +213,45 @@ function initMap(){
   });
 }
 
-/* SERVICE */
-function selectService(type){
-  if(!user){
-    openRegister();
-    return;
-  }
-  serviceType=type;
-  taxiCard.classList.toggle("active",type==="taxi");
-  courierCard.classList.toggle("active",type==="courier");
-  courierFields.style.display=type==="courier"?"block":"none";
-  fromInput.removeAttribute("readonly");
-  toInput.removeAttribute("readonly");
+function selectService(t){
+  if(!user){openRegister();return;}
+  serviceType=t;
+  taxiCard.classList.toggle("active",t==="taxi");
+  courierCard.classList.toggle("active",t==="courier");
+  courierFields.style.display=t==="courier"?"block":"none";
   calculate();
 }
 
-/* REGISTER MODAL */
-function openRegister(){
-  document.body.style.overflow="hidden";
-  registerModal.classList.add("active");
-}
-function closeRegister(){
-  document.body.style.overflow="";
-  registerModal.classList.remove("active");
-}
+function openRegister(){registerModal.classList.add("active")}
+function closeRegister(){registerModal.classList.remove("active")}
 
 function register(){
-  const f=firstName.value.trim();
-  const l=lastName.value.trim();
-  const p=phone.value.trim();
-  if(f.length<2||l.length<2||!/^05\d{9}$/.test(p)||!kvkk.checked){
+  if(firstName.value.length<2||lastName.value.length<2||!/^05\d{9}$/.test(phone.value)||!kvkk.checked){
     regErr.style.display="block";return;
   }
-  user={first_name:f,last_name:l,phone:p};
-  regErr.style.display="none";
+  user={first:firstName.value,last:lastName.value,phone:phone.value};
   closeRegister();
 }
 
-/* CALC */
 function calculate(){
-  if(!user||!serviceType||!fromMarker||!toMarker) return;
-  const a=fromMarker.getLatLng(), b=toMarker.getLatLng();
+  if(!serviceType||!fromMarker||!toMarker)return;
+  const a=fromMarker.getLatLng(),b=toMarker.getLatLng();
   const km=haversine(a.lat,a.lng,b.lat,b.lng);
   distance.textContent=km.toFixed(2)+" km";
-  const priceVal = serviceType==="courier"
-    ? Math.max(80,40+km*15)
-    : Math.max(120,60+km*22);
-  price.textContent=Math.round(priceVal)+" TL";
+  const p=serviceType==="courier"?Math.max(80,40+km*15):Math.max(120,60+km*22);
+  price.textContent=Math.round(p)+" TL";
 }
 
-function createJob(){
-  if(!user || !serviceType || !fromMarker || !toMarker){
-    alert("Eksik bilgi var");
-    return;
-  }
+function createJob(){alert("Talep alındı (demo)")}
 
-  const payload = {
-    service_type: serviceType,
-    first_name: user.first_name,
-    last_name: user.last_name,
-    phone: user.phone,
-    from: fromInput.value,
-    to: toInput.value,
-    distance: distance.textContent,
-    price: price.textContent,
-    package_type: packageType?.value || "",
-    receiver_name: receiverName?.value || "",
-    receiver_phone: receiverPhone?.value || ""
-  };
-
-  fetch(BACKEND_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
-  .then(r => r.json())
-  .then(res => {
-    alert("Talep alındı ✔\nJob ID: " + res.job_id);
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Backend bağlantı hatası");
-  });
-}
-
-
-/* HELPERS */
 function haversine(a,b,c,d){
-  const R=6371;
-  const dLat=(c-a)*Math.PI/180;
-  const dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+
-    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
-    Math.sin(dLon/2)**2;
+  const R=6371,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 function reverse(lat,lng,input){
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json())
-    .then(d=>{if(d?.display_name)input.value=d.display_name});
+    .then(r=>r.json()).then(d=>{if(d?.display_name)input.value=d.display_name});
 }
 </script>
 
