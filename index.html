@@ -242,7 +242,44 @@ function calculate(){
   price.textContent=Math.round(p)+" TL";
 }
 
-function createJob(){alert("Talep alındı (demo)")}
+function createJob(){
+  if(!user || !serviceType || !fromMarker || !toMarker){
+    alert("Eksik bilgi var");
+    return;
+  }
+
+  const payload = {
+    action: "createJob",
+    service_type: serviceType,
+    customer_first: user.first,
+    customer_last: user.last,
+    customer_phone: user.phone,
+    from_address: fromInput.value,
+    to_address: toInput.value,
+    distance_km: distance.textContent.replace(" km",""),
+    price: price.textContent.replace(" TL",""),
+    package_type: packageType?.value || "",
+    receiver_name: receiverName?.value || "",
+    receiver_phone: receiverPhone?.value || ""
+  };
+
+  fetch(BACKEND_URL,{
+    method:"POST",
+    body: JSON.stringify(payload)
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.ok){
+      alert("Talep alındı ✔\nJob ID: "+res.job_id);
+    }else{
+      alert("Kayıt hatası");
+    }
+  })
+  .catch(()=>{
+    alert("Backend bağlantı hatası");
+  });
+}
+
 
 function haversine(a,b,c,d){
   const R=6371,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
