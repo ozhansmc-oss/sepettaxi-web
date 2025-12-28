@@ -2,96 +2,65 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SepetTaxi – Canlı Takip</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
-header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold}
-header span{color:#f5c400}
-#map{height:calc(100vh - 56px);width:100vw}
-.status{
-  position:fixed;bottom:16px;left:50%;
-  transform:translateX(-50%);
-  background:#111;padding:10px 18px;
-  border-radius:24px;border:1px solid #333;
-  font-size:14px;z-index:999;
+html,body,#map{height:100%;margin:0;background:#000}
+.info{
+  position:absolute;top:12px;left:12px;right:12px;
+  background:#111;color:#fff;padding:10px;border-radius:12px;z-index:1000;
 }
-.status.pending{border-color:#777}
-.status.assigned{border-color:#f5c400}
-.status.active{border-color:#2ecc71}
-.status.completed{border-color:#3498db}
-.status.error{border-color:#e74c3c}
 </style>
 </head>
-
 <body>
 
-<header>Sepet<span>Taxi</span> • Canlı Takip</header>
+<div class="info" id="info">Takip başlatılıyor…</div>
 <div id="map"></div>
-<div id="status" class="status">Bağlanıyor…</div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
-const JOB_ID = new URLSearchParams(window.location.search).get("job_id");
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec';
+const params = new URLSearchParams(location.search);
+const JOB_ID = params.get('job_id');
 
-let map = L.map("map").setView([41,29],13);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
+const map = L.map('map').setView([40.195, 29.060], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let marker = null;
 
-let driverMarker = null;
+async function refresh(){
+  const r = await fetch(BACKEND_URL + '?action=getJobs');
+  const jobs = await r.json();
+  const job = jobs.find(j=>j.job_id===JOB_ID);
 
-function setStatusSafe(text, cls){
-  const el = document.getElementById("status");
-  el.textContent = text;
-  el.className = "status " + cls;
-}
-
-function poll(){
-  if(!JOB_ID){
-    setStatusSafe("Job ID yok", "error");
+  if(!job){
+    document.getElementById('info').innerText = 'İş bulunamadı';
     return;
   }
 
-  fetch(API_URL,{
-    method:"POST",
-    body: JSON.stringify({ action:"getJobTrack", job_id:JOB_ID })
-  })
-  .then(r=>r.json())
-  .then(d=>{
-    if(!d || d.ok !== true){
-      setStatusSafe("Takip bilgisi yok", "error");
-      return;
+  if(job.status === 'completed'){
+    document.getElementById('info').innerText = 'İş tamamlandı';
+    return;
+  }
+
+  if(job.driver_lat && job.driver_lng){
+    const lat = parseFloat(job.driver_lat);
+    const lng = parseFloat(job.driver_lng);
+
+    if(!marker){
+      marker = L.marker([lat,lng]).addTo(map);
+      map.setView([lat,lng], 16);
+    }else{
+      marker.setLatLng([lat,lng]);
     }
 
-    const status = d.status || "pending";
-    setStatusSafe("Durum: " + status, status);
-
-    if(d.driver_lat && d.driver_lng){
-      const pos=[Number(d.driver_lat),Number(d.driver_lng)];
-      if(!driverMarker){
-        driverMarker=L.marker(pos).addTo(map);
-        map.setView(pos,15);
-      }else{
-        driverMarker.setLatLng(pos);
-      }
-    }
-
-    if(status==="completed"){
-      setStatusSafe("İş tamamlandı", "completed");
-    }
-  })
-  .catch(()=>{
-    setStatusSafe("Bağlantı hatası", "error");
-  });
+    document.getElementById('info').innerText =
+      'Sürücü yolda • Son konum: ' + (job.last_location_at || '');
+  }
 }
 
-poll();
-setInterval(poll,3000);
+setInterval(refresh, 4000);
+refresh();
 </script>
-
 </body>
 </html>
