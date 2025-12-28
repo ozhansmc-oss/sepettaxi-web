@@ -2,167 +2,86 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Driver</title>
-
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#0f0f0f;color:#fff}
-header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold}
-header span{color:#f5c400}
-.container{padding:16px;max-width:800px;margin:auto}
-
-.card{background:#1b1b1b;border-radius:14px;padding:14px;margin-bottom:12px}
-.label{font-size:12px;color:#aaa}
-.value{font-size:14px;margin-top:4px}
-
-input,button{width:100%;padding:12px;border-radius:10px;border:none;margin-top:8px}
-input{background:#0f0f0f;color:#fff;border:1px solid #333}
-button{background:#f5c400;color:#000;font-weight:bold;cursor:pointer}
-button.secondary{background:#333;color:#fff}
-
-.hidden{display:none}
-.footer-note{text-align:center;color:#777;font-size:12px;margin:20px 0}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+header{height:56px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #222}
+header span{color:#f5c400;font-weight:900}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+.card{background:#121212;border:1px solid #222;border-radius:14px;padding:14px;margin-bottom:12px}
+input,button{width:100%;padding:14px;border-radius:12px;border:0;font-size:15px}
+input{background:#1b1b1b;color:#fff;margin-bottom:10px}
+button{background:#fff;color:#000;font-weight:900;margin-top:8px}
+.btn-red{background:#ff4d4d;color:#000}
+.btn-yellow{background:#f5c400;color:#000}
+.muted{color:#aaa;font-size:13px}
 </style>
 </head>
-
 <body>
-<header>Sepet<span>Taxi</span> Driver</header>
 
-<div class="container">
+<header>Sepet<span>Taxi</span> – Driver</header>
 
-  <!-- LOGIN -->
-  <div id="loginCard" class="card">
-    <div class="label">Driver ID</div>
-    <input id="driverIdInput" placeholder="driver_id">
-    <button onclick="login()">Giriş Yap</button>
+<div class="wrap">
+  <div class="card">
+    <input id="driverId" placeholder="Driver ID">
+    <button onclick="loadJobs()">İşleri Getir</button>
   </div>
 
-  <!-- JOBS -->
-  <div id="jobsArea" class="hidden"></div>
-
-  <div class="footer-note">SepetTaxi • Driver Panel</div>
+  <div id="jobs"></div>
 </div>
 
 <script>
-/************ CONFIG ************/
-const API_URL = "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
 
-/************ STATE ************/
-let driverId = "";
-let allJobs = [];
-let activeJobId = null;
-let locationTimer = null;
-
-/************ LOGIN ************/
-async function login(){
-  driverId = driverIdInput.value.trim();
-  if(!driverId){ alert("driver_id gir"); return; }
-
-  const r = await fetch(API_URL+"?action=listDrivers");
-  const drivers = await r.json();
-  const me = drivers.find(d=>d.driver_id===driverId && d.status==="approved");
-  if(!me){ alert("Onaylı driver bulunamadı"); return; }
-
-  loginCard.classList.add("hidden");
-  jobsArea.classList.remove("hidden");
-  loadJobs();
+async function api(action, data={}){
+  const r = await fetch(BACKEND_URL, {
+    method:"POST",
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action, ...data})
+  });
+  return r.json();
 }
 
-/************ JOBS ************/
 async function loadJobs(){
-  const r = await fetch(API_URL+"?action=listJobs");
-  allJobs = await r.json();
+  const driver_id = driverId.value.trim();
+  if(!driver_id) return alert("Driver ID gir");
 
-  const myJobs = allJobs.filter(j => j.driver_id === driverId);
-  renderJobs(myJobs);
+  const jobs = await api("getJobs");
+  const mine = jobs.filter(j => String(j.driver_id) === driver_id && j.status !== "completed");
 
-  const active = myJobs.find(j => j.status === "active");
-  if(active){
-    startLocationTracking(active.job_id);
-  }else{
-    stopLocationTracking();
-  }
-}
+  const box = document.getElementById("jobs");
+  box.innerHTML = "";
 
-function renderJobs(list){
-  jobsArea.innerHTML="";
-  if(!list.length){
-    jobsArea.innerHTML="<div class='card'>Aktif / atanmış iş yok</div>";
+  if(mine.length===0){
+    box.innerHTML = `<div class="card muted">Aktif iş yok</div>`;
     return;
   }
 
-  list.forEach(j=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`
-      <b>${j.from_address}</b> → <b>${j.to_address}</b><br><br>
-
-      <div class="label">Mesafe</div>
-      <div class="value">${j.distance_km} km</div>
-
-      <div class="label">Ücret</div>
-      <div class="value">${j.final_price || j.price} TL</div>
-
-      <div class="label">Status</div>
-      <div class="value">${j.status}</div><br>
-
-      ${actionButtons(j)}
+  mine.forEach(j=>{
+    const div = document.createElement("div");
+    div.className="card";
+    div.innerHTML = `
+      <b>${j.service_type}</b><br>
+      <span class="muted">${j.pickup_address} → ${j.dropoff_address}</span><br><br>
+      <button class="btn-yellow" onclick="update('${j.job_id}','on_route')">Kabul Et</button>
+      <button class="btn-red" onclick="reject('${j.job_id}')">Reddet</button>
+      <button onclick="update('${j.job_id}','completed')">Tamamlandı</button>
     `;
-    jobsArea.appendChild(c);
+    box.appendChild(div);
   });
 }
 
-function actionButtons(j){
-  if(j.status==="assigned"){
-    return `<button onclick="updateStatus('${j.job_id}','active')">İşi Başlat</button>`;
-  }
-  if(j.status==="active"){
-    return `<button class="secondary" onclick="updateStatus('${j.job_id}','completed')">İşi Tamamla</button>`;
-  }
-  return "";
+async function update(job_id,status){
+  await api("updateStatus",{job_id,status});
+  loadJobs();
 }
 
-/************ STATUS ************/
-async function updateStatus(jobId,status){
-  await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"updateStatus",job_id:jobId,status})
-  });
-  await loadJobs();
-}
-
-/************ LIVE LOCATION ************/
-function startLocationTracking(jobId){
-  if(activeJobId === jobId && locationTimer) return;
-
-  activeJobId = jobId;
-  stopLocationTracking();
-
-  locationTimer = setInterval(()=>{
-    navigator.geolocation.getCurrentPosition(pos=>{
-      fetch(API_URL,{
-        method:"POST",
-        body: JSON.stringify({
-          action:"updateDriverLocation",
-          job_id: activeJobId,
-          driver_id: driverId,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
-        })
-      });
-    });
-  }, 5000); // 5 sn
-}
-
-function stopLocationTracking(){
-  if(locationTimer){
-    clearInterval(locationTimer);
-    locationTimer = null;
-  }
-  activeJobId = null;
+async function reject(job_id){
+  await api("assignDriver",{job_id,driver_id:""});
+  await api("updateStatus",{job_id,status:"pending"});
+  loadJobs();
 }
 </script>
-
 </body>
 </html>
