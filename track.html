@@ -68,8 +68,6 @@ let map = L.map("map").setView([41,29],13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
 
 let driverMarker = null;
-let pickupMarker = null;
-let dropMarker = null;
 
 /************ UI ************/
 function setStatus(text, cls){
@@ -93,42 +91,28 @@ function poll(){
   })
   .then(r=>r.json())
   .then(d=>{
-    if(!d || d.error){
+    /* 🔴 KRİTİK FIX BURADA */
+    if(!d || d.ok !== true){
       setStatus("Takip bilgisi yok", "error");
       return;
     }
 
-    // STATUS
+    /* STATUS */
     setStatus("Durum: " + d.status, d.status);
 
-    // PICKUP / DROP (ilk sefer)
-    if(!pickupMarker && d.from_address){
-      pickupMarker = L.marker([41,29]).addTo(map).bindPopup("Alış Noktası");
-    }
-    if(!dropMarker && d.to_address){
-      dropMarker = L.marker([41,29]).addTo(map).bindPopup("Varış Noktası");
-    }
-
-    // DRIVER
+    /* DRIVER MARKER */
     if(d.driver_lat && d.driver_lng){
       const pos = [Number(d.driver_lat), Number(d.driver_lng)];
 
       if(!driverMarker){
-        driverMarker = L.marker(pos,{
-          icon: L.icon({
-            iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-            iconSize: [25,41],
-            iconAnchor: [12,41]
-          })
-        }).addTo(map).bindPopup("Sürücü");
-
+        driverMarker = L.marker(pos).addTo(map);
         map.setView(pos,15);
       }else{
         driverMarker.setLatLng(pos);
       }
     }
 
-    // JOB BİTTİ
+    /* JOB COMPLETED */
     if(d.status === "completed"){
       setStatus("İş tamamlandı", "completed");
     }
