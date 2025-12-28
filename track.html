@@ -11,35 +11,15 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
-
-header{
-  height:56px;
-  background:#000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  font-weight:bold;
-}
+header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold}
 header span{color:#f5c400}
-
-#map{
-  height:calc(100vh - 56px);
-  width:100vw;
-}
-
-/* STATUS BADGE */
+#map{height:calc(100vh - 56px);width:100vw}
 .status{
-  position:fixed;
-  bottom:16px;
-  left:50%;
+  position:fixed;bottom:16px;left:50%;
   transform:translateX(-50%);
-  background:#111;
-  padding:10px 18px;
-  border-radius:24px;
-  border:1px solid #333;
-  font-size:14px;
-  z-index:999;
+  background:#111;padding:10px 18px;
+  border-radius:24px;border:1px solid #333;
+  font-size:14px;z-index:999;
 }
 .status.pending{border-color:#777}
 .status.assigned{border-color:#f5c400}
@@ -56,75 +36,61 @@ header span{color:#f5c400}
 <div id="status" class="status">Bağlanıyor…</div>
 
 <script>
-/************ CONFIG ************/
 const API_URL = "https://script.google.com/macros/s/AKfycbys0kfPST4tTxCmnhiCqjk8DeKDnUbSLvnL4h8k2IYGOjD9Kgjk-w2CVxRsNCVFZwvpKA/exec";
+const JOB_ID = new URLSearchParams(window.location.search).get("job_id");
 
-/************ PARAM ************/
-const params = new URLSearchParams(window.location.search);
-const JOB_ID = params.get("job_id");
-
-/************ MAP ************/
 let map = L.map("map").setView([41,29],13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
 
 let driverMarker = null;
 
-/************ UI ************/
-function setStatus(text, cls){
-  status.textContent = text;
-  status.className = "status " + cls;
+function setStatusSafe(text, cls){
+  const el = document.getElementById("status");
+  el.textContent = text;
+  el.className = "status " + cls;
 }
 
-/************ TRACK ************/
 function poll(){
   if(!JOB_ID){
-    setStatus("Job ID bulunamadı", "error");
+    setStatusSafe("Job ID yok", "error");
     return;
   }
 
   fetch(API_URL,{
     method:"POST",
-    body: JSON.stringify({
-      action: "getJobTrack",
-      job_id: JOB_ID
-    })
+    body: JSON.stringify({ action:"getJobTrack", job_id:JOB_ID })
   })
   .then(r=>r.json())
   .then(d=>{
-    /* 🔴 KRİTİK FIX BURADA */
     if(!d || d.ok !== true){
-      setStatus("Takip bilgisi yok", "error");
+      setStatusSafe("Takip bilgisi yok", "error");
       return;
     }
 
-    /* STATUS */
-    setStatus("Durum: " + d.status, d.status);
+    const status = d.status || "pending";
+    setStatusSafe("Durum: " + status, status);
 
-    /* DRIVER MARKER */
     if(d.driver_lat && d.driver_lng){
-      const pos = [Number(d.driver_lat), Number(d.driver_lng)];
-
+      const pos=[Number(d.driver_lat),Number(d.driver_lng)];
       if(!driverMarker){
-        driverMarker = L.marker(pos).addTo(map);
+        driverMarker=L.marker(pos).addTo(map);
         map.setView(pos,15);
       }else{
         driverMarker.setLatLng(pos);
       }
     }
 
-    /* JOB COMPLETED */
-    if(d.status === "completed"){
-      setStatus("İş tamamlandı", "completed");
+    if(status==="completed"){
+      setStatusSafe("İş tamamlandı", "completed");
     }
   })
   .catch(()=>{
-    setStatus("Bağlantı hatası", "error");
+    setStatusSafe("Bağlantı hatası", "error");
   });
 }
 
-/************ LOOP ************/
 poll();
-setInterval(poll, 3000);
+setInterval(poll,3000);
 </script>
 
 </body>
