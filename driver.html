@@ -1,299 +1,108 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>SepetTaxi – Driver (B2.1)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SepetTaxi – Driver B2.1</title>
 <style>
-  :root{
-    --bg:#000;--card:#141414;--card2:#1b1b1b;--line:#2a2a2a;
-    --text:#fff;--muted:#bdbdbd;--accent:#f5c400;
-    --ok:#27c24c;--bad:#ff4d4d;--shadow: 0 12px 30px rgba(0,0,0,.45);
-    --r:16px;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
-  header{
-    height:56px;background:#000;border-bottom:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center;
-    position:sticky;top:0;z-index:10;
-    font-weight:900
-  }
-  header span{color:var(--accent)}
-  .wrap{max-width:760px;margin:0 auto;padding:14px}
-  .card{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-    box-shadow:var(--shadow);padding:14px;margin-bottom:12px
-  }
-  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  input,button{
-    width:100%;padding:14px;border-radius:14px;border:0;font-size:15px
-  }
-  input{background:var(--card2);color:#fff;border:1px solid var(--line);outline:0}
-  button{background:#fff;color:#000;font-weight:900;cursor:pointer}
-  button:disabled{opacity:.45;cursor:not-allowed}
-  .btn-ghost{background:transparent;color:#fff;border:1px solid var(--line)}
-  .btn-yellow{background:var(--accent);color:#000}
-  .btn-red{background:var(--bad);color:#000}
-  .btn-green{background:var(--ok);color:#000}
-  .muted{color:var(--muted);font-size:12px}
-  .title{font-weight:900;font-size:16px;margin:0 0 8px}
-  .kv{display:grid;grid-template-columns: 1fr 1.4fr;gap:8px}
-  .k{color:var(--muted);font-size:12px}
-  .v{font-weight:800;font-size:13px;word-break:break-word}
-  .chip{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:6px 10px;border-radius:999px;
-    border:1px solid var(--line);background:#222;font-weight:900;font-size:12px
-  }
-  .dot{width:8px;height:8px;border-radius:99px;background:#888}
-  .st-assigned .dot{background:#5aa7ff}
-  .st-on_route .dot{background:var(--accent)}
-  .st-completed .dot{background:var(--ok)}
-  .err{display:none;margin-bottom:12px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,77,77,.45);background:rgba(255,77,77,.10);color:#ffd0d0}
-  .err.show{display:block}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+header{height:56px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #222}
+header span{color:#f5c400;font-weight:900}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+.card{background:#121212;border:1px solid #222;border-radius:14px;padding:14px;margin-bottom:12px}
+input,button{width:100%;padding:14px;border-radius:12px;border:0;font-size:15px}
+input{background:#1b1b1b;color:#fff;margin-bottom:10px}
+button{background:#f5c400;color:#000;font-weight:900}
+.err{background:#3a0000;border:1px solid #ff4d4d;color:#ffb3b3;padding:10px;border-radius:10px;margin-bottom:12px;display:none}
+.muted{color:#aaa;font-size:13px}
 </style>
 </head>
 <body>
 
-<header>Sepet<span>Taxi</span> – Driver <span style="color:#fff;opacity:.7;margin-left:8px">B2.1</span></header>
+<header>Sepet<span>Taxi</span> – Driver B2.1</header>
 
 <div class="wrap">
   <div id="err" class="err"></div>
 
   <div class="card">
-    <div class="title">Giriş (MVP)</div>
-    <div class="muted" style="margin-bottom:10px">Driver ID ile işlerini görüntüle. (PIN güvenliği B4’te)</div>
-    <div class="row">
-      <input id="driverId" placeholder="Driver ID (örn: D001)" />
-      <button id="btnLoad" class="btn-yellow">İşi Getir</button>
-      <button id="btnRefresh" class="btn-ghost" disabled>Yenile</button>
-    </div>
-    <div class="muted" style="margin-top:10px">
-      Son güncelleme: <span id="lastSync">—</span>
+    <div class="muted">Driver ID ile giriş (MVP)</div>
+    <input id="driverId" placeholder="Driver ID">
+    <button onclick="loadJobs()">İşi Getir</button>
+    <div class="muted" style="margin-top:8px">
+      Son güncelleme: <span id="last">—</span>
     </div>
   </div>
 
-  <div id="jobBox"></div>
+  <div id="jobs"></div>
 
-  <div class="card">
-    <div class="title">Durum Mantığı (Kilit)</div>
-    <div class="muted">
-      <b>assigned</b> = admin sürücü atadı, sürücü kabul edecek ·
-      <b>on_route</b> = sürücü kabul etti, hizmet aktif ·
-      <b>completed</b> = bitti
-    </div>
+  <div class="card muted">
+    assigned = admin atadı • on_route = yolda • completed = bitti
   </div>
 </div>
 
 <script>
-/* ============================
-   SepetTaxi Driver – B2.1
-   - Single active job rule
-   - assigned: accept/reject
-   - on_route: complete
-   ============================ */
-
-// 1) BURAYA KENDİ /exec URL’İNİ KOY
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
-
-// 2) ACTION isimleri (backendimizle uyumlu)
-const ACTIONS = {
-  getJobs: "getJobs",
-  assignDriver: "assignDriver",
-  updateStatus: "updateStatus"
-};
-
-const $ = (id)=>document.getElementById(id);
-const state = { driver_id:"", timer:null, autoMs:15000, currentJob:null };
+// 🔴 TEK DOĞRU BACKEND URL
+const BACKEND =
+  "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
 
 function showErr(msg){
-  const e = $("err");
-  e.textContent = msg;
-  e.classList.add("show");
-  setTimeout(()=>e.classList.remove("show"), 6000);
+  const e=document.getElementById("err");
+  e.innerText=msg; e.style.display="block";
 }
-function fmtTime(){
-  const d=new Date();
-  const p=n=>String(n).padStart(2,"0");
-  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-function statusKey(s){
-  s = (s||"").toString().toLowerCase().trim();
-  if(s.includes("on_route")||s.includes("onroute")) return "on_route";
-  if(s.includes("assigned")) return "assigned";
-  if(s.includes("completed")||s.includes("done")) return "completed";
-  if(s.includes("pending")) return "pending";
-  return s || "pending";
-}
+function hideErr(){ document.getElementById("err").style.display="none"; }
 
-async function api(action, data={}){
-  const r = await fetch(BACKEND_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ action, ...data })
-  });
-  const j = await r.json();
-  if(j && j.error) throw new Error(j.error);
-  return j;
-}
-
-function pickSingleActiveJob(jobs, driver_id){
-  // Kural: önce on_route, yoksa assigned. (tek aktif iş)
-  const mine = jobs.filter(j => String(j.driver_id)===String(driver_id));
-  const onr = mine.find(j => statusKey(j.status)==="on_route");
-  if(onr) return onr;
-  const asg = mine.find(j => statusKey(j.status)==="assigned");
-  if(asg) return asg;
-  return null;
-}
-
-function renderJob(job){
-  const box = $("jobBox");
-  box.innerHTML = "";
-
-  if(!job){
-    box.innerHTML = `<div class="card"><div class="muted">Aktif iş yok.</div></div>`;
-    return;
-  }
-
-  const st = statusKey(job.status);
-  const stClass = st==="assigned" ? "st-assigned" : (st==="on_route" ? "st-on_route" : "st-completed");
-
-  const pickup = (job.pickup_address||"—").toString();
-  const dropoff = (job.dropoff_address||"—").toString();
-
-  const distance = Number(job.distance_km||0);
-  const price = Number(job.estimated_price||0);
-
-  let actionsHtml = "";
-  if(st==="assigned"){
-    actionsHtml = `
-      <button class="btn-yellow" id="btnAccept">Kabul Et</button>
-      <button class="btn-red" id="btnReject">Reddet</button>
-    `;
-  }else if(st==="on_route"){
-    actionsHtml = `
-      <button class="btn-green" id="btnComplete">Tamamlandı</button>
-    `;
-  }else{
-    actionsHtml = `<div class="muted">Bu iş tamamlanmış.</div>`;
-  }
-
-  box.innerHTML = `
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <div style="font-weight:900">Aktif İş</div>
-        <div class="chip ${stClass}"><span class="dot"></span>${st}</div>
-      </div>
-
-      <div class="kv" style="margin-top:12px">
-        <div class="k">Job ID</div><div class="v" style="font-family:ui-monospace,monospace">${job.job_id||"—"}</div>
-        <div class="k">Hizmet</div><div class="v">${job.service_type||"—"}</div>
-        <div class="k">Pickup</div><div class="v">${escapeHtml(pickup)}</div>
-        <div class="k">Dropoff</div><div class="v">${escapeHtml(dropoff)}</div>
-        <div class="k">Mesafe</div><div class="v">${distance.toFixed(2)} km</div>
-        <div class="k">Ücret</div><div class="v">${price.toFixed(0)}</div>
-      </div>
-
-      <div class="row" style="margin-top:12px">
-        ${actionsHtml}
-      </div>
-
-      <div class="muted" style="margin-top:10px">
-        Not: Bu panel MVP’dir. Navigasyon/harita ve canlı takip B3’te.
-      </div>
-    </div>
-  `;
-
-  if(st==="assigned"){
-    $("btnAccept").onclick = ()=>acceptJob(job.job_id);
-    $("btnReject").onclick = ()=>rejectJob(job.job_id);
-  }
-  if(st==="on_route"){
-    $("btnComplete").onclick = ()=>completeJob(job.job_id);
-  }
-}
-
-function escapeHtml(str){
-  return (str ?? "").toString()
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-async function load(){
-  const driver_id = $("driverId").value.trim();
-  if(!driver_id) return showErr("Driver ID gir.");
-
-  state.driver_id = driver_id;
-  $("btnLoad").disabled = true;
+async function loadJobs(){
+  hideErr();
+  const driverId = document.getElementById("driverId").value.trim();
+  if(!driverId) return showErr("Driver ID gir");
 
   try{
-    const jobs = await api(ACTIONS.getJobs);
-    const current = pickSingleActiveJob(jobs, driver_id);
-    state.currentJob = current;
-    renderJob(current);
+    // 👉 GET kullanıyoruz (CORS yok)
+    const r = await fetch(`${BACKEND}?action=getJobs`);
+    const jobs = await r.json();
 
-    $("lastSync").textContent = fmtTime();
-    $("btnRefresh").disabled = false;
+    const mine = jobs.filter(j =>
+      String(j.driver_id) === driverId &&
+      (j.status === "assigned" || j.status === "on_route")
+    );
 
-    // auto refresh
-    if(state.timer) clearInterval(state.timer);
-    state.timer = setInterval(async ()=>{
-      try{
-        const jobs2 = await api(ACTIONS.getJobs);
-        const cur2 = pickSingleActiveJob(jobs2, driver_id);
-        state.currentJob = cur2;
-        renderJob(cur2);
-        $("lastSync").textContent = fmtTime();
-      }catch(e){ /* sessiz */ }
-    }, state.autoMs);
+    const box=document.getElementById("jobs");
+    box.innerHTML="";
 
+    if(mine.length===0){
+      box.innerHTML='<div class="card muted">Aktif iş yok</div>';
+      return;
+    }
+
+    mine.forEach(j=>{
+      const c=document.createElement("div");
+      c.className="card";
+      c.innerHTML=`
+        <b>${j.service_type}</b><br>
+        <div class="muted">${j.from_address} → ${j.to_address}</div><br>
+        <div>Durum: <b>${j.status}</b></div><br>
+        ${j.status==="assigned"
+          ? `<button onclick="accept('${j.job_id}')">Kabul Et</button>`
+          : `<button onclick="complete('${j.job_id}')">Tamamlandı</button>`
+        }
+      `;
+      box.appendChild(c);
+    });
+
+    document.getElementById("last").innerText=new Date().toLocaleTimeString();
   }catch(e){
-    showErr(e.message || String(e));
-  }finally{
-    $("btnLoad").disabled = false;
+    showErr("Failed to fetch (driver.html GET mode çalışmadı)");
   }
 }
 
-async function acceptJob(job_id){
-  try{
-    $("btnAccept").disabled = true;
-    await api(ACTIONS.updateStatus, { job_id, status: "on_route" });
-    await load(); // refresh
-  }catch(e){
-    showErr(e.message || String(e));
-  }
+async function accept(job_id){
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${job_id}&status=on_route`);
+  loadJobs();
 }
-
-async function completeJob(job_id){
-  try{
-    $("btnComplete").disabled = true;
-    await api(ACTIONS.updateStatus, { job_id, status: "completed" });
-    await load(); // refresh
-  }catch(e){
-    showErr(e.message || String(e));
-  }
+async function complete(job_id){
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${job_id}&status=completed`);
+  loadJobs();
 }
-
-async function rejectJob(job_id){
-  // Reject = driver_id temizle + pending
-  try{
-    $("btnReject").disabled = true;
-    await api(ACTIONS.assignDriver, { job_id, driver_id: "" }); // B2 uyumlu assignDriver gerekli
-    // assignDriver zaten pending yapıyorsa bu ikinci çağrıya gerek yok ama güvenli bırakıyorum:
-    await api(ACTIONS.updateStatus, { job_id, status: "pending" });
-    await load(); // refresh
-  }catch(e){
-    showErr(e.message || String(e));
-  }
-}
-
-$("btnLoad").onclick = load;
-$("btnRefresh").onclick = load;
 </script>
 
 </body>
