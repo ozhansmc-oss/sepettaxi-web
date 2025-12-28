@@ -45,16 +45,20 @@ button.secondary{background:#333;color:#fff}
 </div>
 
 <script>
+/************ CONFIG ************/
 const API_URL = "https://script.google.com/macros/s/AKfycbys0kfPST4tTxCmnhiCqjk8DeKDnUbSLvnL4h8k2IYGOjD9Kgjk-w2CVxRsNCVFZwvpKA/exec";
 
+/************ STATE ************/
 let driverId = "";
 let allJobs = [];
+let activeJobId = null;
+let locationTimer = null;
 
+/************ LOGIN ************/
 async function login(){
   driverId = driverIdInput.value.trim();
   if(!driverId){ alert("driver_id gir"); return; }
 
-  // driver onaylı mı?
   const r = await fetch(API_URL+"?action=listDrivers");
   const drivers = await r.json();
   const me = drivers.find(d=>d.driver_id===driverId && d.status==="approved");
@@ -65,23 +69,26 @@ async function login(){
   loadJobs();
 }
 
+/************ JOBS ************/
 async function loadJobs(){
   const r = await fetch(API_URL+"?action=listJobs");
   allJobs = await r.json();
 
-  // driver’a ait işler veya atanabilir işler
-  const myJobs = allJobs.filter(j =>
-    j.driver_id===driverId ||
-    (j.status==="assigned" && j.driver_id===driverId)
-  );
-
+  const myJobs = allJobs.filter(j => j.driver_id === driverId);
   renderJobs(myJobs);
+
+  const active = myJobs.find(j => j.status === "active");
+  if(active){
+    startLocationTracking(active.job_id);
+  }else{
+    stopLocationTracking();
+  }
 }
 
 function renderJobs(list){
   jobsArea.innerHTML="";
   if(!list.length){
-    jobsArea.innerHTML="<div class='card'>Aktif iş yok</div>";
+    jobsArea.innerHTML="<div class='card'>Aktif / atanmış iş yok</div>";
     return;
   }
 
@@ -95,7 +102,7 @@ function renderJobs(list){
       <div class="value">${j.distance_km} km</div>
 
       <div class="label">Ücret</div>
-      <div class="value">${j.final_price || j.price}</div>
+      <div class="value">${j.final_price || j.price} TL</div>
 
       <div class="label">Status</div>
       <div class="value">${j.status}</div><br>
@@ -116,13 +123,46 @@ function actionButtons(j){
   return "";
 }
 
+/************ STATUS ************/
 async function updateStatus(jobId,status){
   await fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({action:"updateStatus",job_id:jobId,status})
   });
-  loadJobs();
+  await loadJobs();
+}
+
+/************ LIVE LOCATION ************/
+function startLocationTracking(jobId){
+  if(activeJobId === jobId && locationTimer) return;
+
+  activeJobId = jobId;
+  stopLocationTracking();
+
+  locationTimer = setInterval(()=>{
+    navigator.geolocation.getCurrentPosition(pos=>{
+      fetch(API_URL,{
+        method:"POST",
+        body: JSON.stringify({
+          action:"updateDriverLocation",
+          job_id: activeJobId,
+          driver_id: driverId,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        })
+      });
+    });
+  }, 5000); // 5 sn
+}
+
+function stopLocationTracking(){
+  if(locationTimer){
+    clearInterval(locationTimer);
+    locationTimer = null;
+  }
+  activeJobId = null;
 }
 </script>
+
 </body>
 </html>
