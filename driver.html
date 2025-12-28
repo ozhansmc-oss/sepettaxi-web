@@ -41,9 +41,9 @@ button{background:#f5c400;color:#000;font-weight:900}
 </div>
 
 <script>
-// 🔴 BACKEND URL (AYNI)
+// ✅ TEK DOĞRU BACKEND
 const BACKEND =
-  "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+"https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
 
 // ================= UTIL =================
 function showErr(msg){
@@ -52,7 +52,7 @@ function showErr(msg){
 }
 function hideErr(){ document.getElementById("err").style.display="none"; }
 
-// ================= GPS (B3) =================
+// ================= GPS =================
 let gpsTimer = null;
 
 function startGPS(jobId){
@@ -64,40 +64,40 @@ function startGPS(jobId){
 
   gpsTimer = setInterval(()=>{
     navigator.geolocation.getCurrentPosition(pos=>{
-      fetch(BACKEND, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          action: "pushLocation",
-          job_id: jobId,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
+      fetch(BACKEND,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          action:"updateLocation",   // ✅ BACKEND İLE AYNI
+          job_id:jobId,
+          lat:pos.coords.latitude,
+          lng:pos.coords.longitude
         })
       });
     });
-  }, 5000); // 5 sn
+  },5000);
 }
 
 function stopGPS(){
   if(gpsTimer){
     clearInterval(gpsTimer);
-    gpsTimer = null;
+    gpsTimer=null;
   }
 }
 
 // ================= JOBS =================
 async function loadJobs(){
   hideErr();
-  const driverId = document.getElementById("driverId").value.trim();
+  const driverId=document.getElementById("driverId").value.trim();
   if(!driverId) return showErr("Driver ID gir");
 
   try{
-    const r = await fetch(`${BACKEND}?action=getJobs`);
-    const jobs = await r.json();
+    const r=await fetch(`${BACKEND}?action=getJobs`);
+    const jobs=await r.json();
 
-    const mine = jobs.filter(j =>
-      String(j.driver_id) === driverId &&
-      (j.status === "assigned" || j.status === "on_route")
+    const mine=jobs.filter(j =>
+      String(j.driver_id)===driverId &&
+      (j.status==="assigned"||j.status==="on_route")
     );
 
     const box=document.getElementById("jobs");
@@ -132,7 +132,7 @@ async function loadJobs(){
 
 // ================= STATUS =================
 async function accept(job_id){
-  await fetch(BACKEND, {
+  await fetch(BACKEND,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
@@ -141,12 +141,12 @@ async function accept(job_id){
       status:"on_route"
     })
   });
-  startGPS(job_id);   // 🔥 GPS BAŞLAR
+  startGPS(job_id);
   loadJobs();
 }
 
 async function complete(job_id){
-  await fetch(BACKEND, {
+  await fetch(BACKEND,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
@@ -155,7 +155,7 @@ async function complete(job_id){
       status:"completed"
     })
   });
-  stopGPS();          // 🔥 GPS DURUR
+  stopGPS();
   loadJobs();
 }
 </script>
