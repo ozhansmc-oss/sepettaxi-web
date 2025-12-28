@@ -1,206 +1,825 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SepetTaxi – Admin</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SepetTaxi – Admin (B1)</title>
+  <style>
+    :root{
+      --bg:#000;
+      --card:#141414;
+      --card2:#1b1b1b;
+      --text:#fff;
+      --muted:#bdbdbd;
+      --line:#2a2a2a;
+      --accent:#f5c400;
+      --ok:#27c24c;
+      --warn:#ffb020;
+      --bad:#ff4d4d;
+      --chip:#222;
+      --shadow: 0 12px 30px rgba(0,0,0,.45);
+      --r:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    a{color:inherit}
+    header{
+      height:56px;background:#000;border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:center;
+      position:sticky;top:0;z-index:20;
+    }
+    header .brand{font-weight:800;letter-spacing:.2px}
+    header .brand span{color:var(--accent)}
+    header .right{
+      position:absolute;right:12px;display:flex;gap:8px;align-items:center;
+    }
+    .btn{
+      border:0;border-radius:12px;padding:10px 12px;cursor:pointer;
+      background:#fff;color:#000;font-weight:700;
+    }
+    .btn.ghost{background:transparent;color:#fff;border:1px solid var(--line);font-weight:700}
+    .btn.small{padding:8px 10px;border-radius:10px;font-size:13px}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .wrap{max-width:1100px;margin:0 auto;padding:14px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .grid{
+      display:grid;grid-template-columns:repeat(12,1fr);gap:10px;
+    }
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+      box-shadow:var(--shadow);
+    }
+    .pad{padding:12px}
+    .kpi{grid-column:span 4}
+    .kpi .label{color:var(--muted);font-size:12px}
+    .kpi .value{font-size:24px;font-weight:900;margin-top:6px}
+    .kpi .value span{color:var(--accent)}
+    .panel{grid-column:span 12}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .search{
+      display:flex;gap:8px;align-items:center;flex:1;min-width:220px;
+      background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;
+    }
+    .search input{
+      width:100%;border:0;outline:0;background:transparent;color:#fff;font-size:14px;
+    }
+    .select{
+      background:var(--card2);border:1px solid var(--line);border-radius:14px;
+      padding:10px 12px;color:#fff;font-weight:700;outline:0;
+    }
+    .hint{color:var(--muted);font-size:12px}
+    .list{margin-top:10px}
+    .job{
+      display:grid;grid-template-columns: 1.2fr .9fr .8fr .8fr .9fr .9fr;
+      gap:10px;align-items:center;
+      padding:12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);
+      margin-bottom:10px;
+      cursor:pointer;
+    }
+    .job:hover{border-color:#3a3a3a}
+    .colTitle{color:var(--muted);font-size:11px;margin-bottom:4px}
+    .colVal{font-weight:800;font-size:13px}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace}
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;
+      background:var(--chip);border:1px solid var(--line);
+      font-weight:900;font-size:12px;
+    }
+    .dot{width:8px;height:8px;border-radius:99px;background:#888}
+    .st-pending .dot{background:var(--warn)}
+    .st-assigned .dot{background:#5aa7ff}
+    .st-on_route .dot{background:var(--accent)}
+    .st-completed .dot{background:var(--ok)}
+    .muted{color:var(--muted);font-weight:700}
+    .empty{
+      padding:18px;border:1px dashed var(--line);border-radius:14px;
+      color:var(--muted);text-align:center;background:#0c0c0c;margin-top:12px;
+    }
+    .errbar{
+      display:none;margin:10px auto 0;max-width:1100px;
+      padding:10px 12px;border-radius:14px;border:1px solid rgba(255,77,77,.45);
+      background:rgba(255,77,77,.10);color:#ffd0d0;
+    }
+    .errbar.show{display:block}
+    .footer{
+      margin:16px 0 6px;color:var(--muted);font-size:12px;text-align:center
+    }
 
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#0f0f0f;color:#fff}
-header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold}
-header span{color:#f5c400}
-.container{padding:16px;max-width:1200px;margin:auto}
-
-.tabs{display:flex;gap:8px;margin-bottom:12px}
-.tabs button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;background:#222;color:#fff}
-.tabs button.active{background:#f5c400;color:#000;font-weight:bold}
-
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-.kpi{background:#1b1b1b;border-radius:12px;padding:14px;text-align:center}
-.kpi h3{margin:0;font-size:14px;color:#aaa}
-.kpi div{margin-top:6px;font-size:22px;font-weight:bold}
-
-.filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.filters button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;background:#222;color:#fff}
-.filters button.active{background:#f5c400;color:#000;font-weight:bold}
-
-.card{background:#1b1b1b;border-radius:14px;padding:14px;margin-bottom:12px}
-.row{display:flex;flex-wrap:wrap;gap:10px}
-.col{flex:1;min-width:160px}
-
-.label{font-size:12px;color:#aaa}
-.value{margin-top:2px;font-size:14px}
-
-input,select,button.action{width:100%;padding:10px;border-radius:10px;border:none;margin-top:6px}
-input,select{background:#0f0f0f;color:#fff;border:1px solid #333}
-button.action{background:#f5c400;color:#000;font-weight:bold;cursor:pointer}
-button.secondary{background:#333;color:#fff}
-
-.timeline{display:flex;gap:6px;margin-top:8px;font-size:12px}
-.timeline span{padding:4px 8px;border-radius:6px;background:#222;color:#aaa}
-.timeline span.done{background:#2ecc71;color:#000}
-
-.footer-note{text-align:center;color:#777;font-size:12px;margin:20px 0 10px}
-</style>
+    /* Modal */
+    .modalBack{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
+      z-index:50;align-items:flex-end;justify-content:center;
+      padding:10px;
+    }
+    .modalBack.show{display:flex}
+    .modal{
+      width:min(720px, 100%);max-height:92vh;overflow:auto;
+      border-radius:22px;border:1px solid var(--line);
+      background:var(--card);box-shadow:var(--shadow);
+    }
+    .modalHead{
+      position:sticky;top:0;background:linear-gradient(#111, #0c0c0c);
+      border-bottom:1px solid var(--line);
+      padding:12px 12px;display:flex;align-items:center;justify-content:space-between;
+      border-top-left-radius:22px;border-top-right-radius:22px;
+    }
+    .modalTitle{font-weight:900}
+    .modalBody{padding:12px}
+    .section{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px}
+    .section h4{margin:0 0 10px;font-size:13px;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+    .kv{display:grid;grid-template-columns: 1fr 1.2fr;gap:10px}
+    .kv .k{color:var(--muted);font-size:12px}
+    .kv .v{font-weight:800;font-size:13px;word-break:break-word}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .danger{background:transparent;color:#fff;border:1px solid rgba(255,77,77,.65)}
+    .ok{background:#fff;color:#000}
+    .pill{padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:#0c0c0c;color:#fff;font-weight:800}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width: 860px){
+      .kpi{grid-column:span 12}
+      .job{
+        grid-template-columns: 1.2fr 1fr;
+        gap:12px;
+      }
+    }
+  </style>
 </head>
-
 <body>
-<header>Sepet<span>Taxi</span> Admin</header>
-
-<div class="container">
-
-  <!-- TABS -->
-  <div class="tabs">
-    <button id="tabJobsBtn" class="active" onclick="showTab('jobs')">Jobs</button>
-    <button id="tabDriversBtn" onclick="showTab('drivers')">Driver Başvuruları</button>
-  </div>
-
-  <!-- JOBS TAB -->
-  <div id="tabJobs">
-
-    <div class="kpis">
-      <div class="kpi"><h3>Toplam</h3><div id="kpiTotal">0</div></div>
-      <div class="kpi"><h3>Pending</h3><div id="kpiPending">0</div></div>
-      <div class="kpi"><h3>Active</h3><div id="kpiActive">0</div></div>
-      <div class="kpi"><h3>Completed</h3><div id="kpiCompleted">0</div></div>
+  <header>
+    <div class="brand">Sepet<span>Taxi</span> – Admin <span style="color:#fff;opacity:.75">B1</span></div>
+    <div class="right">
+      <button id="btnRefresh" class="btn small">Yenile</button>
+      <button id="btnSettings" class="btn ghost small">Ayar</button>
     </div>
+  </header>
 
-    <div class="filters">
-      <button onclick="setFilter('all')" id="f-all" class="active">Tümü</button>
-      <button onclick="setFilter('pending')" id="f-pending">Pending</button>
-      <button onclick="setFilter('assigned')" id="f-assigned">Assigned</button>
-      <button onclick="setFilter('active')" id="f-active">Active</button>
-      <button onclick="setFilter('completed')" id="f-completed">Completed</button>
-    </div>
+  <div id="errbar" class="errbar"></div>
 
-    <div id="jobs"></div>
-  </div>
+  <div class="wrap">
+    <div class="grid">
+      <div class="card kpi pad">
+        <div class="label">Bugünkü İş</div>
+        <div class="value"><span id="kpiToday">0</span></div>
+        <div class="hint" id="kpiTodayHint">00:00–23:59</div>
+      </div>
+      <div class="card kpi pad">
+        <div class="label">Aktif İş (pending/assigned/on_route)</div>
+        <div class="value"><span id="kpiActive">0</span></div>
+        <div class="hint">Operasyon yükü</div>
+      </div>
+      <div class="card kpi pad">
+        <div class="label">Tamamlanan</div>
+        <div class="value"><span id="kpiDone">0</span></div>
+        <div class="hint">Gün içi</div>
+      </div>
 
-  <!-- DRIVERS TAB -->
-  <div id="tabDrivers" style="display:none"></div>
-
-  <div class="footer-note">SepetTaxi • Admin Panel</div>
-</div>
-
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbys0kfPST4tTxCmnhiCqjk8DeKDnUbSLvnL4h8k2IYGOjD9Kgjk-w2CVxRsNCVFZwvpKA/exec";
-
-let allJobs = [];
-let currentFilter = "all";
-
-/* TAB */
-function showTab(t){
-  tabJobs.style.display = t==="jobs"?"block":"none";
-  tabDrivers.style.display = t==="drivers"?"block":"none";
-  tabJobsBtn.classList.toggle("active",t==="jobs");
-  tabDriversBtn.classList.toggle("active",t==="drivers");
-  if(t==="drivers") loadDrivers();
-}
-
-/* JOBS */
-function setFilter(f){
-  currentFilter=f;
-  document.querySelectorAll(".filters button").forEach(b=>b.classList.remove("active"));
-  document.getElementById("f-"+f).classList.add("active");
-  renderJobs();
-}
-
-async function loadJobs(){
-  const r = await fetch(API_URL+"?action=listJobs");
-  allJobs = await r.json();
-  updateKPI(); renderJobs();
-}
-
-function updateKPI(){
-  kpiTotal.innerText = allJobs.length;
-  kpiPending.innerText = allJobs.filter(j=>j.status==="pending").length;
-  kpiActive.innerText = allJobs.filter(j=>j.status==="active").length;
-  kpiCompleted.innerText = allJobs.filter(j=>j.status==="completed").length;
-}
-
-function renderJobs(){
-  jobs.innerHTML="";
-  let list = currentFilter==="all"?allJobs:allJobs.filter(j=>j.status===currentFilter);
-  if(!list.length){ jobs.innerHTML="<div class='card'>Kayıt yok</div>"; return; }
-
-  list.forEach(j=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`
-      <b>${j.customer_first||""} ${j.customer_last||""}</b> • ${j.customer_phone||""}<br>
-      ${j.from_address||""} → ${j.to_address||""}<br>
-      Mesafe: ${j.distance_km||0} km<br><br>
-
-      <div class="row">
-        <div class="col">
-          <div class="label">Driver ID</div>
-          <input id="d-${j.job_id}" value="${j.driver_id||""}">
-        </div>
-        <div class="col">
-          <div class="label">Final Price</div>
-          <input id="p-${j.job_id}" value="${j.final_price||j.price||""}">
-        </div>
-        <div class="col">
-          <div class="label">Status</div>
-          <select id="s-${j.job_id}">
-            <option ${j.status==="pending"?"selected":""}>pending</option>
-            <option ${j.status==="assigned"?"selected":""}>assigned</option>
-            <option ${j.status==="active"?"selected":""}>active</option>
-            <option ${j.status==="completed"?"selected":""}>completed</option>
+      <div class="card panel pad">
+        <div class="toolbar">
+          <div class="search">
+            <span class="muted">Ara</span>
+            <input id="q" placeholder="Job ID, telefon, sürücü, hizmet..." />
+          </div>
+          <select id="filterStatus" class="select">
+            <option value="">Tüm durumlar</option>
+            <option value="pending">pending</option>
+            <option value="assigned">assigned</option>
+            <option value="on_route">on_route</option>
+            <option value="completed">completed</option>
+          </select>
+          <select id="filterService" class="select">
+            <option value="">Tüm hizmetler</option>
+            <option value="taxi">taxi</option>
+            <option value="courier">courier</option>
+            <option value="transfer">transfer</option>
+          </select>
+          <select id="sortBy" class="select">
+            <option value="created_desc">Tarih (Yeni→Eski)</option>
+            <option value="created_asc">Tarih (Eski→Yeni)</option>
+            <option value="price_desc">Fiyat (Yüksek→Düşük)</option>
+            <option value="price_asc">Fiyat (Düşük→Yüksek)</option>
+            <option value="distance_desc">Mesafe (Uzak→Yakın)</option>
+            <option value="distance_asc">Mesafe (Yakın→Uzak)</option>
           </select>
         </div>
+
+        <div class="hint" style="margin-top:10px">
+          Otomatik yenileme: <span id="autoState" class="muted">Açık (15 sn)</span> ·
+          Son güncelleme: <span id="lastSync" class="muted">—</span>
+        </div>
+
+        <div class="list" id="list"></div>
+        <div id="empty" class="empty" style="display:none">Kayıt bulunamadı.</div>
+      </div>
+    </div>
+
+    <div class="footer">B1 kilitli kapsam: İş listele · İş detay · Manuel sürücü atama · Durum güncelle</div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalBack" class="modalBack" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modalHead">
+        <div class="modalTitle" id="mTitle">İş Detayı</div>
+        <button class="btn ghost small" id="mClose">Kapat</button>
+      </div>
+      <div class="modalBody">
+        <div class="section">
+          <h4>Özet</h4>
+          <div class="two">
+            <div class="pill"><span class="muted">Job</span> · <span id="mJobId" class="mono"></span></div>
+            <div class="pill"><span class="muted">Durum</span> · <span id="mStatus"></span></div>
+          </div>
+          <div class="two" style="margin-top:10px">
+            <div class="pill"><span class="muted">Hizmet</span> · <span id="mService"></span></div>
+            <div class="pill"><span class="muted">Sürücü</span> · <span id="mDriver"></span></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h4>Müşteri</h4>
+          <div class="kv">
+            <div class="k">Ad</div><div class="v" id="mUserName">—</div>
+            <div class="k">Telefon</div><div class="v" id="mUserPhone">—</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h4>Rota & Ücret</h4>
+          <div class="kv">
+            <div class="k">Pickup</div><div class="v" id="mPickup">—</div>
+            <div class="k">Dropoff</div><div class="v" id="mDropoff">—</div>
+            <div class="k">Mesafe (km)</div><div class="v" id="mDistance">—</div>
+            <div class="k">Fiyat</div><div class="v" id="mPrice">—</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h4>Manuel Sürücü Atama</h4>
+          <div class="row">
+            <select id="mDriverSelect" class="select" style="flex:1;min-width:220px">
+              <option value="">Sürücü seç…</option>
+            </select>
+            <button id="btnAssign" class="btn">Ata</button>
+          </div>
+          <div class="hint" style="margin-top:8px">
+            Atama sonrası job durumu otomatik <span class="muted">assigned</span> yapılır.
+          </div>
+        </div>
+
+        <div class="section">
+          <h4>Durum Güncelle</h4>
+          <div class="row">
+            <select id="mStatusSelect" class="select" style="flex:1;min-width:220px">
+              <option value="pending">pending</option>
+              <option value="assigned">assigned</option>
+              <option value="on_route">on_route</option>
+              <option value="completed">completed</option>
+            </select>
+            <button id="btnStatus" class="btn ok">Güncelle</button>
+          </div>
+          <div class="hint" style="margin-top:8px">
+            B1’de status akışı manuel. Otomasyon B2+.
+          </div>
+        </div>
+
+        <div class="row" style="justify-content:space-between;margin-top:10px">
+          <button id="btnCopyTrack" class="btn ghost">Track Link Kopyala</button>
+          <button id="btnDeleteStub" class="btn danger" disabled title="B1 kapsamı dışında">Sil (B1 dışı)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal (simple) -->
+  <div id="settingsBack" class="modalBack">
+    <div class="modal">
+      <div class="modalHead">
+        <div class="modalTitle">Ayarlar</div>
+        <button class="btn ghost small" id="sClose">Kapat</button>
+      </div>
+      <div class="modalBody">
+        <div class="section">
+          <h4>Backend URL</h4>
+          <div class="hint">Google Apps Script Web App URL’ini buraya yapıştır.</div>
+          <div class="row" style="margin-top:10px">
+            <input id="backendUrl" class="select" style="flex:1" placeholder="https://script.google.com/macros/s/...../exec" />
+            <button id="btnSaveUrl" class="btn">Kaydet</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h4>Otomatik Yenileme</h4>
+          <div class="row">
+            <select id="autoRefresh" class="select" style="min-width:220px">
+              <option value="15000">Açık (15 sn)</option>
+              <option value="30000">Açık (30 sn)</option>
+              <option value="60000">Açık (60 sn)</option>
+              <option value="0">Kapalı</option>
+            </select>
+            <button id="btnApplyAuto" class="btn">Uygula</button>
+          </div>
+          <div class="hint" style="margin-top:8px">B1 için öneri: 15 sn.</div>
+        </div>
+
+        <div class="section">
+          <h4>Track Link Formatı</h4>
+          <div class="hint">Müşteri takip sayfası için temel URL (örn: https://site.com/track.html)</div>
+          <div class="row" style="margin-top:10px">
+            <input id="trackBase" class="select" style="flex:1" placeholder="https://.../track.html" />
+            <button id="btnSaveTrack" class="btn">Kaydet</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ============================
+   SepetTaxi Admin B1
+   - Jobs list
+   - Job detail modal
+   - Manual driver assign
+   - Manual status update
+   ============================ */
+
+const STORAGE = {
+  backendUrl: "sepettaxi_backend_url",
+  autoMs: "sepettaxi_admin_auto_ms",
+  trackBase: "sepettaxi_track_base"
+};
+
+// 1) Backend URL (burayı doldur)
+let BACKEND_URL = localStorage.getItem(STORAGE.backendUrl) || "";
+
+// 2) API action isimleri (backend farklı ise sadece burayı uyarlarsın)
+const API = {
+  actions: {
+    getJobs: "getJobs",
+    getDrivers: "getDrivers",
+    assignDriver: "assignDriver",
+    updateStatus: "updateStatus"
+  }
+};
+
+// 3) UI elements
+const el = (id)=>document.getElementById(id);
+
+const state = {
+  jobs: [],
+  drivers: [],
+  selectedJob: null,
+  autoMs: Number(localStorage.getItem(STORAGE.autoMs) || 15000),
+  autoTimer: null,
+  trackBase: localStorage.getItem(STORAGE.trackBase) || ""
+};
+
+// -------- Helpers --------
+function showError(msg){
+  const bar = el("errbar");
+  bar.textContent = msg;
+  bar.classList.add("show");
+  setTimeout(()=>bar.classList.remove("show"), 6000);
+}
+function fmtDate(ts){
+  if(!ts) return "—";
+  try{
+    const d = new Date(ts);
+    if(isNaN(d.getTime())) return String(ts);
+    const pad = (n)=>String(n).padStart(2,"0");
+    return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }catch(e){ return String(ts); }
+}
+function num(x){
+  const n = Number(x);
+  return isFinite(n) ? n : 0;
+}
+function normStr(x){
+  return (x ?? "").toString().trim();
+}
+function serviceKey(s){
+  s = normStr(s).toLowerCase();
+  if(s.includes("taxi")) return "taxi";
+  if(s.includes("kurye") || s.includes("courier")) return "courier";
+  if(s.includes("transfer")) return "transfer";
+  return s || "";
+}
+function statusKey(s){
+  s = normStr(s).toLowerCase();
+  if(s.includes("pending")) return "pending";
+  if(s.includes("assigned")) return "assigned";
+  if(s.includes("on_route") || s.includes("onroute") || s.includes("yolda")) return "on_route";
+  if(s.includes("completed") || s.includes("done") || s.includes("tamam")) return "completed";
+  return s || "pending";
+}
+function jobToSearchBlob(j){
+  return [
+    j.job_id, j.user_name, j.user_phone,
+    j.service_type, j.status, j.driver_id, j.driver_name,
+    j.pickup_address, j.dropoff_address
+  ].map(normStr).join(" ").toLowerCase();
+}
+function stClass(st){
+  const k = statusKey(st);
+  return `st-${k}`;
+}
+function stLabel(st){
+  return statusKey(st);
+}
+function svcLabel(s){
+  const k = serviceKey(s);
+  if(k==="taxi") return "taxi";
+  if(k==="courier") return "courier";
+  if(k==="transfer") return "transfer";
+  return k || "—";
+}
+
+// -------- Backend Call --------
+// Beklenen backend: GET veya POST ile action parametresi
+async function apiCall(action, payload={}){
+  if(!BACKEND_URL){
+    throw new Error("Backend URL boş. Ayarlar > Backend URL gir.");
+  }
+  const url = BACKEND_URL;
+
+  // Önce POST dene, başarısız olursa GET fallback
+  try{
+    const r = await fetch(url, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ action, ...payload })
+    });
+    const t = await r.text();
+    let data;
+    try{ data = JSON.parse(t); }catch(e){ data = t; }
+    if(!r.ok) throw new Error(typeof data==="string" ? data : (data.error || "HTTP "+r.status));
+    return data;
+  }catch(postErr){
+    // GET fallback
+    const qs = new URLSearchParams({ action, ...Object.fromEntries(Object.entries(payload).map(([k,v])=>[k, String(v)])) });
+    const r = await fetch(url + (url.includes("?") ? "&" : "?") + qs.toString(), { method:"GET" });
+    const t = await r.text();
+    let data;
+    try{ data = JSON.parse(t); }catch(e){ data = t; }
+    if(!r.ok) throw new Error(typeof data==="string" ? data : (data.error || "HTTP "+r.status));
+    return data;
+  }
+}
+
+// -------- Data Adapters --------
+// Backend farklı field isimleri döndürürse burada normalize edilir.
+function normalizeJob(raw){
+  const j = raw || {};
+  return {
+    job_id: normStr(j.job_id || j.id || j.jobId),
+    created_at: j.created_at || j.createdAt || j.ts || j.timestamp || "",
+    service_type: normStr(j.service_type || j.service || j.serviceType),
+    user_name: normStr(j.user_name || j.name || j.userName),
+    user_phone: normStr(j.user_phone || j.phone || j.userPhone),
+    pickup_address: normStr(j.pickup_address || j.pickup || j.pickupAddress),
+    dropoff_address: normStr(j.dropoff_address || j.dropoff || j.dropoffAddress),
+    distance_km: num(j.distance_km ?? j.distance ?? j.km),
+    estimated_price: num(j.estimated_price ?? j.price ?? j.fare),
+    status: statusKey(j.status),
+    driver_id: normStr(j.driver_id || j.driverId),
+    driver_name: normStr(j.driver_name || j.driverName || "")
+  };
+}
+function normalizeDriver(raw){
+  const d = raw || {};
+  return {
+    driver_id: normStr(d.driver_id || d.id || d.driverId),
+    name: normStr(d.name || d.driver_name || d.driverName || d.full_name || d.fullName),
+    phone: normStr(d.phone || d.driver_phone || d.driverPhone),
+    status: normStr(d.status || d.driver_status || ""),
+    vehicle: normStr(d.vehicle || d.vehicle_type || "")
+  };
+}
+
+// -------- UI Render --------
+function renderKPIs(jobs){
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0,0).getTime();
+  const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23,59,59,999).getTime();
+
+  let today=0, active=0, done=0;
+  for(const j of jobs){
+    const ts = new Date(j.created_at).getTime();
+    if(!isNaN(ts) && ts>=start && ts<=end) today++;
+    const st = statusKey(j.status);
+    if(st==="completed") done++;
+    if(st==="pending" || st==="assigned" || st==="on_route") active++;
+  }
+  el("kpiToday").textContent = String(today);
+  el("kpiActive").textContent = String(active);
+  el("kpiDone").textContent = String(done);
+}
+
+function applyFiltersAndSort(){
+  const q = normStr(el("q").value).toLowerCase();
+  const fs = normStr(el("filterStatus").value);
+  const fsvc = normStr(el("filterService").value);
+  const sortBy = el("sortBy").value;
+
+  let list = state.jobs.slice();
+
+  if(fs) list = list.filter(j => statusKey(j.status) === fs);
+  if(fsvc) list = list.filter(j => serviceKey(j.service_type) === fsvc);
+  if(q){
+    list = list.filter(j => jobToSearchBlob(j).includes(q));
+  }
+
+  const createdMs = (j)=>{
+    const t = new Date(j.created_at).getTime();
+    return isNaN(t) ? 0 : t;
+  };
+
+  const cmp = {
+    created_desc: (a,b)=>createdMs(b)-createdMs(a),
+    created_asc: (a,b)=>createdMs(a)-createdMs(b),
+    price_desc: (a,b)=>num(b.estimated_price)-num(a.estimated_price),
+    price_asc: (a,b)=>num(a.estimated_price)-num(b.estimated_price),
+    distance_desc: (a,b)=>num(b.distance_km)-num(a.distance_km),
+    distance_asc: (a,b)=>num(a.distance_km)-num(b.distance_km)
+  }[sortBy];
+
+  if(cmp) list.sort(cmp);
+  return list;
+}
+
+function renderList(){
+  const listEl = el("list");
+  listEl.innerHTML = "";
+  const filtered = applyFiltersAndSort();
+
+  if(filtered.length===0){
+    el("empty").style.display = "block";
+    return;
+  }
+  el("empty").style.display = "none";
+
+  for(const j of filtered){
+    const st = statusKey(j.status);
+    const svc = svcLabel(j.service_type);
+
+    const driverText = j.driver_name ? j.driver_name : (j.driver_id ? ("#" + j.driver_id) : "—");
+    const job = document.createElement("div");
+    job.className = "job";
+    job.innerHTML = `
+      <div>
+        <div class="colTitle">Job</div>
+        <div class="colVal mono">${escapeHtml(j.job_id || "—")}</div>
+        <div class="hint">${escapeHtml(fmtDate(j.created_at))}</div>
       </div>
 
-      <div class="row" style="margin-top:8px">
-        <div class="col"><button class="action" onclick="assignDriver('${j.job_id}')">Driver Ata</button></div>
-        <div class="col"><button class="secondary action" onclick="updateStatus('${j.job_id}')">Status Güncelle</button></div>
-        <div class="col"><button class="secondary action" onclick="updatePrice('${j.job_id}')">Fiyat Güncelle</button></div>
+      <div>
+        <div class="colTitle">Hizmet</div>
+        <div class="colVal">${escapeHtml(svc)}</div>
       </div>
 
-      <div class="timeline">
-        <span class="${j.created_at?'done':''}">Created</span>
-        <span class="${j.assigned_at?'done':''}">Assigned</span>
-        <span class="${j.active_at?'done':''}">Active</span>
-        <span class="${j.completed_at?'done':''}">Completed</span>
+      <div>
+        <div class="colTitle">Mesafe</div>
+        <div class="colVal">${escapeHtml((j.distance_km||0).toFixed(2))} km</div>
+      </div>
+
+      <div>
+        <div class="colTitle">Fiyat</div>
+        <div class="colVal">${escapeHtml((j.estimated_price||0).toFixed(0))}</div>
+      </div>
+
+      <div>
+        <div class="colTitle">Durum</div>
+        <div class="chip ${stClass(st)}"><span class="dot"></span>${escapeHtml(stLabel(st))}</div>
+      </div>
+
+      <div>
+        <div class="colTitle">Sürücü</div>
+        <div class="colVal">${escapeHtml(driverText)}</div>
       </div>
     `;
-    jobs.appendChild(c);
-  });
+    job.addEventListener("click", ()=>openJobModal(j.job_id));
+    listEl.appendChild(job);
+  }
 }
 
-async function post(action,payload){
-  await fetch(API_URL,{method:"POST",body:JSON.stringify({action,...payload})});
-  loadJobs();
+function escapeHtml(str){
+  return (str ?? "").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 }
 
-function assignDriver(id){ post("assignDriver",{job_id:id,driver_id:document.getElementById("d-"+id).value}); }
-function updateStatus(id){ post("updateStatus",{job_id:id,status:document.getElementById("s-"+id).value}); }
-function updatePrice(id){ post("updatePrice",{job_id:id,final_price:document.getElementById("p-"+id).value}); }
+// -------- Modal --------
+function openModal(id, show=true){
+  const back = el(id);
+  back.classList.toggle("show", show);
+}
+function openJobModal(jobId){
+  const j = state.jobs.find(x=>x.job_id===jobId);
+  if(!j){ showError("İş bulunamadı."); return; }
+  state.selectedJob = j;
 
-/* DRIVERS */
-async function loadDrivers(){
-  const r=await fetch(API_URL+"?action=listDrivers");
-  const data=await r.json();
-  tabDrivers.innerHTML="";
-  data.filter(d=>d.status==="pending").forEach(d=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`
-      <b>${d.first_name} ${d.last_name}</b><br>
-      ${d.phone} • ${d.vehicle_type}<br><br>
-      <button class="action" onclick="driverAction('approveDriver','${d.driver_id}')">Onayla</button>
-      <button class="secondary action" onclick="driverAction('rejectDriver','${d.driver_id}')">Reddet</button>
-    `;
-    tabDrivers.appendChild(c);
-  });
+  el("mJobId").textContent = j.job_id || "—";
+  el("mStatus").textContent = stLabel(j.status);
+  el("mService").textContent = svcLabel(j.service_type);
+  el("mDriver").textContent = j.driver_name || (j.driver_id ? ("#" + j.driver_id) : "—");
+  el("mUserName").textContent = j.user_name || "—";
+  el("mUserPhone").textContent = j.user_phone || "—";
+  el("mPickup").textContent = j.pickup_address || "—";
+  el("mDropoff").textContent = j.dropoff_address || "—";
+  el("mDistance").textContent = (j.distance_km||0).toFixed(2);
+  el("mPrice").textContent = (j.estimated_price||0).toFixed(0);
+
+  // Status dropdown current
+  el("mStatusSelect").value = statusKey(j.status);
+
+  // Driver dropdown
+  const ds = el("mDriverSelect");
+  ds.innerHTML = `<option value="">Sürücü seç…</option>`;
+  for(const d of state.drivers){
+    const label = `${d.name || ("#" + d.driver_id)}${d.phone ? " · " + d.phone : ""}${d.vehicle ? " · " + d.vehicle : ""}`;
+    const opt = document.createElement("option");
+    opt.value = d.driver_id;
+    opt.textContent = label;
+    ds.appendChild(opt);
+  }
+  if(j.driver_id) ds.value = j.driver_id;
+
+  openModal("modalBack", true);
 }
 
-function driverAction(a,id){
-  fetch(API_URL,{method:"POST",body:JSON.stringify({action:a,driver_id:id})}).then(loadDrivers);
+function closeJobModal(){
+  state.selectedJob = null;
+  openModal("modalBack", false);
 }
 
-loadJobs();
+// -------- Actions --------
+async function refreshAll(){
+  try{
+    el("btnRefresh").disabled = true;
+
+    // drivers first (dropdown ready)
+    const dRes = await apiCall(API.actions.getDrivers, {});
+    const dList = Array.isArray(dRes) ? dRes : (dRes.drivers || dRes.data || []);
+    state.drivers = dList.map(normalizeDriver).filter(d=>d.driver_id || d.name);
+
+    // jobs
+    const jRes = await apiCall(API.actions.getJobs, {});
+    const jList = Array.isArray(jRes) ? jRes : (jRes.jobs || jRes.data || []);
+    state.jobs = jList.map(normalizeJob).filter(j=>j.job_id);
+
+    renderKPIs(state.jobs);
+    renderList();
+
+    const now = new Date();
+    el("lastSync").textContent = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
+  }catch(e){
+    showError(e.message || String(e));
+  }finally{
+    el("btnRefresh").disabled = false;
+  }
+}
+
+async function assignDriver(){
+  const j = state.selectedJob;
+  if(!j){ return; }
+  const driver_id = el("mDriverSelect").value;
+  if(!driver_id){ showError("Sürücü seçmelisin."); return; }
+
+  try{
+    el("btnAssign").disabled = true;
+    const res = await apiCall(API.actions.assignDriver, { job_id: j.job_id, driver_id });
+    // optimistic update
+    j.driver_id = driver_id;
+    const d = state.drivers.find(x=>x.driver_id===driver_id);
+    j.driver_name = d ? d.name : "";
+    j.status = "assigned";
+
+    // UI refresh
+    openJobModal(j.job_id);
+    renderKPIs(state.jobs);
+    renderList();
+  }catch(e){
+    showError(e.message || String(e));
+  }finally{
+    el("btnAssign").disabled = false;
+  }
+}
+
+async function updateStatus(){
+  const j = state.selectedJob;
+  if(!j){ return; }
+  const status = el("mStatusSelect").value;
+
+  try{
+    el("btnStatus").disabled = true;
+    await apiCall(API.actions.updateStatus, { job_id: j.job_id, status });
+    j.status = status;
+
+    openJobModal(j.job_id);
+    renderKPIs(state.jobs);
+    renderList();
+  }catch(e){
+    showError(e.message || String(e));
+  }finally{
+    el("btnStatus").disabled = false;
+  }
+}
+
+async function copyTrackLink(){
+  const j = state.selectedJob;
+  if(!j){ return; }
+  const base = state.trackBase || "";
+  if(!base){
+    showError("Track base URL boş. Ayarlar > Track Link Formatı gir.");
+    return;
+  }
+  // örn: https://site.com/track.html?job_id=XYZ
+  const link = base + (base.includes("?") ? "&" : "?") + "job_id=" + encodeURIComponent(j.job_id);
+  try{
+    await navigator.clipboard.writeText(link);
+    showError("Track link kopyalandı."); // kısa toast olarak kullanıyoruz
+  }catch(e){
+    // fallback
+    prompt("Kopyalamak için Ctrl+C:", link);
+  }
+}
+
+// -------- Auto Refresh --------
+function applyAuto(){
+  clearInterval(state.autoTimer);
+  if(state.autoMs>0){
+    state.autoTimer = setInterval(()=>refreshAll(), state.autoMs);
+    el("autoState").textContent = `Açık (${Math.round(state.autoMs/1000)} sn)`;
+  }else{
+    el("autoState").textContent = "Kapalı";
+  }
+}
+
+function openSettings(){
+  el("backendUrl").value = BACKEND_URL || "https://script.google.com/macros/s/AKfycbys0kfPST4tTxCmnhiCqjk8DeKDnUbSLvnL4h8k2IYGOjD9Kgjk-w2CVxRsNCVFZwvpKA/exec";
+  el("autoRefresh").value = String(state.autoMs);
+  el("trackBase").value = state.trackBase || "";
+  openModal("settingsBack", true);
+}
+function closeSettings(){ openModal("settingsBack", false); }
+
+// -------- Events --------
+el("btnRefresh").addEventListener("click", refreshAll);
+el("btnSettings").addEventListener("click", openSettings);
+
+el("q").addEventListener("input", ()=>renderList());
+el("filterStatus").addEventListener("change", ()=>renderList());
+el("filterService").addEventListener("change", ()=>renderList());
+el("sortBy").addEventListener("change", ()=>renderList());
+
+el("mClose").addEventListener("click", closeJobModal);
+el("modalBack").addEventListener("click", (e)=>{ if(e.target===el("modalBack")) closeJobModal(); });
+
+el("btnAssign").addEventListener("click", assignDriver);
+el("btnStatus").addEventListener("click", updateStatus);
+el("btnCopyTrack").addEventListener("click", copyTrackLink);
+
+el("sClose").addEventListener("click", closeSettings);
+el("settingsBack").addEventListener("click", (e)=>{ if(e.target===el("settingsBack")) closeSettings(); });
+
+el("btnSaveUrl").addEventListener("click", ()=>{
+  const v = normStr(el("backendUrl").value);
+  BACKEND_URL = v;
+  localStorage.setItem(STORAGE.backendUrl, v);
+  showError("Backend URL kaydedildi.");
+  closeSettings();
+  refreshAll();
+});
+
+el("btnSaveTrack").addEventListener("click", ()=>{
+  const v = normStr(el("trackBase").value);
+  state.trackBase = v;
+  localStorage.setItem(STORAGE.trackBase, v);
+  showError("Track base kaydedildi.");
+});
+
+el("btnApplyAuto").addEventListener("click", ()=>{
+  const v = Number(el("autoRefresh").value);
+  state.autoMs = v;
+  localStorage.setItem(STORAGE.autoMs, String(v));
+  applyAuto();
+  showError("Otomatik yenileme uygulandı.");
+});
+
+// -------- Init --------
+(function init(){
+  applyAuto();
+  // URL yoksa ayar aç
+  if(!BACKEND_URL){
+    openSettings();
+  }else{
+    refreshAll();
+  }
+})();
 </script>
 </body>
 </html>
