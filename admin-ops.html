@@ -33,7 +33,12 @@ td,th{border-top:1px solid #222;padding:8px;text-align:left}
     <b>Canlı İşler</b>
     <table id="activeTbl">
       <thead>
-        <tr><th>Job</th><th>Sürücü</th><th>Hizmet</th><th>Başlangıç</th></tr>
+        <tr>
+          <th>Job</th>
+          <th>Sürücü</th>
+          <th>Hizmet</th>
+          <th>Başlangıç</th>
+        </tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -42,42 +47,62 @@ td,th{border-top:1px solid #222;padding:8px;text-align:left}
   <div class="card">
     <b>Sürücü Başına (Bugün)</b>
     <table id="drvTbl">
-      <thead><tr><th>Sürücü</th><th>Tamamlanan</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Sürücü</th>
+          <th>Tamamlanan</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
 </div>
 
 <script>
-const BACKEND="https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+/* === BACKEND (GÖMÜLÜ) === */
+const BACKEND =
+"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
 async function load(){
+  // OPS SUMMARY
   const s = await (await fetch(`${BACKEND}?action=getOpsSummary`)).json();
-  t1.innerText=s.today_total;
-  t2.innerText=s.active_total;
-  t3.innerText=s.completed_today;
-  t4.innerText=s.drivers_total;
 
+  t1.innerText = s.today_total ?? "—";
+  t2.innerText = s.active_total ?? "—";
+  t3.innerText = s.completed_today ?? "—";
+  t4.innerText = s.drivers_total ?? "—";
+
+  // ACTIVE JOBS
   const a = await (await fetch(`${BACKEND}?action=getActiveJobs`)).json();
-  const tb=document.querySelector("#activeTbl tbody");
-  tb.innerHTML="";
-  a.forEach(j=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${j.job_id}</td><td>${j.driver_id||"—"}</td><td>${j.service_type||""}</td><td>${j.active_at||""}</td>`;
+  const tb = document.querySelector("#activeTbl tbody");
+  tb.innerHTML = "";
+
+  (a || []).forEach(j=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${j.job_id || "—"}</td>
+      <td>${j.driver_id || "—"}</td>
+      <td>${j.service_type || "—"}</td>
+      <td>${j.active_at || "—"}</td>
+    `;
     tb.appendChild(tr);
   });
 
-  const db=document.querySelector("#drvTbl tbody");
-  db.innerHTML="";
-  Object.keys(s.completed_by_driver||{}).forEach(k=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${k}</td><td>${s.completed_by_driver[k]}</td>`;
+  // COMPLETED BY DRIVER
+  const db = document.querySelector("#drvTbl tbody");
+  db.innerHTML = "";
+
+  const byDrv = s.completed_by_driver || {};
+  Object.keys(byDrv).forEach(k=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${k}</td><td>${byDrv[k]}</td>`;
     db.appendChild(tr);
   });
 }
 
+// ilk yükleme + otomatik yenileme
 load();
-setInterval(load,15000);
+setInterval(load, 15000);
 </script>
 
 </body>
