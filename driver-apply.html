@@ -16,7 +16,7 @@ input,select,button{width:100%;padding:12px;border-radius:10px;border:none;margi
 input,select{background:#0f0f0f;color:#fff;border:1px solid #333}
 button{background:#f5c400;color:#000;font-weight:bold;cursor:pointer;margin-top:14px}
 .small{font-size:12px;color:#aaa;line-height:1.35;margin-top:10px}
-.notice{margin-top:12px;padding:12px;border-radius:12px;background:#111;border:1px solid #2a2a2a;color:#ddd}
+.notice{margin-top:12px;padding:12px;border-radius:12px;background:#111;border:1px solid #2a2a2a;color:#ddd;display:none}
 .notice.ok{border-color:#2ecc71}
 .notice.bad{border-color:#e74c3c}
 .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -24,29 +24,31 @@ button{background:#f5c400;color:#000;font-weight:bold;cursor:pointer;margin-top:
 a{color:#f5c400;text-decoration:none}
 </style>
 </head>
+
 <body>
 <header>Sepet<span>Taxi</span> Sürücü Başvurusu</header>
 
 <div class="container">
   <div class="card">
     <div class="small">
-      Bu sayfa sürücü aday başvurusu içindir. Başvurunuz alındıktan sonra admin onay sürecine girer.
-      Onay sonrası sürücü paneline giriş bilgileri paylaşılır.
+      Bu sayfa sürücü aday başvurusu içindir.
+      Başvurunuz admin onay sürecine girer.
+      Onay sonrası sürücü paneli bilgileri paylaşılır.
     </div>
 
     <div class="row">
       <div class="col">
         <div class="label">Ad</div>
-        <input id="firstName" placeholder="Örn: Ahmet" autocomplete="given-name">
+        <input id="firstName" placeholder="Örn: Ahmet">
       </div>
       <div class="col">
         <div class="label">Soyad</div>
-        <input id="lastName" placeholder="Örn: Yılmaz" autocomplete="family-name">
+        <input id="lastName" placeholder="Örn: Yılmaz">
       </div>
     </div>
 
-    <div class="label">Telefon (10-11 hane)</div>
-    <input id="phone" placeholder="05xxxxxxxxx" inputmode="tel" autocomplete="tel">
+    <div class="label">Telefon</div>
+    <input id="phone" placeholder="05xxxxxxxxx" inputmode="tel">
 
     <div class="label">Araç Tipi</div>
     <select id="vehicleType">
@@ -60,21 +62,18 @@ a{color:#f5c400;text-decoration:none}
 
     <button id="submitBtn" onclick="submitApplication()">Başvuruyu Gönder</button>
 
-    <div id="msg" class="notice" style="display:none"></div>
+    <div id="msg" class="notice"></div>
 
     <div class="small">
-      Admin panel: <b>Driver Başvuruları</b> sekmesinden onay verilir.
-      Onaydan sonra <a href="./driver.html">driver.html</a> ile giriş yapılır.
+      Onay sonrası <a href="./driver.html">driver.html</a> üzerinden giriş yapılır.
     </div>
   </div>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-function cleanPhone(p){
-  return (p||"").replace(/\D/g,"");
-}
+function cleanPhone(p){ return (p||"").replace(/\D/g,""); }
 
 function showMsg(type,text){
   msg.style.display="block";
@@ -83,16 +82,16 @@ function showMsg(type,text){
 }
 
 async function submitApplication(){
-  const first_name = (firstName.value||"").trim();
-  const last_name  = (lastName.value||"").trim();
-  const phoneRaw   = cleanPhone(phone.value);
+  const first_name = firstName.value.trim();
+  const last_name  = lastName.value.trim();
+  const phone      = cleanPhone(phone.value);
   const vehicle_type = vehicleType.value;
 
   if(!first_name || !last_name){
     showMsg("bad","Ad ve soyad zorunludur.");
     return;
   }
-  if(phoneRaw.length < 10 || phoneRaw.length > 11){
+  if(phone.length < 10 || phone.length > 11){
     showMsg("bad","Telefon 10-11 hane olmalıdır.");
     return;
   }
@@ -107,18 +106,20 @@ async function submitApplication(){
         action:"applyDriver",
         first_name,
         last_name,
-        phone: phoneRaw,
+        phone,
         vehicle_type
       })
     });
-    const resText = await r.text(); // backend JSON dönüyor; ama burada basit tutuyoruz
-    // Başarı: drivers sheet'e pending satır düşer, driver_id backend üretir
-    showMsg("ok","Başvurunuz alındı. Admin onayı sonrası sürücü paneli giriş bilgileri paylaşılacaktır.");
-    // formu kilitle
-    firstName.value=""; lastName.value=""; phone.value="";
+    const res = await r.json();
+
+    if(res.ok){
+      showMsg("ok","Başvurunuz alındı. Admin onayı bekleniyor.");
+      firstName.value=""; lastName.value=""; phone.value="";
+    }else{
+      showMsg("bad",res.error||"Başvuru alınamadı.");
+    }
   }catch(e){
-    console.error(e);
-    showMsg("bad","Başvuru gönderilemedi. Lütfen tekrar deneyin.");
+    showMsg("bad","Sunucuya ulaşılamadı.");
   }finally{
     submitBtn.disabled = false;
     submitBtn.textContent = "Başvuruyu Gönder";
