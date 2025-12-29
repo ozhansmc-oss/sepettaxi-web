@@ -10,65 +10,110 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff;overflow:hidden}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
 
 /* LANDING */
 #landing{position:fixed;inset:0;background:#000 url("assets/landing.png") center/cover no-repeat;z-index:50}
-#landing .overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center}
-#landing h1{font-size:38px;margin-bottom:18px}
+#landing .overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#landing h1{font-size:40px;letter-spacing:.5px;margin-bottom:18px}
 #landing span{color:#f5c400}
-#landing button{background:#f5c400;color:#000;border:0;border-radius:26px;padding:14px 42px;font-size:17px;font-weight:900}
+#landing button{
+  background:#f5c400;color:#000;border:0;border-radius:28px;
+  padding:14px 46px;font-size:17px;font-weight:900;
+  box-shadow:0 10px 30px rgba(245,196,0,.35);
+}
 
 /* APP */
 #app{display:none;height:100%}
-header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900}
+header{
+  height:56px;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;letter-spacing:.3px
+}
 header span{color:#f5c400}
 
 /* MAP + PANEL */
-#map{height:30vh}
-#panel{height:calc(70vh - 56px);padding:8px;display:flex;flex-direction:column;gap:6px}
+#map{height:32vh}
+#panel{
+  height:calc(68vh - 56px);
+  padding:10px;
+  display:flex;flex-direction:column;gap:8px
+}
 
-/* UI */
-.card{background:#1b1b1b;border-radius:10px;padding:8px}
-.service-row{display:flex;gap:6px}
-.service{flex:1;padding:8px;border-radius:8px;text-align:center;border:1px solid #333;font-size:13px}
-.service.active{border-color:#f5c400}
-.input{width:100%;padding:8px;border-radius:8px;border:1px solid #333;background:#000;color:#fff;font-size:13px}
-.row{display:flex;gap:6px}
-.row .card{flex:1;text-align:center}
-.big{font-size:15px;font-weight:900}
+/* CARDS */
+.card{
+  background:linear-gradient(180deg,#141414,#0f0f0f);
+  border-radius:14px;
+  padding:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,.6);
+}
 
-/* CALL BAR */
-#callBar{display:none;background:#f5c400;color:#000;border-radius:22px;padding:12px;text-align:center;font-weight:900;margin-top:auto}
+/* SERVICE */
+.service-row{display:flex;gap:8px}
+.service{
+  flex:1;padding:10px;border-radius:12px;
+  text-align:center;font-size:13px;
+  border:1px solid #222;color:#aaa;
+  transition:.2s
+}
+.service.active{
+  border-color:#f5c400;color:#fff;
+  box-shadow:0 0 0 1px rgba(245,196,0,.25),0 8px 18px rgba(245,196,0,.25)
+}
+
+/* INPUTS */
+.input{
+  width:100%;padding:10px 12px;border-radius:12px;
+  border:1px solid #1f1f1f;background:#000;color:#fff;font-size:13px
+}
+.input::placeholder{color:#666}
+
+/* STATS */
+.row{display:flex;gap:8px}
+.row .card{text-align:center}
+.big{font-size:16px;font-weight:900}
+
+/* CTA */
+#callBar{
+  display:none;
+  background:#f5c400;color:#000;
+  border-radius:28px;padding:14px;
+  text-align:center;font-weight:900;
+  margin-top:auto;
+  box-shadow:0 12px 30px rgba(245,196,0,.45);
+  transition:transform .12s
+}
+#callBar:active{transform:scale(.98)}
 
 /* DRIVER CTA */
-#driverCta{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #333;border-radius:20px;padding:5px 14px;font-size:11px;z-index:10}
+#driverCta{
+  position:fixed;bottom:6px;left:50%;
+  transform:translateX(-50%);
+  background:#0f0f0f;border:1px solid #222;
+  border-radius:20px;padding:6px 14px;
+  font-size:11px;z-index:10
+}
 
 /* REGISTER */
-#register{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:100}
-#register .box{width:88%;max-width:340px;background:#111;border-radius:14px;padding:12px}
+#register{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100}
+#register .box{
+  width:88%;max-width:340px;
+  background:#0f0f0f;border-radius:16px;padding:14px;
+  box-shadow:0 20px 50px rgba(0,0,0,.7)
+}
 #register .err{color:#ff5c5c;font-size:12px;display:none}
 
 /* SEARCH DRIVER */
 #searching{
   position:fixed;inset:0;
-  background:rgba(0,0,0,.92);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-  z-index:200;
+  background:rgba(0,0,0,.95);
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;z-index:200
 }
-#searching .txt{font-size:18px;font-weight:900;margin-bottom:10px}
-#dots::after{
-  content:"";
-  animation:dots 1.5s infinite;
-}
+#searching .txt{font-size:18px;font-weight:900;letter-spacing:.3px}
+#dots::after{content:"";animation:dots 1.4s infinite}
 @keyframes dots{
-  0%{content:""}
-  33%{content:"."}
-  66%{content:".."}
-  100%{content:"..."}
+  0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}
 }
 </style>
 </head>
@@ -89,7 +134,7 @@ header span{color:#f5c400}
   <div id="panel">
     <div class="card">
       <b>Hizmet Seç</b>
-      <div class="service-row">
+      <div class="service-row" style="margin-top:6px">
         <div id="svcTaxi" class="service" onclick="pickService('taxi')">🚕 Taksi</div>
         <div id="svcCourier" class="service" onclick="pickService('courier')">📦 Kurye</div>
       </div>
@@ -105,8 +150,8 @@ header span{color:#f5c400}
     </div>
 
     <div class="row">
-      <div class="card"><div>Mesafe</div><div id="dist" class="big">—</div></div>
-      <div class="card"><div>Ücret</div><div id="price" class="big">—</div></div>
+      <div class="card"><div style="font-size:11px;color:#888">Mesafe</div><div id="dist" class="big">—</div></div>
+      <div class="card"><div style="font-size:11px;color:#888">Ücret</div><div id="price" class="big">—</div></div>
     </div>
 
     <div id="callBar" onclick="callDriver()">ÇAĞIR</div>
@@ -117,7 +162,7 @@ header span{color:#f5c400}
 
 <div id="searching">
   <div class="txt">Sürücü aranıyor<span id="dots"></span></div>
-  <div style="font-size:12px;color:#aaa">Lütfen bekleyin</div>
+  <div style="font-size:12px;color:#888;margin-top:6px">Lütfen bekleyin</div>
 </div>
 
 <div id="register">
@@ -125,9 +170,9 @@ header span{color:#f5c400}
     <input id="fn" class="input" placeholder="Ad">
     <input id="ln" class="input" placeholder="Soyad">
     <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <label style="font-size:12px"><input type="checkbox" id="kvkk"> KVKK kabul</label>
+    <label style="font-size:12px;color:#aaa"><input type="checkbox" id="kvkk"> KVKK kabul</label>
     <div id="regErr" class="err">Bilgiler hatalı</div>
-    <div class="callBar" style="display:block;margin-top:8px" onclick="saveUser()">KAYDI TAMAMLA</div>
+    <div id="callBar" style="display:block;margin-top:10px" onclick="saveUser()">KAYDI TAMAMLA</div>
   </div>
 </div>
 
