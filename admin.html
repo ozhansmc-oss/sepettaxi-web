@@ -1,174 +1,179 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SepetTaxi – Admin (B1)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SepetTaxi – Admin B1</title>
 
 <style>
-:root{
-  --bg:#000;--card:#141414;--card2:#1b1b1b;--text:#fff;--muted:#bdbdbd;
-  --line:#2a2a2a;--accent:#f5c400;--ok:#27c24c;--warn:#ffb020;
-  --chip:#222;--r:16px;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
-header{height:56px;background:#000;border-bottom:1px solid var(--line);
-display:flex;align-items:center;justify-content:center;position:sticky;top:0;z-index:20}
-header .brand{font-weight:900}
-header .brand span{color:var(--accent)}
-.wrap{max-width:1100px;margin:auto;padding:14px}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px}
-.kpi{grid-column:span 4}
-.kpi .label{color:var(--muted);font-size:12px}
-.kpi .value{font-size:26px;font-weight:900}
-.panel{grid-column:span 12}
-.job{display:grid;grid-template-columns:1.2fr .9fr .8fr .8fr .9fr .9fr;
-gap:10px;padding:12px;border-radius:14px;background:var(--card2);
-border:1px solid var(--line);margin-bottom:10px;cursor:pointer}
-.colTitle{color:var(--muted);font-size:11px}
-.colVal{font-weight:800;font-size:13px}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;
-border-radius:999px;background:var(--chip);font-size:12px;font-weight:900}
-.dot{width:8px;height:8px;border-radius:99px}
-.st-pending .dot{background:var(--warn)}
-.st-assigned .dot{background:#5aa7ff}
-.st-on_route .dot{background:var(--accent)}
-.st-completed .dot{background:var(--ok)}
-.empty{padding:18px;border:1px dashed var(--line);border-radius:14px;
-color:var(--muted);text-align:center}
-.modalBack{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
-align-items:flex-end;justify-content:center;padding:10px}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+header{height:56px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #222;font-weight:900}
+header span{color:#f5c400}
+.wrap{max-width:1100px;margin:auto;padding:16px}
+.job{background:#121212;border:1px solid #222;border-radius:14px;padding:14px;margin-bottom:12px;cursor:pointer}
+.row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.badge{padding:6px 10px;border-radius:10px;font-weight:900;font-size:13px}
+.pending{background:#444}
+.assigned{background:#555}
+.on_route{background:#f5c400;color:#000}
+.completed{background:#2ecc71;color:#000}
+.muted{color:#aaa;font-size:13px}
+button{padding:12px 14px;border-radius:12px;border:none;font-weight:900;cursor:pointer}
+.btn{background:#f5c400;color:#000}
+.btn.ghost{background:#000;color:#fff;border:1px solid #333}
+.modalBack{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center}
 .modalBack.show{display:flex}
-.modal{background:#141414;border-radius:20px;max-width:720px;width:100%;
-border:1px solid var(--line)}
-.modalHead{padding:12px;border-bottom:1px solid var(--line);
-display:flex;justify-content:space-between}
-.modalBody{padding:12px}
-.btn{padding:10px 12px;border-radius:12px;border:0;font-weight:900;cursor:pointer}
-.btn.main{background:#fff;color:#000}
-.btn.ghost{background:transparent;color:#fff;border:1px solid var(--line)}
-.select{width:100%;padding:10px;border-radius:12px;background:#0f0f0f;
-color:#fff;border:1px solid var(--line)}
+.modal{background:#121212;border-radius:16px;padding:16px;width:90%;max-width:520px}
+select{width:100%;padding:12px;border-radius:12px;background:#000;color:#fff;border:1px solid #333;margin-bottom:10px}
 </style>
 </head>
 
 <body>
 
-<header>
-  <div class="brand">Sepet<span>Taxi</span> – Admin B1</div>
-</header>
+<header>Sepet<span>Taxi</span> – Admin B1</header>
 
 <div class="wrap">
-  <div class="grid">
-    <div class="card kpi"><div class="label">Bugünkü İş</div><div id="kToday" class="value">0</div></div>
-    <div class="card kpi"><div class="label">Aktif İş</div><div id="kActive" class="value">0</div></div>
-    <div class="card kpi"><div class="label">Tamamlanan</div><div id="kDone" class="value">0</div></div>
-
-    <div class="card panel">
-      <div id="list"></div>
-      <div id="empty" class="empty" style="display:none">Kayıt yok</div>
-    </div>
-  </div>
+  <div id="jobs"></div>
 </div>
 
 <!-- MODAL -->
 <div id="modalBack" class="modalBack">
   <div class="modal">
-    <div class="modalHead">
-      <b>İş Detayı</b>
-      <button class="btn ghost" onclick="closeModal()">Kapat</button>
-    </div>
-    <div class="modalBody">
-      <div><b id="mJob"></b></div>
-      <div id="mRoute"></div><br>
+    <h3>İş Detayı</h3>
 
-      <select id="driverSelect" class="select"></select><br><br>
-      <button class="btn main" onclick="assign()">Sürücü Ata</button>
-    </div>
+    <div class="muted">Job ID</div>
+    <b id="mJob"></b><br><br>
+
+    <div class="muted">Durum</div>
+    <select id="mStatus">
+      <option value="pending">pending</option>
+      <option value="assigned">assigned</option>
+      <option value="on_route">on_route</option>
+      <option value="completed">completed</option>
+    </select>
+
+    <div class="muted">Sürücü Ata</div>
+    <select id="mDriver"></select>
+
+    <button class="btn" onclick="assign()">Ata</button>
+    <button class="btn" onclick="updateStatus()">Durum Güncelle</button>
+
+    <hr style="margin:14px 0;border-color:#222">
+
+    <button class="btn ghost" onclick="copyTrackLink()">Track Link Kopyala</button>
+
+    <br><br>
+    <button class="btn ghost" onclick="closeModal()">Kapat</button>
   </div>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-const BACKEND_URL =
+/* =============================
+   SABİT BACKEND (GÖMÜLÜ)
+   ============================= */
+const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-/* ================= STATE ================= */
-let jobs=[],drivers=[],current=null;
+const TRACK_BASE =
+"https://ozhansmc-oss.github.io/sepettaxi-web/track.html";
 
-/* ================= API ================= */
-const api=(a,p={})=>fetch(BACKEND_URL,{
-  method:"POST",body:JSON.stringify({action:a,...p})
-}).then(r=>r.json());
+let JOBS=[];
+let DRIVERS=[];
+let current=null;
 
-/* ================= LOAD ================= */
+/* =============================
+   LOAD
+   ============================= */
 async function load(){
-  drivers=(await api("getDrivers")).filter(d=>d.status==="approved");
-  jobs=await api("getJobs");
+  const j = await (await fetch(`${BACKEND}?action=getJobs`)).json();
+  JOBS = j;
 
-  let t=0,a=0,d=0;
-  const today=new Date().toDateString();
-
-  jobs.forEach(j=>{
-    if(new Date(j.created_at).toDateString()===today) t++;
-    if(["pending","assigned","on_route"].includes(j.status)) a++;
-    if(j.status==="completed") d++;
-  });
-
-  kToday.textContent=t;
-  kActive.textContent=a;
-  kDone.textContent=d;
+  const d = await (await fetch(`${BACKEND}?action=getDrivers`)).json();
+  DRIVERS = d;
 
   render();
 }
 
 function render(){
-  list.innerHTML="";
-  if(jobs.length===0){empty.style.display="block";return}
-  empty.style.display="none";
-
-  jobs.forEach(j=>{
-    const el=document.createElement("div");
-    el.className="job";
-    el.innerHTML=`
-      <div><div class="colTitle">Job</div><div class="colVal">${j.job_id}</div></div>
-      <div><div class="colTitle">Hizmet</div><div class="colVal">${j.service_type}</div></div>
-      <div><div class="colTitle">Mesafe</div><div class="colVal">${j.distance_km||0} km</div></div>
-      <div><div class="colTitle">Fiyat</div><div class="colVal">${j.final_price||j.price}</div></div>
-      <div class="chip st-${j.status}"><span class="dot"></span>${j.status}</div>
-      <div><div class="colTitle">Sürücü</div><div class="colVal">${j.driver_id||"—"}</div></div>
+  jobs.innerHTML="";
+  JOBS.forEach(j=>{
+    const div=document.createElement("div");
+    div.className="job";
+    div.innerHTML=`
+      <div class="row">
+        <div>
+          <b>${j.job_id}</b><br>
+          <span class="muted">${j.service_type} · ${j.distance_km||0} km · ${j.estimated_price||0}</span>
+        </div>
+        <span class="badge ${j.status}">${j.status}</span>
+      </div>
     `;
-    el.onclick=()=>open(j);
-    list.appendChild(el);
+    div.onclick=()=>open(j.job_id);
+    jobs.appendChild(div);
   });
 }
 
-function open(j){
-  current=j;
-  mJob.textContent=j.job_id;
-  mRoute.textContent=`${j.from_address} → ${j.to_address}`;
-  driverSelect.innerHTML="<option value=''>Sürücü seç</option>";
-  drivers.forEach(d=>{
+/* =============================
+   MODAL
+   ============================= */
+function open(id){
+  current = JOBS.find(x=>x.job_id===id);
+  mJob.innerText=current.job_id;
+  mStatus.value=current.status;
+
+  mDriver.innerHTML=`<option value="">Sürücü seç</option>`;
+  DRIVERS.forEach(d=>{
     const o=document.createElement("option");
     o.value=d.driver_id;
-    o.textContent=`${d.first_name} ${d.last_name}`;
-    driverSelect.appendChild(o);
+    o.textContent=d.driver_name||d.driver_id;
+    mDriver.appendChild(o);
   });
+
   modalBack.classList.add("show");
 }
 
-function closeModal(){modalBack.classList.remove("show")}
+function closeModal(){
+  modalBack.classList.remove("show");
+  current=null;
+}
 
+/* =============================
+   ACTIONS
+   ============================= */
 async function assign(){
-  if(!driverSelect.value) return alert("Sürücü seç");
-  await api("assignDriver",{job_id:current.job_id,driver_id:driverSelect.value});
+  if(!mDriver.value) return alert("Sürücü seç");
+  await fetch(`${BACKEND}?action=assignDriver&job_id=${current.job_id}&driver_id=${mDriver.value}`);
   closeModal();
   load();
 }
 
+async function updateStatus(){
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${current.job_id}&status=${mStatus.value}`);
+  closeModal();
+  load();
+}
+
+/* =============================
+   TRACK LINK
+   ============================= */
+function copyTrackLink(){
+  if(!current.track_token){
+    alert("Bu job için token yok");
+    return;
+  }
+  const link =
+    TRACK_BASE +
+    "?job_id=" + encodeURIComponent(current.job_id) +
+    "&token=" + encodeURIComponent(current.track_token);
+
+  navigator.clipboard.writeText(link)
+    .then(()=>alert("Track link kopyalandı"))
+    .catch(()=>prompt("Kopyala:",link));
+}
+
+/* INIT */
 load();
 </script>
+
 </body>
 </html>
