@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Driver B2.1</title>
+<title>SepetTaxi – Driver B2.2</title>
 <style>
 body{margin:0;font-family:Arial;background:#000;color:#fff}
 header{height:56px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #222}
@@ -19,29 +19,24 @@ button{background:#f5c400;color:#000;font-weight:900}
 </head>
 <body>
 
-<header>Sepet<span>Taxi</span> – Driver B2.1</header>
+<header>Sepet<span>Taxi</span> – Driver</header>
 
 <div class="wrap">
   <div id="err" class="err"></div>
 
   <div class="card">
-    <div class="muted">Driver ID ile giriş</div>
     <input id="driverId" placeholder="Driver ID">
     <button onclick="loadJobs()">İşi Getir</button>
     <div class="muted">Son güncelleme: <span id="last">—</span></div>
   </div>
 
   <div id="jobs"></div>
-
-  <div class="card muted">
-    assigned = atandı • on_route = yolda • completed = bitti
-  </div>
 </div>
 
 <script>
-// 🔴 BACKEND URL (SADECE BURAYI DEĞİŞTİR)
-const BACKEND =
-"https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+const BACKEND = "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+
+let pingTimer=null;
 
 // === UTIL ===
 function err(m){
@@ -53,56 +48,64 @@ function clearErr(){ document.getElementById("err").style.display="none"; }
 // === LOAD JOBS ===
 async function loadJobs(){
   clearErr();
-  const did = document.getElementById("driverId").value.trim();
+  const did = driverId.value.trim();
   if(!did) return err("Driver ID gir");
 
-  try{
-    const r = await fetch(`${BACKEND}?action=getJobs`);
-    const jobs = await r.json();
+  const r = await fetch(`${BACKEND}?action=getJobs`);
+  const jobs = await r.json();
 
-    const mine = jobs.filter(j =>
-      String(j.driver_id)===did &&
-      (j.status==="assigned" || j.status==="on_route")
-    );
+  const mine = jobs.filter(j =>
+    String(j.driver_id)===did &&
+    (j.status==="assigned" || j.status==="on_route")
+  );
 
-    const box=document.getElementById("jobs");
-    box.innerHTML="";
+  const box=document.getElementById("jobs");
+  box.innerHTML="";
 
-    if(mine.length===0){
-      box.innerHTML='<div class="card muted">Aktif iş yok</div>';
-      return;
-    }
+  mine.forEach(j=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`
+      <b>${j.service_type}</b>
+      <div class="muted">${j.from_address} → ${j.to_address}</div>
+      <div>Durum: <b>${j.status}</b></div><br>
+      ${
+        j.status==="assigned"
+        ? `<button onclick="accept('${j.job_id}')">Kabul Et</button>`
+        : `<button onclick="finish('${j.job_id}')">Tamamlandı</button>`
+      }
+    `;
+    box.appendChild(c);
 
-    mine.forEach(j=>{
-      const c=document.createElement("div");
-      c.className="card";
-      c.innerHTML=`
-        <b>${j.service_type}</b><br>
-        <div class="muted">${j.from_address} → ${j.to_address}</div>
-        <div>Durum: <b>${j.status}</b></div><br>
-        ${
-          j.status==="assigned"
-          ? `<button onclick="setStatus('${j.job_id}','on_route')">Kabul Et</button>`
-          : `<button onclick="setStatus('${j.job_id}','completed')">Tamamlandı</button>`
-        }
-      `;
-      box.appendChild(c);
-    });
+    if(j.status==="on_route") startPing(j.job_id);
+  });
 
-    document.getElementById("last").innerText =
-      new Date().toLocaleTimeString();
-
-  }catch(e){
-    err("Backend erişilemedi");
-  }
+  last.innerText=new Date().toLocaleTimeString();
 }
 
-// === STATUS UPDATE ===
-async function setStatus(jobId,status){
-  await fetch(
-    `${BACKEND}?action=updateStatus&job_id=${jobId}&status=${status}`
-  );
+async function accept(id){
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${id}&status=on_route`);
   loadJobs();
+}
+
+async function finish(id){
+  stopPing();
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${id}&status=completed`);
+  loadJobs();
+}
+
+// === B3 : LIVE PING ===
+function startPing(jobId){
+  if(pingTimer) return;
+  pingTimer=setInterval(()=>{
+    navigator.geolocation.getCurrentPosition(pos=>{
+      fetch(`${BACKEND}?action=ping&job_id=${jobId}&driver_id=${driverId.value}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
+    });
+  },7000);
+}
+function stopPing(){
+  clearInterval(pingTimer);
+  pingTimer=null;
 }
 </script>
 
