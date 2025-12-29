@@ -10,93 +10,123 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Arial;background:#000;color:#fff;overflow:hidden}
+html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff;overflow:hidden}
 
 /* LANDING */
 #landing{
   position:fixed;inset:0;
   background:#000 url("assets/landing.png") center/cover no-repeat;
-  display:flex;align-items:center;justify-content:center;
   z-index:10;
 }
 #landing .overlay{
-  background:rgba(0,0,0,.55);
-  width:100%;height:100%;
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.6);
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
 }
-#landing h1{font-size:42px;margin-bottom:20px}
+#landing h1{font-size:40px;margin:0 0 18px}
 #landing span{color:#f5c400}
 #landing button{
   background:#f5c400;color:#000;
-  border:none;border-radius:28px;
-  padding:16px 46px;
-  font-size:18px;font-weight:900;
+  border:0;border-radius:26px;
+  padding:14px 44px;
+  font-size:17px;font-weight:900;
 }
 
 /* APP */
 #app{display:none;height:100%}
 header{
-  height:56px;background:#000;
+  height:56px;
+  background:#000;
   display:flex;align-items:center;justify-content:center;
   font-size:20px;font-weight:900;
 }
 header span{color:#f5c400}
 
-#map{height:42%}
-
+/* MAP + PANEL */
+#map{height:35%}
 #panel{
-  height:calc(58% - 56px);
-  padding:12px;
-  display:flex;flex-direction:column;
-  gap:10px;
+  height:calc(65% - 56px);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
 }
 
+/* UI */
 .card{
-  background:#1b1b1b;border-radius:14px;
-  padding:14px;
+  background:#1b1b1b;
+  border-radius:12px;
+  padding:10px;
 }
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.service-row{
+  display:flex;
+  gap:8px;
+}
 .service{
-  text-align:center;padding:18px;
-  border-radius:14px;
-  border:2px solid transparent;
+  flex:1;
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
+  border:1px solid #333;
+  font-size:14px;
 }
 .service.active{border-color:#f5c400}
 
 .input{
-  width:100%;padding:12px;
-  border-radius:10px;
+  width:100%;
+  padding:10px;
+  border-radius:8px;
   border:1px solid #333;
-  background:#000;color:#fff;
+  background:#000;
+  color:#fff;
+  font-size:14px;
 }
 
-.row{display:flex;gap:10px}
+.row{display:flex;gap:8px}
 .row .card{flex:1;text-align:center}
-.big{font-size:20px;font-weight:900}
+.big{font-size:16px;font-weight:900}
 
-button.call{
+.call{
   margin-top:auto;
   background:#f5c400;color:#000;
-  border:none;border-radius:28px;
-  padding:18px;
-  font-size:18px;font-weight:900;
+  border:0;border-radius:24px;
+  padding:14px;
+  font-size:16px;font-weight:900;
+}
+
+/* DRIVER CTA */
+#driverCta{
+  position:fixed;
+  bottom:6px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#111;
+  border:1px solid #333;
+  border-radius:20px;
+  padding:6px 14px;
+  font-size:12px;
+  z-index:5;
 }
 
 /* REGISTER */
 #register{
   position:fixed;inset:0;
-  background:rgba(0,0,0,.8);
-  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
   z-index:20;
 }
 #register .box{
-  background:#111;border-radius:16px;
-  width:90%;max-width:400px;
-  padding:18px;
+  width:90%;
+  max-width:360px;
+  background:#111;
+  border-radius:14px;
+  padding:14px;
 }
-label{font-size:13px}
-.err{color:#ff6b6b;font-size:13px;display:none}
+#register .box input{margin-bottom:8px}
+#register .err{color:#ff5c5c;font-size:12px;display:none}
 </style>
 </head>
 
@@ -117,56 +147,51 @@ label{font-size:13px}
 
   <div id="panel">
 
-    <!-- SERVICE -->
     <div class="card">
       <b>Hizmet Seç</b>
-      <div class="grid">
-        <div id="svcTaxi" class="service" onclick="selectService('taxi')">🚕 Taksi</div>
-        <div id="svcCourier" class="service" onclick="selectService('courier')">📦 Kurye</div>
+      <div class="service-row">
+        <div id="svcTaxi" class="service" onclick="pickService('taxi')">🚕 Taksi</div>
+        <div id="svcCourier" class="service" onclick="pickService('courier')">📦 Kurye</div>
       </div>
     </div>
 
-    <!-- ADDRESS -->
     <div class="card"><input id="fromAddr" class="input" placeholder="Nereden" readonly></div>
     <div class="card"><input id="toAddr" class="input" placeholder="Nereye" readonly></div>
 
-    <!-- COURIER EXTRA -->
-    <div id="courierExtra" class="card" style="display:none">
-      <input id="packageType" class="input" placeholder="Paket Türü">
-      <input id="receiverName" class="input" placeholder="Alıcı Adı">
-      <input id="receiverPhone" class="input" placeholder="Alıcı Telefon">
+    <div id="courierBox" class="card" style="display:none">
+      <input id="pkg" class="input" placeholder="Paket Türü">
+      <input id="rcvName" class="input" placeholder="Alıcı Adı">
+      <input id="rcvPhone" class="input" placeholder="Alıcı Telefon" maxlength="11">
     </div>
 
-    <!-- PRICE -->
     <div class="row">
       <div class="card"><div>Mesafe</div><div id="dist" class="big">—</div></div>
       <div class="card"><div>Ücret</div><div id="price" class="big">—</div></div>
     </div>
 
-    <button class="call" onclick="callDriver()">SÜRÜCÜ ÇAĞIR</button>
+    <button class="call" onclick="call()">SÜRÜCÜ ÇAĞIR</button>
   </div>
 </div>
+
+<div id="driverCta">🚗 Sürücü müsün? <a href="driver.html" style="color:#f5c400">Tıkla</a></div>
 
 <!-- REGISTER -->
 <div id="register">
   <div class="box">
-    <input id="fname" class="input" placeholder="Ad">
-    <input id="lname" class="input" placeholder="Soyad">
-    <input id="phone" class="input" placeholder="05XXXXXXXXX">
-    <label><input type="checkbox" id="kvkk"> KVKK kabul</label>
+    <input id="fn" class="input" placeholder="Ad">
+    <input id="ln" class="input" placeholder="Soyad">
+    <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
+    <label style="font-size:12px"><input type="checkbox" id="kvkk"> KVKK kabul</label>
     <div id="regErr" class="err">Bilgiler hatalı</div>
     <button class="call" onclick="saveUser()">KAYDI TAMAMLA</button>
   </div>
 </div>
 
 <script>
-/* CONFIG */
 const BACKEND="https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+let map,fromM,toM,service=null,user=null,registered=false;
 
-/* STATE */
-let map,fromM,toM,service=null,user=null;
-
-/* LANDING */
+/* START */
 function start(){
   landing.style.display="none";
   app.style.display="block";
@@ -179,63 +204,63 @@ function initMap(){
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   navigator.geolocation.getCurrentPosition(p=>{
     const {latitude,longitude}=p.coords;
-    fromM=L.marker([latitude,longitude],{draggable:true}).addTo(map);
+    fromM=L.marker([latitude,longitude]).addTo(map);
     map.setView([latitude,longitude],15);
     reverse(latitude,longitude,fromAddr);
   });
   map.on("click",e=>{
-    toM ? toM.setLatLng(e.latlng) : toM=L.marker(e.latlng,{draggable:true}).addTo(map);
+    toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
     reverse(e.latlng.lat,e.latlng.lng,toAddr);
     calc();
   });
 }
 
 /* SERVICE */
-function selectService(t){
-  if(!user){register.style.display="flex";return;}
+function pickService(t){
+  if(!registered){register.style.display="flex";return;}
   service=t;
   svcTaxi.classList.toggle("active",t==="taxi");
   svcCourier.classList.toggle("active",t==="courier");
-  courierExtra.style.display=t==="courier"?"block":"none";
+  courierBox.style.display=t==="courier"?"block":"none";
   calc();
 }
 
 /* REGISTER */
 function saveUser(){
-  if(fname.value.length<2||lname.value.length<2||!/^05\d{9}$/.test(phone.value)||!kvkk.checked){
+  if(fn.value.length<2||ln.value.length<2||!/^05\d{9}$/.test(ph.value)||!kvkk.checked){
     regErr.style.display="block";return;
   }
-  user={f:fname.value,l:lname.value,p:phone.value};
+  user={f:fn.value,l:ln.value,p:ph.value};
+  registered=true;
   register.style.display="none";
 }
 
-/* PRICE */
+/* CALC */
 function calc(){
   if(!service||!fromM||!toM)return;
   const a=fromM.getLatLng(),b=toM.getLatLng();
   const km=h(a.lat,a.lng,b.lat,b.lng);
-  dist.innerText=km.toFixed(2)+" km";
+  dist.textContent=km.toFixed(2)+" km";
   const pr=service==="taxi"?Math.max(120,60+km*22):Math.max(80,40+km*15);
-  price.innerText=Math.round(pr)+" TL";
+  price.textContent=Math.round(pr)+" TL";
 }
 
 /* CALL */
-function callDriver(){
-  if(!user||!service||!fromM||!toM){alert("Eksik bilgi");return;}
-  const url=`${BACKEND}?action=createJob`
+function call(){
+  if(!registered||!service||!fromM||!toM){alert("Eksik bilgi");return;}
+  const u=`${BACKEND}?action=createJob`
   +`&service_type=${service}`
   +`&customer_first=${user.f}`
   +`&customer_last=${user.l}`
   +`&customer_phone=${user.p}`
   +`&from_address=${fromAddr.value}`
   +`&to_address=${toAddr.value}`
-  +`&distance_km=${dist.innerText.replace(" km","")}`
-  +`&price=${price.innerText.replace(" TL","")}`
-  +`&final_price=${price.innerText.replace(" TL","")}`;
-  fetch(url).then(r=>r.json()).then(res=>{
-    if(res.ok){
-      location.href=`track.html?job_id=${res.job_id}&token=${res.track_token}`;
-    }else alert("Hata");
+  +`&distance_km=${dist.textContent.replace(" km","")}`
+  +`&price=${price.textContent.replace(" TL","")}`
+  +`&final_price=${price.textContent.replace(" TL","")}`;
+  fetch(u).then(r=>r.json()).then(res=>{
+    if(res.ok) location.href=`track.html?job_id=${res.job_id}&token=${res.track_token}`;
+    else alert("Hata");
   });
 }
 
