@@ -10,46 +10,61 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-
-/* LANDING */
-#landing{position:fixed;inset:0;background:#000 url("assets/landing.png") center/cover no-repeat;z-index:50}
-#landing .overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center}
-#landing h1{font-size:40px;letter-spacing:.5px;margin-bottom:18px}
-#landing span{color:#f5c400}
-#landing button{
-  background:#f5c400;color:#000;border:0;border-radius:28px;
-  padding:14px 46px;font-size:17px;font-weight:900;
-  box-shadow:0 10px 30px rgba(245,196,0,.35);
+html,body{
+  margin:0;height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#000;color:#fff;overflow:hidden
 }
 
-/* APP */
+/* ================= LANDING ================= */
+#landing{
+  position:fixed;inset:0;
+  background:#000 url("assets/landing.png") center/cover no-repeat;
+  z-index:1000
+}
+#landing .overlay{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.65);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center
+}
+#landing h1{font-size:40px;margin-bottom:18px}
+#landing span{color:#f5c400}
+#landing button{
+  background:#f5c400;color:#000;border:0;
+  border-radius:28px;padding:14px 46px;
+  font-size:17px;font-weight:900;
+  box-shadow:0 10px 30px rgba(245,196,0,.4)
+}
+
+/* ================= APP ================= */
 #app{display:none;height:100%}
 header{
   height:56px;background:#000;
   display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:900;letter-spacing:.3px
+  font-size:20px;font-weight:900
 }
 header span{color:#f5c400}
 
-/* MAP + PANEL */
+/* ================= MAP + PANEL ================= */
 #map{height:32vh}
 #panel{
   height:calc(68vh - 56px);
   padding:10px;
-  display:flex;flex-direction:column;gap:8px
+  display:flex;flex-direction:column;
+  gap:8px
 }
 
-/* CARDS */
+/* ================= CARDS ================= */
 .card{
   background:linear-gradient(180deg,#141414,#0f0f0f);
   border-radius:14px;
   padding:10px;
-  box-shadow:0 8px 20px rgba(0,0,0,.6);
+  box-shadow:0 8px 20px rgba(0,0,0,.6)
 }
 
-/* SERVICE */
-.service-row{display:flex;gap:8px}
+/* ================= SERVICE ================= */
+.service-row{display:flex;gap:8px;margin-top:6px}
 .service{
   flex:1;padding:10px;border-radius:12px;
   text-align:center;font-size:13px;
@@ -58,22 +73,25 @@ header span{color:#f5c400}
 }
 .service.active{
   border-color:#f5c400;color:#fff;
-  box-shadow:0 0 0 1px rgba(245,196,0,.25),0 8px 18px rgba(245,196,0,.25)
+  box-shadow:0 0 0 1px rgba(245,196,0,.25),
+             0 8px 18px rgba(245,196,0,.25)
 }
 
-/* INPUTS */
+/* ================= INPUT ================= */
 .input{
-  width:100%;padding:10px 12px;border-radius:12px;
-  border:1px solid #1f1f1f;background:#000;color:#fff;font-size:13px
+  width:100%;padding:10px 12px;
+  border-radius:12px;
+  border:1px solid #1f1f1f;
+  background:#000;color:#fff;font-size:13px
 }
 .input::placeholder{color:#666}
 
-/* STATS */
+/* ================= STATS ================= */
 .row{display:flex;gap:8px}
 .row .card{text-align:center}
 .big{font-size:16px;font-weight:900}
 
-/* CTA */
+/* ================= CTA ================= */
 #callBar{
   display:none;
   background:#f5c400;color:#000;
@@ -83,43 +101,61 @@ header span{color:#f5c400}
   box-shadow:0 12px 30px rgba(245,196,0,.45);
   transition:transform .12s
 }
-#callBar:active{transform:scale(.98)}
+#callBar:active{transform:scale(.97)}
 
-/* DRIVER CTA */
+/* ================= DRIVER CTA ================= */
 #driverCta{
   position:fixed;bottom:6px;left:50%;
   transform:translateX(-50%);
   background:#0f0f0f;border:1px solid #222;
   border-radius:20px;padding:6px 14px;
-  font-size:11px;z-index:10
+  font-size:11px;z-index:50
 }
 
-/* REGISTER */
-#register{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100}
+/* ================= REGISTER ================= */
+#register{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.9);
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:500
+}
 #register .box{
   width:88%;max-width:340px;
-  background:#0f0f0f;border-radius:16px;padding:14px;
-  box-shadow:0 20px 50px rgba(0,0,0,.7)
+  background:#0f0f0f;
+  border-radius:16px;padding:14px;
+  box-shadow:0 20px 50px rgba(0,0,0,.8)
 }
 #register .err{color:#ff5c5c;font-size:12px;display:none}
 
-/* SEARCH DRIVER */
+/* APP LOCK */
+.app-locked{
+  filter:blur(4px) brightness(.6);
+  pointer-events:none;
+  transition:.2s
+}
+
+/* ================= SEARCHING ================= */
 #searching{
   position:fixed;inset:0;
   background:rgba(0,0,0,.95);
-  display:none;align-items:center;justify-content:center;
-  flex-direction:column;z-index:200
+  display:none;
+  align-items:center;justify-content:center;
+  flex-direction:column;
+  z-index:600
 }
-#searching .txt{font-size:18px;font-weight:900;letter-spacing:.3px}
+#searching .txt{font-size:18px;font-weight:900}
 #dots::after{content:"";animation:dots 1.4s infinite}
 @keyframes dots{
-  0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}
+  0%{content:""}33%{content:"."}
+  66%{content:".."}100%{content:"..."}
 }
 </style>
 </head>
 
 <body>
 
+<!-- LANDING -->
 <div id="landing">
   <div class="overlay">
     <h1>Sepet<span>Taxi</span></h1>
@@ -127,6 +163,7 @@ header span{color:#f5c400}
   </div>
 </div>
 
+<!-- APP -->
 <div id="app">
   <header>Sepet<span>Taxi</span></header>
   <div id="map"></div>
@@ -134,7 +171,7 @@ header span{color:#f5c400}
   <div id="panel">
     <div class="card">
       <b>Hizmet Seç</b>
-      <div class="service-row" style="margin-top:6px">
+      <div class="service-row">
         <div id="svcTaxi" class="service" onclick="pickService('taxi')">🚕 Taksi</div>
         <div id="svcCourier" class="service" onclick="pickService('courier')">📦 Kurye</div>
       </div>
@@ -160,17 +197,21 @@ header span{color:#f5c400}
 
 <div id="driverCta">🚗 Sürücü müsün? <a href="driver.html" style="color:#f5c400">Tıkla</a></div>
 
+<!-- SEARCH -->
 <div id="searching">
   <div class="txt">Sürücü aranıyor<span id="dots"></span></div>
   <div style="font-size:12px;color:#888;margin-top:6px">Lütfen bekleyin</div>
 </div>
 
+<!-- REGISTER -->
 <div id="register">
   <div class="box">
     <input id="fn" class="input" placeholder="Ad">
     <input id="ln" class="input" placeholder="Soyad">
     <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <label style="font-size:12px;color:#aaa"><input type="checkbox" id="kvkk"> KVKK kabul</label>
+    <label style="font-size:12px;color:#aaa">
+      <input type="checkbox" id="kvkk"> KVKK kabul
+    </label>
     <div id="regErr" class="err">Bilgiler hatalı</div>
     <div id="callBar" style="display:block;margin-top:10px" onclick="saveUser()">KAYDI TAMAMLA</div>
   </div>
@@ -181,7 +222,11 @@ const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13p
 
 let map,fromM,toM,service=null,registered=false,user=null,jobId=null,poll=null;
 
-function start(){landing.style.display="none";app.style.display="block";initMap();}
+function start(){
+  landing.style.display="none";
+  app.style.display="block";
+  initMap();
+}
 
 function initMap(){
   map=L.map("map").setView([41,29],13);
@@ -209,13 +254,19 @@ function pickService(t){
   calc();
 }
 
-function openRegister(){app.style.pointerEvents="none";register.style.display="flex";}
+function openRegister(){
+  app.classList.add("app-locked");
+  register.style.display="flex";
+}
+
 function saveUser(){
   if(fn.value.length<2||ln.value.length<2||!/^05\d{9}$/.test(ph.value)||!kvkk.checked){
     regErr.style.display="block";return;
   }
   user={name:fn.value+" "+ln.value,phone:ph.value};
-  registered=true;register.style.display="none";app.style.pointerEvents="auto";
+  registered=true;
+  register.style.display="none";
+  app.classList.remove("app-locked");
 }
 
 function calc(){
@@ -228,21 +279,27 @@ function calc(){
 
 async function callDriver(){
   searching.style.display="flex";
-  const res=await fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({
-    action:"createJob",
-    service,
-    pickup_address:fromAddr.value,
-    pickup_lat:fromM.getLatLng().lat,
-    pickup_lng:fromM.getLatLng().lng,
-    dropoff_address:toAddr.value,
-    dropoff_lat:toM.getLatLng().lat,
-    dropoff_lng:toM.getLatLng().lng,
-    customer_name:user.name,
-    customer_phone:user.phone,
-    price:price.textContent
-  })});
+  const res=await fetch(BACKEND_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"createJob",
+      service,
+      pickup_address:fromAddr.value,
+      pickup_lat:fromM.getLatLng().lat,
+      pickup_lng:fromM.getLatLng().lng,
+      dropoff_address:toAddr.value,
+      dropoff_lat:toM.getLatLng().lat,
+      dropoff_lng:toM.getLatLng().lng,
+      customer_name:user.name,
+      customer_phone:user.phone,
+      price:price.textContent
+    })
+  });
   const d=await res.json();
-  if(d.job_id){jobId=d.job_id;poll=setInterval(checkJob,3000);}
+  if(d.job_id){
+    jobId=d.job_id;
+    poll=setInterval(checkJob,3000);
+  }
 }
 
 async function checkJob(){
@@ -255,13 +312,19 @@ async function checkJob(){
 }
 
 function h(a,b,c,d){
-  const R=6371,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  const R=6371;
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+
+    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
+    Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
+
 function reverse(lat,lng,input){
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-  .then(r=>r.json()).then(d=>{if(d.display_name)input.value=d.display_name});
+  .then(r=>r.json())
+  .then(d=>{if(d.display_name)input.value=d.display_name});
 }
 </script>
 
