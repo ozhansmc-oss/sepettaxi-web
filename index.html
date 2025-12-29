@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi</title>
 
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -26,63 +25,88 @@ header span{color:#f5c400}
 
 /* LANDING */
 #landing{
-  height:220px;
+  height:260px;
   background:url("assets/landing.png") center/cover no-repeat;
 }
 
 /* MAP */
-#map{height:42vh}
+#map{
+  height:38vh;
+}
 
 /* WRAP */
-.wrap{max-width:520px;margin:auto;padding:14px}
+.wrap{
+  max-width:520px;
+  margin:auto;
+  padding:14px;
+}
 
-/* SERVICE */
-.services{display:flex;gap:12px;margin-top:-40px}
+/* SERVICES */
+.services{
+  display:flex;
+  gap:12px;
+  margin-top:-28px;
+}
 .service{
   flex:1;
   background:#111;
-  border:1px solid #222;
+  border:2px solid #222;
   border-radius:16px;
   padding:18px;
   text-align:center;
-  font-weight:800;
+  font-weight:900;
   cursor:pointer;
 }
-.service.active{border-color:#f5c400;color:#f5c400}
+.service.active{
+  border-color:#f5c400;
+  color:#f5c400;
+}
 
-/* INPUTS */
-.card{background:#111;border:1px solid #222;border-radius:16px;padding:14px;margin-top:12px}
-input{width:100%;padding:14px;border-radius:12px;border:0;background:#1b1b1b;color:#fff;margin-top:8px}
-
-/* CTA */
-#callBtn{
-  margin-top:14px;
-  padding:18px;
-  width:100%;
+/* CARD */
+.card{
+  background:#111;
+  border:1px solid #222;
   border-radius:16px;
+  padding:14px;
+  margin-top:12px;
+}
+input{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
   border:0;
-  font-size:18px;
-  font-weight:900;
+  background:#1b1b1b;
+  color:#fff;
+  margin-top:8px;
+}
+
+/* CALL */
+#callBtn{
+  margin-top:16px;
+  width:100%;
+  padding:18px;
+  border-radius:18px;
+  border:0;
   background:#f5c400;
   color:#000;
-  cursor:pointer;
+  font-size:18px;
+  font-weight:900;
 }
 
-/* DRIVER CTA */
+/* DRIVER CARD */
 .driverCard{
-  margin-top:16px;
-  padding:22px;
-  border-radius:18px;
-  background:#151515;
+  margin-top:18px;
+  padding:26px;
+  border-radius:20px;
+  background:#141414;
   border:2px dashed #333;
   text-align:center;
   font-size:18px;
   font-weight:900;
-  cursor:pointer;
 }
 .driverCard span{color:#f5c400}
 
-/* REGISTER MODAL */
+/* REGISTER */
 #register{
   position:fixed;
   inset:0;
@@ -90,7 +114,7 @@ input{width:100%;padding:14px;border-radius:12px;border:0;background:#1b1b1b;col
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:99;
+  z-index:999;
 }
 .regBox{
   width:90%;
@@ -102,7 +126,7 @@ input{width:100%;padding:14px;border-radius:12px;border:0;background:#1b1b1b;col
 .regBox input{margin-top:10px}
 .regBox label{font-size:13px;color:#aaa;display:block;margin-top:10px}
 .regBox button{
-  margin-top:14px;
+  margin-top:16px;
   width:100%;
   padding:16px;
   border-radius:14px;
@@ -124,8 +148,8 @@ input{width:100%;padding:14px;border-radius:12px;border:0;background:#1b1b1b;col
 <div class="wrap">
 
   <div class="services">
-    <div class="service active" onclick="selectService('taxi')">🚕 Taksi</div>
-    <div class="service" onclick="selectService('courier')">📦 Kurye</div>
+    <div class="service active" onclick="selectService('taxi',this)">🚕 Taksi</div>
+    <div class="service" onclick="selectService('courier',this)">📦 Kurye</div>
   </div>
 
   <div class="card">
@@ -153,11 +177,10 @@ input{width:100%;padding:14px;border-radius:12px;border:0;background:#1b1b1b;col
 </div>
 
 <script>
-/* ================= BACKEND ================= */
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-/* ================= MAP ================= */
-const map = L.map("map").setView([40.195,29.060],14);
+/* MAP */
+const map=L.map("map").setView([40.195,29.060],14);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
 let fromM=null,toM=null,step="from";
@@ -165,22 +188,22 @@ map.on("click",e=>{
   if(step==="from"){
     if(fromM) map.removeLayer(fromM);
     fromM=L.marker(e.latlng).addTo(map);
-    fromAddr.value=`${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+    fromAddr.value="Seçildi";
     step="to";
   }else{
     if(toM) map.removeLayer(toM);
     toM=L.marker(e.latlng).addTo(map);
-    toAddr.value=`${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+    toAddr.value="Seçildi";
   }
 });
 
-/* ================= FLOW ================= */
+/* FLOW */
 let service="taxi",registered=false,user={};
 
-function selectService(s){
+function selectService(s,el){
   service=s;
   document.querySelectorAll(".service").forEach(x=>x.classList.remove("active"));
-  event.target.classList.add("active");
+  el.classList.add("active");
 }
 
 function callFlow(){
@@ -203,7 +226,7 @@ function saveUser(){
 }
 
 async function createJob(){
-  const res = await fetch(BACKEND_URL,{
+  const r=await fetch(BACKEND_URL,{
     method:"POST",
     body:JSON.stringify({
       action:"createJob",
@@ -217,8 +240,8 @@ async function createJob(){
       to_lng:toM.getLatLng().lng
     })
   });
-  const d = await res.json();
-  location.href = `track.html?job_id=${d.job_id}&token=${d.track_token}`;
+  const d=await r.json();
+  location.href=`track.html?job_id=${d.job_id}&token=${d.track_token}`;
 }
 </script>
 
