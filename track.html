@@ -8,7 +8,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 body{margin:0;font-family:Arial;background:#000;color:#fff}
-#map{height:65vh}
+#map{height:60vh}
 .top{padding:12px}
 .badge{display:inline-block;padding:6px 10px;border-radius:10px;font-weight:700}
 .assigned{background:#555}
@@ -16,7 +16,10 @@ body{margin:0;font-family:Arial;background:#000;color:#fff}
 .completed{background:#2ecc71;color:#000}
 .card{background:#121212;border:1px solid #222;border-radius:14px;padding:12px;margin:12px}
 .muted{color:#aaa;font-size:13px}
-.err{padding:14px}
+.err{padding:14px;color:#ffb3b3}
+.tl-item{padding:10px 0;border-top:1px solid #222}
+.tl-item:first-child{border-top:0}
+.tl-title{font-weight:700}
 </style>
 </head>
 <body>
@@ -33,6 +36,11 @@ body{margin:0;font-family:Arial;background:#000;color:#fff}
   <div class="muted">Tahmini süre: <span id="eta">—</span></div>
 </div>
 
+<div class="card">
+  <div class="tl-title">Zaman Çizelgesi</div>
+  <div id="timeline" class="muted">Yükleniyor…</div>
+</div>
+
 <div id="err" class="err"></div>
 
 <script>
@@ -41,52 +49,94 @@ const qs = new URLSearchParams(location.search);
 const jobId = qs.get("job_id");
 const token = qs.get("token");
 
+if(!jobId || !token){
+  document.getElementById("err").innerText = "Eksik parametre: job_id ve token gerekli.";
+}
+
 const map = L.map("map").setView([41,29],13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
 let marker=null, lastPos=null, lastTime=null;
 
 function showErr(m){ document.getElementById("err").innerText=m; }
 
+function statusText(s){
+  if(s==="assigned") return "Atandı";
+  if(s==="on_route") return "Yolda";
+  if(s==="completed") return "Tamamlandı";
+  return s || "—";
+}
+
+function eventText(e){
+  if(e==="assigned") return "Sürücü atandı";
+  if(e==="accepted") return "Sürücü kabul etti";
+  if(e==="on_route") return "Yola çıktı";
+  if(e==="completed") return "Tamamlandı";
+  if(e==="created") return "Oluşturuldu";
+  return e || "Güncelleme";
+}
+
 async function loadJob(){
-  const r = await fetch(`${BACKEND}?action=getPublicJob&job_id=${jobId}&token=${token}`);
+  const r = await fetch(`${BACKEND}?action=getPublicJob&job_id=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}`);
   const j = await r.json();
-  if(j.error){ showErr("Erişim yok"); return; }
+  if(j.error){ showErr("Erişim yok (token hatalı olabilir)."); return; }
+
   service.innerText = j.service_type || "Hizmet";
   route.innerText = `${j.from_address || ""} → ${j.to_address || ""}`;
-  status.className = "badge "+(j.status||"");
-  status.innerText = j.status || "—";
+  status.className = "badge " + (j.status||"");
+  status.innerText = statusText(j.status);
 }
 
 async function pollLive(){
-  const r = await fetch(`${BACKEND}?action=getLive&job_id=${jobId}`);
+  const r = await fetch(`${BACKEND}?action=getLive&job_id=${encodeURIComponent(jobId)}`);
   const d = await r.json();
-  if(!d.lat) return;
-  const p=[d.lat,d.lng];
+  if(!d || !d.lat) return;
+
+  const p=[Number(d.lat), Number(d.lng)];
   if(!marker){
     marker=L.marker(p).addTo(map);
     map.setView(p,16);
-  }else marker.setLatLng(p);
+  }else{
+    marker.setLatLng(p);
+  }
+  upd.innerText = d.updated_at ? new Date(d.updated_at).toLocaleTimeString() : new Date().toLocaleTimeString();
 
-  upd.innerText = new Date(d.updated_at).toLocaleTimeString();
-
-  // basit ETA (son iki ping arası)
+  // Basit ETA (son iki ping arası)
   const now=Date.now();
   if(lastPos){
     const dist = map.distance(lastPos, p); // metre
-    const dt = (now-lastTime)/1000; // sn
+    const dt = (now-lastTime)/1000;       // sn
     if(dt>0){
       const speed = dist/dt; // m/s
-      if(speed>0){
-        const est = Math.round((500/speed)/60); // ~500m varsayım
-        eta.innerText = `~${Math.max(1,est)} dk`;
+      if(speed>0.5){
+        const estMin = Math.round((500/speed)/60); // ~500m varsayım (MVP)
+        eta.innerText = `~${Math.max(1,estMin)} dk`;
       }
     }
   }
   lastPos=p; lastTime=now;
 }
 
+async function loadTimeline(){
+  const r = await fetch(`${BACKEND}?action=getTimeline&job_id=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}`);
+  const list = await r.json();
+  if(list.error){ document.getElementById("timeline").innerText = "Zaman çizelgesi görüntülenemiyor."; return; }
+  if(!Array.isArray(list) || list.length===0){ document.getElementById("timeline").innerText = "Henüz kayıt yok."; return; }
+
+  const html = list.map(x=>{
+    const t = x.at ? new Date(x.at).toLocaleTimeString() : "";
+    const actor = x.actor ? ` • ${x.actor}` : "";
+    return `<div class="tl-item"><b>${eventText(x.event)}</b><div class="muted">${t}${actor}</div></div>`;
+  }).join("");
+
+  document.getElementById("timeline").className = "";
+  document.getElementById("timeline").innerHTML = html;
+}
+
 loadJob();
-setInterval(pollLive,3000);
+loadTimeline();
+setInterval(pollLive, 3000);
+setInterval(loadTimeline, 5000);
 </script>
 
 </body>
