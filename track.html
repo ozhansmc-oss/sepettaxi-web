@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Takip</title>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
 body{margin:0;font-family:Arial;background:#000;color:#fff}
 #map{height:60vh}
@@ -14,6 +16,7 @@ body{margin:0;font-family:Arial;background:#000;color:#fff}
 .assigned{background:#555}
 .on_route{background:#f5c400;color:#000}
 .completed{background:#2ecc71;color:#000}
+.pending{background:#333}
 .card{background:#121212;border:1px solid #222;border-radius:14px;padding:12px;margin:12px}
 .muted{color:#aaa;font-size:13px}
 .err{padding:14px;color:#ffb3b3}
@@ -22,11 +25,13 @@ body{margin:0;font-family:Arial;background:#000;color:#fff}
 .tl-title{font-weight:700}
 </style>
 </head>
+
 <body>
 
 <div class="top">
   <span id="status" class="badge">—</span>
 </div>
+
 <div id="map"></div>
 
 <div class="card">
@@ -44,15 +49,19 @@ body{margin:0;font-family:Arial;background:#000;color:#fff}
 <div id="err" class="err"></div>
 
 <script>
-const BACKEND = "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+/* ================== CONFIG ================== */
+const BACKEND = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+
+/* ================== PARAMS ================== */
 const qs = new URLSearchParams(location.search);
 const jobId = qs.get("job_id");
-const token = qs.get("token");
+const token = qs.get("token"); // opsiyonel
 
-if(!jobId || !token){
-  document.getElementById("err").innerText = "Eksik parametre: job_id ve token gerekli.";
+if(!jobId){
+  document.getElementById("err").innerText = "Eksik parametre: job_id gerekli.";
 }
 
+/* ================== MAP ================== */
 const map = L.map("map").setView([41,29],13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
@@ -61,6 +70,7 @@ let marker=null, lastPos=null, lastTime=null;
 function showErr(m){ document.getElementById("err").innerText=m; }
 
 function statusText(s){
+  if(s==="pending") return "Beklemede";
   if(s==="assigned") return "Atandı";
   if(s==="on_route") return "Yolda";
   if(s==="completed") return "Tamamlandı";
@@ -68,25 +78,44 @@ function statusText(s){
 }
 
 function eventText(e){
+  if(e==="created") return "Oluşturuldu";
   if(e==="assigned") return "Sürücü atandı";
   if(e==="accepted") return "Sürücü kabul etti";
   if(e==="on_route") return "Yola çıktı";
   if(e==="completed") return "Tamamlandı";
-  if(e==="created") return "Oluşturuldu";
   return e || "Güncelleme";
 }
 
+/* ================== JOB ================== */
 async function loadJob(){
-  const r = await fetch(`${BACKEND}?action=getPublicJob&job_id=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}`);
-  const j = await r.json();
-  if(j.error){ showErr("Erişim yok (token hatalı olabilir)."); return; }
+  let url;
+  if(token){
+    url = `${BACKEND}?action=getPublicJob&job_id=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}`;
+  }else{
+    // token yoksa, minimum bilgiyle status göster
+    url = `${BACKEND}?action=getJobs`;
+  }
+
+  const r = await fetch(url);
+  const data = await r.json();
+
+  let j = data;
+  if(Array.isArray(data)){
+    j = data.find(x=>String(x.job_id)===String(jobId));
+  }
+
+  if(!j){
+    showErr("Job bulunamadı.");
+    return;
+  }
 
   service.innerText = j.service_type || "Hizmet";
   route.innerText = `${j.from_address || ""} → ${j.to_address || ""}`;
-  status.className = "badge " + (j.status||"");
+  status.className = "badge " + (j.status || "pending");
   status.innerText = statusText(j.status);
 }
 
+/* ================== LIVE ================== */
 async function pollLive(){
   const r = await fetch(`${BACKEND}?action=getLive&job_id=${encodeURIComponent(jobId)}`);
   const d = await r.json();
@@ -99,17 +128,19 @@ async function pollLive(){
   }else{
     marker.setLatLng(p);
   }
-  upd.innerText = d.updated_at ? new Date(d.updated_at).toLocaleTimeString() : new Date().toLocaleTimeString();
 
-  // Basit ETA (son iki ping arası)
+  upd.innerText = d.last_location_at
+    ? new Date(d.last_location_at).toLocaleTimeString()
+    : new Date().toLocaleTimeString();
+
   const now=Date.now();
   if(lastPos){
-    const dist = map.distance(lastPos, p); // metre
-    const dt = (now-lastTime)/1000;       // sn
+    const dist = map.distance(lastPos, p);
+    const dt = (now-lastTime)/1000;
     if(dt>0){
-      const speed = dist/dt; // m/s
+      const speed = dist/dt;
       if(speed>0.5){
-        const estMin = Math.round((500/speed)/60); // ~500m varsayım (MVP)
+        const estMin = Math.round((500/speed)/60);
         eta.innerText = `~${Math.max(1,estMin)} dk`;
       }
     }
@@ -117,22 +148,33 @@ async function pollLive(){
   lastPos=p; lastTime=now;
 }
 
+/* ================== TIMELINE ================== */
 async function loadTimeline(){
+  if(!token){
+    timeline.innerText = "Zaman çizelgesi için token gerekli.";
+    return;
+  }
   const r = await fetch(`${BACKEND}?action=getTimeline&job_id=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}`);
   const list = await r.json();
-  if(list.error){ document.getElementById("timeline").innerText = "Zaman çizelgesi görüntülenemiyor."; return; }
-  if(!Array.isArray(list) || list.length===0){ document.getElementById("timeline").innerText = "Henüz kayıt yok."; return; }
 
-  const html = list.map(x=>{
+  if(list.error){
+    timeline.innerText = "Zaman çizelgesi görüntülenemiyor.";
+    return;
+  }
+  if(!Array.isArray(list) || list.length===0){
+    timeline.innerText = "Henüz kayıt yok.";
+    return;
+  }
+
+  timeline.className = "";
+  timeline.innerHTML = list.map(x=>{
     const t = x.at ? new Date(x.at).toLocaleTimeString() : "";
     const actor = x.actor ? ` • ${x.actor}` : "";
     return `<div class="tl-item"><b>${eventText(x.event)}</b><div class="muted">${t}${actor}</div></div>`;
   }).join("");
-
-  document.getElementById("timeline").className = "";
-  document.getElementById("timeline").innerHTML = html;
 }
 
+/* ================== INIT ================== */
 loadJob();
 loadTimeline();
 setInterval(pollLive, 3000);
