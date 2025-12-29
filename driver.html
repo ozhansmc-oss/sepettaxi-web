@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Driver B2.2</title>
+<title>SepetTaxi – Driver</title>
+
 <style>
 body{margin:0;font-family:Arial;background:#000;color:#fff}
 header{height:56px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #222}
@@ -17,6 +18,7 @@ button{background:#f5c400;color:#000;font-weight:900}
 .muted{color:#aaa;font-size:13px}
 </style>
 </head>
+
 <body>
 
 <header>Sepet<span>Taxi</span> – Driver</header>
@@ -26,7 +28,7 @@ button{background:#f5c400;color:#000;font-weight:900}
 
   <div class="card">
     <input id="driverId" placeholder="Driver ID">
-    <button onclick="loadJobs()">İşi Getir</button>
+    <button onclick="loadJobs()">İşleri Getir</button>
     <div class="muted">Son güncelleme: <span id="last">—</span></div>
   </div>
 
@@ -34,78 +36,101 @@ button{background:#f5c400;color:#000;font-weight:900}
 </div>
 
 <script>
-const BACKEND = "https://script.google.com/macros/s/AKfycbxMLho3ZDX1R4EvZz-9MrOOq44807vH0MFd_X8ypSrYB6-vAQAR_dPa-lprAGkR1xsDxQ/exec";
+/* ================== CONFIG ================== */
+const BACKEND = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-let pingTimer=null;
+/* ================== STATE ================== */
+let pingTimer = null;
+let activeJobId = null;
 
-// === UTIL ===
-function err(m){
+/* ================== UTIL ================== */
+function showErr(m){
   const e=document.getElementById("err");
   e.innerText=m; e.style.display="block";
 }
-function clearErr(){ document.getElementById("err").style.display="none"; }
+function clearErr(){
+  document.getElementById("err").style.display="none";
+}
 
-// === LOAD JOBS ===
+/* ================== LOAD JOBS ================== */
 async function loadJobs(){
   clearErr();
+  stopPing();
+
   const did = driverId.value.trim();
-  if(!did) return err("Driver ID gir");
+  if(!did) return showErr("Driver ID gir");
 
   const r = await fetch(`${BACKEND}?action=getJobs`);
   const jobs = await r.json();
 
   const mine = jobs.filter(j =>
-    String(j.driver_id)===did &&
-    (j.status==="assigned" || j.status==="on_route")
+    String(j.driver_id) === did &&
+    (j.status === "assigned" || j.status === "on_route")
   );
 
-  const box=document.getElementById("jobs");
-  box.innerHTML="";
+  const box = document.getElementById("jobs");
+  box.innerHTML = "";
+
+  if(mine.length === 0){
+    box.innerHTML = `<div class="muted">Aktif iş yok.</div>`;
+  }
 
   mine.forEach(j=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`
+    const c = document.createElement("div");
+    c.className = "card";
+
+    c.innerHTML = `
       <b>${j.service_type}</b>
       <div class="muted">${j.from_address} → ${j.to_address}</div>
+      <div class="muted">Kazanç: <b>${j.driver_earning} TL</b></div>
       <div>Durum: <b>${j.status}</b></div><br>
       ${
-        j.status==="assigned"
-        ? `<button onclick="accept('${j.job_id}')">Kabul Et</button>`
-        : `<button onclick="finish('${j.job_id}')">Tamamlandı</button>`
+        j.status === "assigned"
+          ? `<button onclick="acceptJob('${j.job_id}')">Kabul Et</button>`
+          : `<button onclick="finishJob('${j.job_id}')">Tamamlandı</button>`
       }
     `;
     box.appendChild(c);
 
-    if(j.status==="on_route") startPing(j.job_id);
+    if(j.status === "on_route"){
+      activeJobId = j.job_id;
+      startPing(j.job_id);
+    }
   });
 
-  last.innerText=new Date().toLocaleTimeString();
+  last.innerText = new Date().toLocaleTimeString();
 }
 
-async function accept(id){
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${id}&status=on_route`);
+/* ================== ACTIONS ================== */
+async function acceptJob(jobId){
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=on_route`);
   loadJobs();
 }
 
-async function finish(id){
+async function finishJob(jobId){
   stopPing();
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${id}&status=completed`);
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=completed`);
   loadJobs();
 }
 
-// === B3 : LIVE PING ===
+/* ================== LIVE PING ================== */
 function startPing(jobId){
-  if(pingTimer) return;
-  pingTimer=setInterval(()=>{
-    navigator.geolocation.getCurrentPosition(pos=>{
-      fetch(`${BACKEND}?action=ping&job_id=${jobId}&driver_id=${driverId.value}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
-    });
-  },7000);
+  if(pingTimer || !navigator.geolocation) return;
+
+  pingTimer = setInterval(()=>{
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        fetch(`${BACKEND}?action=ping&job_id=${jobId}&driver_id=${driverId.value}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
+      },
+      ()=>{ showErr("Konum izni gerekli."); }
+    );
+  }, 7000);
 }
+
 function stopPing(){
   clearInterval(pingTimer);
-  pingTimer=null;
+  pingTimer = null;
+  activeJobId = null;
 }
 </script>
 
