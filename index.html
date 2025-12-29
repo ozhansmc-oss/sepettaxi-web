@@ -10,7 +10,16 @@
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#000;
+  color:#fff;
+}
+body.lock{
+  overflow:hidden;
+  height:100vh;
+}
 
 /* HEADER */
 header{
@@ -25,13 +34,14 @@ header span{color:#f5c400}
 
 /* LANDING */
 #landing{
-  height:260px;
-  background:url("assets/landing.png") center/cover no-repeat;
+  height:240px;
+  background:#111 url("assets/landing.png") center/cover no-repeat;
 }
 
 /* MAP */
 #map{
-  height:38vh;
+  height:320px;
+  flex-shrink:0;
 }
 
 /* WRAP */
@@ -45,7 +55,7 @@ header span{color:#f5c400}
 .services{
   display:flex;
   gap:12px;
-  margin-top:-28px;
+  margin-top:-24px;
 }
 .service{
   flex:1;
@@ -82,7 +92,7 @@ input{
 
 /* CALL */
 #callBtn{
-  margin-top:16px;
+  margin-top:14px;
   width:100%;
   padding:18px;
   border-radius:18px;
@@ -114,7 +124,7 @@ input{
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:999;
+  z-index:9999;
 }
 .regBox{
   width:90%;
@@ -124,7 +134,14 @@ input{
   padding:18px;
 }
 .regBox input{margin-top:10px}
-.regBox label{font-size:13px;color:#aaa;display:block;margin-top:10px}
+.regBox label{
+  font-size:13px;
+  color:#aaa;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-top:10px;
+}
 .regBox button{
   margin-top:16px;
   width:100%;
@@ -177,6 +194,7 @@ input{
 </div>
 
 <script>
+/* BACKEND */
 const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
 /* MAP */
@@ -209,6 +227,7 @@ function selectService(s,el){
 function callFlow(){
   if(!fromM||!toM) return alert("Adres seç");
   if(!registered){
+    document.body.classList.add("lock");
     register.style.display="flex";
   }else{
     createJob();
@@ -222,6 +241,7 @@ function saveUser(){
   user={ad:ad.value,soyad:soyad.value,tel:tel.value};
   registered=true;
   register.style.display="none";
+  document.body.classList.remove("lock");
   createJob();
 }
 
