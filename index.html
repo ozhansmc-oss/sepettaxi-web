@@ -16,6 +16,278 @@ html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff;over
 #landing{
   position:fixed;inset:0;
   background:#000 url("assets/landing.png") center/cover no-repeat;
+  z-index:50;
+}
+#landing .overlay{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.6);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+#landing h1{font-size:38px;margin-bottom:18px}
+#landing span{color:#f5c400}
+#landing button{
+  background:#f5c400;color:#000;
+  border:0;border-radius:26px;
+  padding:14px 42px;
+  font-size:17px;font-weight:900;
+}
+
+/* APP */
+#app{display:none;height:100%}
+header{
+  height:56px;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;
+}
+header span{color:#f5c400}
+
+/* MAP + PANEL */
+#map{height:30vh}
+#panel{
+  height:calc(70vh - 56px);
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* UI */
+.card{
+  background:#1b1b1b;
+  border-radius:10px;
+  padding:8px;
+}
+.service-row{display:flex;gap:6px}
+.service{
+  flex:1;
+  padding:8px;
+  border-radius:8px;
+  text-align:center;
+  border:1px solid #333;
+  font-size:13px;
+}
+.service.active{border-color:#f5c400}
+
+.input{
+  width:100%;
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #333;
+  background:#000;
+  color:#fff;
+  font-size:13px;
+}
+
+.row{display:flex;gap:6px}
+.row .card{flex:1;text-align:center}
+.big{font-size:15px;font-weight:900}
+
+/* CALL BAR */
+#callBar{
+  display:none;
+  background:#f5c400;
+  color:#000;
+  border-radius:22px;
+  padding:12px;
+  text-align:center;
+  font-weight:900;
+  margin-top:auto;
+}
+
+/* DRIVER CTA */
+#driverCta{
+  position:fixed;
+  bottom:6px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#111;
+  border:1px solid #333;
+  border-radius:20px;
+  padding:5px 14px;
+  font-size:11px;
+  z-index:10;
+}
+
+/* REGISTER */
+#register{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+}
+#register .box{
+  width:88%;
+  max-width:340px;
+  background:#111;
+  border-radius:14px;
+  padding:12px;
+}
+#register .err{color:#ff5c5c;font-size:12px;display:none}
+</style>
+</head>
+
+<body>
+
+<!-- LANDING -->
+<div id="landing">
+  <div class="overlay">
+    <h1>Sepet<span>Taxi</span></h1>
+    <button onclick="start()">BAŞLA</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>Sepet<span>Taxi</span></header>
+  <div id="map"></div>
+
+  <div id="panel">
+
+    <div class="card">
+      <b>Hizmet Seç</b>
+      <div class="service-row">
+        <div id="svcTaxi" class="service" onclick="pickService('taxi')">🚕 Taksi</div>
+        <div id="svcCourier" class="service" onclick="pickService('courier')">📦 Kurye</div>
+      </div>
+    </div>
+
+    <div class="card"><input id="fromAddr" class="input" readonly placeholder="Nereden"></div>
+    <div class="card"><input id="toAddr" class="input" readonly placeholder="Nereye"></div>
+
+    <div id="courierBox" class="card" style="display:none">
+      <input class="input" placeholder="Paket Türü">
+      <input class="input" placeholder="Alıcı Adı">
+      <input class="input" placeholder="Alıcı Telefon" maxlength="11">
+    </div>
+
+    <div class="row">
+      <div class="card"><div>Mesafe</div><div id="dist" class="big">—</div></div>
+      <div class="card"><div>Ücret</div><div id="price" class="big">—</div></div>
+    </div>
+
+    <div id="callBar" onclick="callDriver()">—</div>
+  </div>
+</div>
+
+<div id="driverCta">🚗 Sürücü müsün? <a href="driver.html" style="color:#f5c400">Tıkla</a></div>
+
+<!-- REGISTER -->
+<div id="register">
+  <div class="box">
+    <input id="fn" class="input" placeholder="Ad">
+    <input id="ln" class="input" placeholder="Soyad">
+    <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
+    <label style="font-size:12px"><input type="checkbox" id="kvkk"> KVKK kabul</label>
+    <div id="regErr" class="err">Bilgiler hatalı</div>
+    <div id="saveBtn" class="callBar" style="display:block;margin-top:8px" onclick="saveUser()">KAYDI TAMAMLA</div>
+  </div>
+</div>
+
+<script>
+const BACKEND="PUT_BACKEND_URL";
+let map,fromM,toM,service=null,registered=false,user=null;
+
+/* START */
+function start(){
+  landing.style.display="none";
+  app.style.display="block";
+  initMap();
+}
+
+/* MAP */
+function initMap(){
+  map=L.map("map").setView([41,29],13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  navigator.geolocation.getCurrentPosition(p=>{
+    const {latitude,longitude}=p.coords;
+    fromM=L.marker([latitude,longitude]).addTo(map);
+    map.setView([latitude,longitude],15);
+    reverse(latitude,longitude,fromAddr);
+  });
+  map.on("click",e=>{
+    toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
+    reverse(e.latlng.lat,e.latlng.lng,toAddr);
+    calc();
+  });
+}
+
+/* SERVICE */
+function pickService(t){
+  if(!registered){openRegister();return;}
+  service=t;
+  svcTaxi.classList.toggle("active",t==="taxi");
+  svcCourier.classList.toggle("active",t==="courier");
+  courierBox.style.display=t==="courier"?"block":"none";
+  callBar.style.display="block";
+  callBar.innerText = t==="taxi" ? "TAKSİ ÇAĞIR" : "KURYE ÇAĞIR";
+  calc();
+}
+
+/* REGISTER */
+function openRegister(){
+  app.style.pointerEvents="none";
+  register.style.display="flex";
+}
+function saveUser(){
+  if(fn.value.length<2||ln.value.length<2||!/^05\d{9}$/.test(ph.value)||!kvkk.checked){
+    regErr.style.display="block";return;
+  }
+  user={f:fn.value,l:ln.value,p:ph.value};
+  registered=true;
+  register.style.display="none";
+  app.style.pointerEvents="auto";
+}
+
+/* CALC */
+function calc(){
+  if(!service||!fromM||!toM)return;
+  const a=fromM.getLatLng(),b=toM.getLatLng();
+  const km=h(a.lat,a.lng,b.lat,b.lng);
+  dist.textContent=km.toFixed(2)+" km";
+  const pr=service==="taxi"?Math.max(120,60+km*22):Math.max(80,40+km*15);
+  price.textContent=Math.round(pr)+" TL";
+}
+
+/* CALL */
+function callDriver(){
+  alert(service==="taxi"?"Taksi çağrıldı":"Kurye çağrıldı");
+}
+
+/* UTIL */
+function h(a,b,c,d){
+  const R=6371,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function reverse(lat,lng,input){
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+  .then(r=>r.json()).then(d=>{if(d.display_name)input.value=d.display_name});
+}
+</script>
+
+</body>
+</html>
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SepetTaxi</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff;overflow:hidden}
+
+/* LANDING */
+#landing{
+  position:fixed;inset:0;
+  background:#000 url("assets/landing.png") center/cover no-repeat;
   z-index:10;
 }
 #landing .overlay{
