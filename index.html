@@ -13,118 +13,40 @@
 html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff;overflow:hidden}
 
 /* LANDING */
-#landing{
-  position:fixed;inset:0;
-  background:#000 url("assets/landing.png") center/cover no-repeat;
-  z-index:50;
-}
-#landing .overlay{
-  position:absolute;inset:0;
-  background:rgba(0,0,0,.6);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-}
+#landing{position:fixed;inset:0;background:#000 url("assets/landing.png") center/cover no-repeat;z-index:50}
+#landing .overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center}
 #landing h1{font-size:38px;margin-bottom:18px}
 #landing span{color:#f5c400}
-#landing button{
-  background:#f5c400;color:#000;
-  border:0;border-radius:26px;
-  padding:14px 42px;
-  font-size:17px;font-weight:900;
-}
+#landing button{background:#f5c400;color:#000;border:0;border-radius:26px;padding:14px 42px;font-size:17px;font-weight:900}
 
 /* APP */
 #app{display:none;height:100%}
-header{
-  height:56px;background:#000;
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:900;
-}
+header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900}
 header span{color:#f5c400}
 
 /* MAP + PANEL */
 #map{height:30vh}
-#panel{
-  height:calc(70vh - 56px);
-  padding:8px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
+#panel{height:calc(70vh - 56px);padding:8px;display:flex;flex-direction:column;gap:6px}
 
 /* UI */
-.card{
-  background:#1b1b1b;
-  border-radius:10px;
-  padding:8px;
-}
+.card{background:#1b1b1b;border-radius:10px;padding:8px}
 .service-row{display:flex;gap:6px}
-.service{
-  flex:1;
-  padding:8px;
-  border-radius:8px;
-  text-align:center;
-  border:1px solid #333;
-  font-size:13px;
-}
+.service{flex:1;padding:8px;border-radius:8px;text-align:center;border:1px solid #333;font-size:13px}
 .service.active{border-color:#f5c400}
-
-.input{
-  width:100%;
-  padding:8px;
-  border-radius:8px;
-  border:1px solid #333;
-  background:#000;
-  color:#fff;
-  font-size:13px;
-}
-
+.input{width:100%;padding:8px;border-radius:8px;border:1px solid #333;background:#000;color:#fff;font-size:13px}
 .row{display:flex;gap:6px}
 .row .card{flex:1;text-align:center}
 .big{font-size:15px;font-weight:900}
 
 /* CALL BAR */
-#callBar{
-  display:none;
-  background:#f5c400;
-  color:#000;
-  border-radius:22px;
-  padding:12px;
-  text-align:center;
-  font-weight:900;
-  margin-top:auto;
-}
+#callBar{display:none;background:#f5c400;color:#000;border-radius:22px;padding:12px;text-align:center;font-weight:900;margin-top:auto}
 
 /* DRIVER CTA */
-#driverCta{
-  position:fixed;
-  bottom:6px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#111;
-  border:1px solid #333;
-  border-radius:20px;
-  padding:5px 14px;
-  font-size:11px;
-  z-index:10;
-}
+#driverCta{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #333;border-radius:20px;padding:5px 14px;font-size:11px;z-index:10}
 
 /* REGISTER */
-#register{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.85);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:100;
-}
-#register .box{
-  width:88%;
-  max-width:340px;
-  background:#111;
-  border-radius:14px;
-  padding:12px;
-}
+#register{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:100}
+#register .box{width:88%;max-width:340px;background:#111;border-radius:14px;padding:12px}
 #register .err{color:#ff5c5c;font-size:12px;display:none}
 </style>
 </head>
@@ -145,7 +67,6 @@ header span{color:#f5c400}
   <div id="map"></div>
 
   <div id="panel">
-
     <div class="card">
       <b>Hizmet Seç</b>
       <div class="service-row">
@@ -168,7 +89,7 @@ header span{color:#f5c400}
       <div class="card"><div>Ücret</div><div id="price" class="big">—</div></div>
     </div>
 
-    <div id="callBar" onclick="callDriver()">—</div>
+    <div id="callBar" onclick="callDriver()">ÇAĞIR</div>
   </div>
 </div>
 
@@ -182,39 +103,47 @@ header span{color:#f5c400}
     <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
     <label style="font-size:12px"><input type="checkbox" id="kvkk"> KVKK kabul</label>
     <div id="regErr" class="err">Bilgiler hatalı</div>
-    <div id="saveBtn" class="callBar" style="display:block;margin-top:8px" onclick="saveUser()">KAYDI TAMAMLA</div>
+    <div class="callBar" style="display:block;margin-top:8px" onclick="saveUser()">KAYDI TAMAMLA</div>
   </div>
 </div>
 
 <script>
-const BACKEND="PUT_BACKEND_URL";
-let map,fromM,toM,service=null,registered=false,user=null;
+/* ================== AYAR ================== */
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-/* START */
+/* ================== STATE ================== */
+let map, fromM, toM;
+let service = null;
+let registered = false;
+let user = null;
+
+/* ================== START ================== */
 function start(){
   landing.style.display="none";
   app.style.display="block";
   initMap();
 }
 
-/* MAP */
+/* ================== MAP ================== */
 function initMap(){
-  map=L.map("map").setView([41,29],13);
+  map = L.map("map").setView([41,29],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
   navigator.geolocation.getCurrentPosition(p=>{
     const {latitude,longitude}=p.coords;
     fromM=L.marker([latitude,longitude]).addTo(map);
     map.setView([latitude,longitude],15);
     reverse(latitude,longitude,fromAddr);
   });
+
   map.on("click",e=>{
-    toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
+    toM ? toM.setLatLng(e.latlng) : toM=L.marker(e.latlng).addTo(map);
     reverse(e.latlng.lat,e.latlng.lng,toAddr);
     calc();
   });
 }
 
-/* SERVICE */
+/* ================== SERVICE ================== */
 function pickService(t){
   if(!registered){openRegister();return;}
   service=t;
@@ -226,7 +155,7 @@ function pickService(t){
   calc();
 }
 
-/* REGISTER */
+/* ================== REGISTER ================== */
 function openRegister(){
   app.style.pointerEvents="none";
   register.style.display="flex";
@@ -235,13 +164,13 @@ function saveUser(){
   if(fn.value.length<2||ln.value.length<2||!/^05\d{9}$/.test(ph.value)||!kvkk.checked){
     regErr.style.display="block";return;
   }
-  user={f:fn.value,l:ln.value,p:ph.value};
+  user={name:fn.value+" "+ln.value,phone:ph.value};
   registered=true;
   register.style.display="none";
   app.style.pointerEvents="auto";
 }
 
-/* CALC */
+/* ================== CALC ================== */
 function calc(){
   if(!service||!fromM||!toM)return;
   const a=fromM.getLatLng(),b=toM.getLatLng();
@@ -251,12 +180,38 @@ function calc(){
   price.textContent=Math.round(pr)+" TL";
 }
 
-/* CALL */
-function callDriver(){
-  alert(service==="taxi"?"Taksi çağrıldı":"Kurye çağrıldı");
+/* ================== CALL → CREATE JOB ================== */
+async function callDriver(){
+  if(!fromM||!toM||!service)return;
+
+  const payload={
+    action:"createJob",
+    service,
+    pickup_address:fromAddr.value,
+    pickup_lat:fromM.getLatLng().lat,
+    pickup_lng:fromM.getLatLng().lng,
+    dropoff_address:toAddr.value,
+    dropoff_lat:toM.getLatLng().lat,
+    dropoff_lng:toM.getLatLng().lng,
+    customer_name:user.name,
+    customer_phone:user.phone,
+    price:price.textContent
+  };
+
+  callBar.innerText="Gönderiliyor…";
+
+  const res=await fetch(BACKEND_URL,{method:"POST",body:JSON.stringify(payload)});
+  const data=await res.json();
+
+  if(data.job_id){
+    location.href="track.html?job_id="+data.job_id;
+  }else{
+    alert("İş oluşturulamadı");
+    callBar.innerText="TEKRAR DENE";
+  }
 }
 
-/* UTIL */
+/* ================== UTIL ================== */
 function h(a,b,c,d){
   const R=6371,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
   const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
