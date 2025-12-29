@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -10,61 +10,64 @@
 
 <style>
 *{box-sizing:border-box}
-body{
+html,body{
   margin:0;
+  height:100%;
   font-family:Arial,Helvetica,sans-serif;
   background:#000;
   color:#fff;
-}
-body.lock{
   overflow:hidden;
-  height:100vh;
 }
 
-/* HEADER */
-header{
-  height:56px;
+/* MAP – ZEMİN */
+#map{
+  position:fixed;
+  inset:0;
+  z-index:1;
+}
+
+/* TOP BAR */
+#topBar{
+  position:fixed;
+  top:0;left:0;right:0;
+  height:64px;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:20px;
+  font-size:22px;
   font-weight:900;
+  background:linear-gradient(rgba(0,0,0,.85),rgba(0,0,0,.35));
+  z-index:10;
 }
-header span{color:#f5c400}
+#topBar span{color:#f5c400}
 
-/* LANDING */
-#landing{
-  height:240px;
-  background:#111 url("assets/landing.png") center/cover no-repeat;
-}
-
-/* MAP */
-#map{
-  height:320px;
-  flex-shrink:0;
-}
-
-/* WRAP */
-.wrap{
-  max-width:520px;
-  margin:auto;
+/* PANEL */
+#panel{
+  position:fixed;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:110px;
+  width:94%;
+  max-width:420px;
+  background:#0f0f0f;
+  border-radius:22px;
   padding:14px;
+  z-index:10;
 }
 
 /* SERVICES */
 .services{
   display:flex;
-  gap:12px;
-  margin-top:-24px;
+  gap:10px;
 }
 .service{
   flex:1;
-  background:#111;
-  border:2px solid #222;
-  border-radius:16px;
-  padding:18px;
+  padding:14px;
+  border-radius:14px;
   text-align:center;
   font-weight:900;
+  background:#151515;
+  border:2px solid #222;
   cursor:pointer;
 }
 .service.active{
@@ -72,14 +75,7 @@ header span{color:#f5c400}
   color:#f5c400;
 }
 
-/* CARD */
-.card{
-  background:#111;
-  border:1px solid #222;
-  border-radius:16px;
-  padding:14px;
-  margin-top:12px;
-}
+/* INPUT */
 input{
   width:100%;
   padding:14px;
@@ -87,12 +83,12 @@ input{
   border:0;
   background:#1b1b1b;
   color:#fff;
-  margin-top:8px;
+  margin-top:10px;
 }
 
 /* CALL */
 #callBtn{
-  margin-top:14px;
+  margin-top:12px;
   width:100%;
   padding:18px;
   border-radius:18px;
@@ -103,20 +99,26 @@ input{
   font-weight:900;
 }
 
-/* DRIVER CARD */
-.driverCard{
-  margin-top:18px;
-  padding:26px;
-  border-radius:20px;
+/* DRIVER CTA */
+#driverCta{
+  position:fixed;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:24px;
+  width:94%;
+  max-width:420px;
+  padding:22px;
+  border-radius:22px;
   background:#141414;
   border:2px dashed #333;
   text-align:center;
   font-size:18px;
   font-weight:900;
+  z-index:10;
 }
-.driverCard span{color:#f5c400}
+#driverCta span{color:#f5c400}
 
-/* REGISTER */
+/* REGISTER MODAL */
 #register{
   position:fixed;
   inset:0;
@@ -124,22 +126,22 @@ input{
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:9999;
+  z-index:99;
 }
 .regBox{
   width:90%;
   max-width:360px;
   background:#111;
-  border-radius:18px;
+  border-radius:20px;
   padding:18px;
 }
 .regBox input{margin-top:10px}
 .regBox label{
+  display:flex;
+  align-items:center;
+  gap:8px;
   font-size:13px;
   color:#aaa;
-  display:flex;
-  gap:8px;
-  align-items:center;
   margin-top:10px;
 }
 .regBox button{
@@ -157,29 +159,24 @@ input{
 
 <body>
 
-<header>Sepet<span>Taxi</span></header>
-
-<div id="landing"></div>
 <div id="map"></div>
 
-<div class="wrap">
+<div id="topBar">Sepet<span>Taxi</span></div>
 
+<div id="panel">
   <div class="services">
     <div class="service active" onclick="selectService('taxi',this)">🚕 Taksi</div>
     <div class="service" onclick="selectService('courier',this)">📦 Kurye</div>
   </div>
 
-  <div class="card">
-    <input id="fromAddr" placeholder="Nereden (haritaya dokun)">
-    <input id="toAddr" placeholder="Nereye (haritaya dokun)">
-  </div>
+  <input id="fromAddr" placeholder="Nereden (haritaya dokun)">
+  <input id="toAddr" placeholder="Nereye (haritaya dokun)">
 
   <button id="callBtn" onclick="callFlow()">ÇAĞIR</button>
+</div>
 
-  <div class="driverCard" onclick="location.href='driver_apply.html'">
-    🚗 <span>Sürücü Ol</span> – Hemen Başvur
-  </div>
-
+<div id="driverCta" onclick="location.href='driver_apply.html'">
+  🚗 <span>Sürücü Ol</span> – Hemen Başvur
 </div>
 
 <!-- REGISTER -->
@@ -215,7 +212,6 @@ map.on("click",e=>{
   }
 });
 
-/* FLOW */
 let service="taxi",registered=false,user={};
 
 function selectService(s,el){
@@ -227,7 +223,6 @@ function selectService(s,el){
 function callFlow(){
   if(!fromM||!toM) return alert("Adres seç");
   if(!registered){
-    document.body.classList.add("lock");
     register.style.display="flex";
   }else{
     createJob();
@@ -241,7 +236,6 @@ function saveUser(){
   user={ad:ad.value,soyad:soyad.value,tel:tel.value};
   registered=true;
   register.style.display="none";
-  document.body.classList.remove("lock");
   createJob();
 }
 
