@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Driver</title>
+<title>SepetTaxi – Driver Panel</title>
 
 <style>
 *{box-sizing:border-box}
@@ -13,26 +13,26 @@ header{
   font-weight:900;border-bottom:1px solid #222
 }
 header span{color:#f5c400}
-.wrap{padding:14px;max-width:720px;margin:auto}
-.card{background:#111;border-radius:14px;padding:14px;margin-bottom:12px}
-button{
-  width:100%;padding:14px;border-radius:20px;border:0;
-  font-weight:900;background:#f5c400;color:#000;cursor:pointer
-}
-button.secondary{
-  background:#222;color:#ddd;margin-top:6px
-}
-.small{font-size:13px;color:#aaa}
-hr{border:0;border-top:1px solid #222;margin:10px 0}
+.wrap{padding:14px;max-width:760px;margin:auto}
+.card{background:#111;border-radius:16px;padding:14px;margin-bottom:12px}
 input{
   width:100%;padding:12px;border-radius:12px;
   border:0;background:#222;color:#fff
 }
+button{
+  width:100%;padding:14px;border-radius:22px;border:0;
+  font-weight:900;background:#f5c400;color:#000;cursor:pointer
+}
+button.secondary{background:#222;color:#ddd;margin-top:6px}
+.small{font-size:12px;color:#aaa}
+.big{font-size:26px;font-weight:900}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .badge{
   display:inline-block;padding:4px 10px;border-radius:999px;
-  font-size:12px;background:#222;color:#aaa
+  background:#222;color:#aaa;font-size:12px
 }
-.badge.active{background:#163;border-color:#2f8}
+.auth-only{display:none}
+hr{border:0;border-top:1px solid #222;margin:10px 0}
 </style>
 </head>
 
@@ -43,30 +43,46 @@ input{
 <div class="wrap">
 
 <!-- LOGIN -->
-<div class="card">
+<div class="card" id="loginCard">
   <b>Sürücü Girişi</b>
   <div style="height:8px"></div>
   <input id="did" placeholder="Driver ID (örn: DRV-001)">
   <div style="height:10px"></div>
-  <button onclick="loadJobs()">İşleri Getir</button>
+  <button onclick="login()">Panele Gir</button>
 </div>
 
-<!-- STATS -->
-<div class="card">
-  <b>Bugünkü Kazanç</b>
-  <div style="font-size:26px;font-weight:900" id="earnToday">— TL</div>
-  <div class="small">Tamamlanan iş: <span id="cntToday">—</span></div>
+<!-- SUMMARY -->
+<div class="card auth-only">
+  <b>Sürücü Özeti</b>
+  <div class="grid" style="margin-top:10px">
+    <div>
+      <div class="small">Bugünkü Kazanç</div>
+      <div class="big" id="todayEarn">—</div>
+    </div>
+    <div>
+      <div class="small">Toplam Kazanç</div>
+      <div class="big" id="totalEarn">—</div>
+    </div>
+    <div>
+      <div class="small">Toplam Komisyon</div>
+      <div class="big" id="totalComm">—</div>
+    </div>
+    <div>
+      <div class="small">Net Kazanç</div>
+      <div class="big" id="netEarn">—</div>
+    </div>
+  </div>
 </div>
 
-<!-- JOBS -->
-<div class="card">
-  <b>Bekleyen / Aktif İşler</b>
-  <div id="jobs"></div>
+<!-- ACTIVE JOB -->
+<div class="card auth-only">
+  <b>Aktif İş</b>
+  <div id="activeJob" class="small">Aktif iş yok.</div>
 </div>
 
 <!-- HISTORY -->
-<div class="card">
-  <b>Son Tamamlanan İşler</b>
+<div class="card auth-only">
+  <b>Geçmiş İşler</b>
   <div id="history"></div>
 </div>
 
@@ -76,115 +92,92 @@ input{
 const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
+const COMMISSION = 0.15;
+
+let DRIVER_ID = null;
 const $ = id => document.getElementById(id);
 
-/* ================= LOAD ================= */
-async function loadJobs(){
+/* LOGIN */
+async function login(){
   const did = $("did").value.trim();
   if(!did){ alert("Driver ID gir"); return; }
 
-  const jobs = await fetch(`${BACKEND}?action=getJobs`)
-    .then(r=>r.json());
+  DRIVER_ID = did;
+  document.querySelectorAll(".auth-only").forEach(e=>e.style.display="block");
+  $("loginCard").style.display="none";
 
-  renderStats(jobs,did);
-  renderJobs(jobs,did);
-  renderHistory(jobs,did);
+  loadData();
 }
 
-/* ================= STATS ================= */
-function renderStats(jobs,did){
+/* LOAD ALL */
+async function loadData(){
+  const jobs = await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
+  const mine = jobs.filter(j=>j.driver_id===DRIVER_ID);
+
+  renderSummary(mine);
+  renderActive(mine);
+  renderHistory(mine);
+}
+
+/* SUMMARY */
+function renderSummary(jobs){
   const today = new Date().toISOString().slice(0,10);
-  let sum=0,cnt=0;
+  let todaySum=0,total=0,comm=0;
 
   jobs.forEach(j=>{
-    if(j.driver_id===did &&
-       j.status==="completed" &&
-       String(j.completed_at||"").startsWith(today)){
-      sum += Number(j.final_price||0);
-      cnt++;
+    if(j.status==="completed"){
+      const p = Number(j.final_price||0);
+      total += p;
+      comm  += p*COMMISSION;
+      if(String(j.completed_at||"").startsWith(today)) todaySum+=p;
     }
   });
 
-  $("earnToday").innerText = sum + " TL";
-  $("cntToday").innerText = cnt;
+  $("todayEarn").innerText = todaySum.toFixed(0)+" TL";
+  $("totalEarn").innerText = total.toFixed(0)+" TL";
+  $("totalComm").innerText = comm.toFixed(0)+" TL";
+  $("netEarn").innerText = (total-comm).toFixed(0)+" TL";
 }
 
-/* ================= JOB LIST ================= */
-function renderJobs(jobs,did){
-  const box = $("jobs");
-  box.innerHTML = "";
+/* ACTIVE JOB */
+function renderActive(jobs){
+  const box = $("activeJob");
+  const j = jobs.find(x=>x.status==="assigned"||x.status==="on_route");
+  if(!j){ box.innerHTML="Aktif iş yok."; return; }
 
-  const list = jobs.filter(j =>
-    j.status==="pending" ||
-    (j.driver_id===did && j.status!=="completed")
-  );
+  let btn="";
+  if(j.status==="assigned") btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
+  if(j.status==="on_route") btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
 
-  if(!list.length){
-    box.innerHTML = `<div class="small">Aktif iş yok.</div>`;
-    return;
-  }
-
-  list.forEach(j=>{
-    const d=document.createElement("div");
-
-    let actions = "";
-    if(j.status==="pending"){
-      actions = `<button onclick="acceptJob('${j.job_id}')">KABUL ET</button>`;
-    }
-    if(j.status==="assigned" && j.driver_id===did){
-      actions = `
-        <button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>
-      `;
-    }
-    if(j.status==="on_route" && j.driver_id===did){
-      actions = `
-        <button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>
-      `;
-    }
-
-    d.innerHTML = `
-      <hr>
-      <b>${j.from_address} → ${j.to_address}</b><br>
-      <span class="small">
-        Mesafe: ${j.distance_km} km · Ücret: ${j.final_price} TL
-      </span><br>
-      <span class="badge">${j.status}</span>
-      <div style="height:8px"></div>
-      ${actions}
-    `;
-    box.appendChild(d);
-  });
+  box.innerHTML=`
+    <b>${j.from_address} → ${j.to_address}</b><br>
+    <span class="small">Ücret: ${j.final_price} TL</span><br>
+    <span class="badge">${j.status}</span>
+    <div style="height:8px"></div>
+    ${btn}
+  `;
 }
 
-/* ================= HISTORY ================= */
-function renderHistory(jobs,did){
+/* HISTORY */
+function renderHistory(jobs){
   const box = $("history");
-  box.innerHTML = "";
-
-  jobs
-    .filter(j=>j.driver_id===did && j.status==="completed")
-    .slice(-5).reverse()
+  box.innerHTML="";
+  jobs.filter(j=>j.status==="completed")
+    .slice(-10).reverse()
     .forEach(j=>{
-      box.innerHTML += `
+      const c = j.final_price*COMMISSION;
+      box.innerHTML+=`
         <div class="small">
           ${j.from_address} → ${j.to_address}<br>
-          <b>${j.final_price} TL</b>
-        </div><hr>
-      `;
+          Ücret: ${j.final_price} TL · Komisyon: ${c.toFixed(0)} TL
+        </div><hr>`;
     });
 }
 
-/* ================= ACTIONS ================= */
-async function acceptJob(jobId){
-  const did = $("did").value.trim();
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=assigned&driver_id=${did}`);
-  loadJobs();
-}
-
+/* STATUS UPDATE */
 async function setStatus(jobId,status){
-  const did = $("did").value.trim();
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=${status}&driver_id=${did}`);
-  loadJobs();
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=${status}&driver_id=${DRIVER_ID}`);
+  loadData();
 }
 </script>
 
