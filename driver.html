@@ -95,6 +95,8 @@ const BACKEND =
 const COMMISSION = 0.15;
 
 let DRIVER_ID = null;
+let LIVE_TIMER = null;
+
 const $ = id => document.getElementById(id);
 
 /* LOGIN */
@@ -143,11 +145,13 @@ function renderSummary(jobs){
 function renderActive(jobs){
   const box = $("activeJob");
   const j = jobs.find(x=>x.status==="assigned"||x.status==="on_route");
-  if(!j){ box.innerHTML="Aktif iş yok."; return; }
+  if(!j){ box.innerHTML="Aktif iş yok."; stopLivePing(); return; }
 
   let btn="";
-  if(j.status==="assigned") btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
-  if(j.status==="on_route") btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
+  if(j.status==="assigned")
+    btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
+  if(j.status==="on_route")
+    btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
 
   box.innerHTML=`
     <b>${j.from_address} → ${j.to_address}</b><br>
@@ -156,6 +160,8 @@ function renderActive(jobs){
     <div style="height:8px"></div>
     ${btn}
   `;
+
+  if(j.status==="on_route") startLivePing(j.job_id);
 }
 
 /* HISTORY */
@@ -177,7 +183,31 @@ function renderHistory(jobs){
 /* STATUS UPDATE */
 async function setStatus(jobId,status){
   await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=${status}&driver_id=${DRIVER_ID}`);
+
+  if(status==="on_route") startLivePing(jobId);
+  if(status==="completed") stopLivePing();
+
   loadData();
+}
+
+/* LIVE LOCATION PING */
+function startLivePing(jobId){
+  if(!navigator.geolocation) return;
+
+  if(LIVE_TIMER) return;
+
+  LIVE_TIMER = setInterval(()=>{
+    navigator.geolocation.getCurrentPosition(pos=>{
+      fetch(`${BACKEND}?action=ping&job_id=${jobId}&driver_id=${DRIVER_ID}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
+    });
+  },5000);
+}
+
+function stopLivePing(){
+  if(LIVE_TIMER){
+    clearInterval(LIVE_TIMER);
+    LIVE_TIMER=null;
+  }
 }
 </script>
 
