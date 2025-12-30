@@ -48,7 +48,6 @@ header span{color:var(--y)}
   height:calc(68vh - 56px);
   padding:10px;
   display:flex;flex-direction:column;gap:8px;
-  /* Sticky CTA güvenli alan: km/ücret kapanmasın */
   padding-bottom:220px;
 }
 @media(min-width:768px){ #panel{height:calc(74vh - 56px)} }
@@ -129,7 +128,7 @@ header span{color:var(--y)}
 #ctaBtn:active{transform:scale(.98)}
 #ctaSub{margin-top:6px;text-align:center;font-size:11px;color:#9a9a9a}
 
-/* DRIVER CTA */
+/* DRIVER CTA (SECONDARY) */
 #driverCta{
   position:fixed;bottom:92px;left:50%;
   transform:translateX(-50%);
@@ -200,7 +199,7 @@ header span{color:var(--y)}
       </div>
       <div class="serviceRow">
         <div id="svcTaxi" class="serviceBtn" onclick="pickService('taxi')">🚕 Taksi</div>
-        <div id="svcCourier" class="serviceBtn" onclick="pickService('courier')">📦 Kurye Rei</div>
+        <div id="svcCourier" class="serviceBtn" onclick="pickService('courier')">📦 Kurye</div>
       </div>
       <div class="helper">Haritada varış noktasına dokunarak “Nereye” seç.</div>
     </div>
@@ -248,7 +247,7 @@ header span{color:var(--y)}
 
 <div id="driverCta">🚗 <a href="driver.html">Sürücü müsün?</a></div>
 
-<!-- SEARCH -->
+<!-- SEARCH (LOCKED OVERLAY) -->
 <div id="searching">
   <div class="txt">Sürücü aranıyor<span id="dots"></span></div>
   <div style="font-size:12px;color:#888;margin-top:6px">Lütfen bekleyin</div>
@@ -281,7 +280,7 @@ header span{color:var(--y)}
 <script>
 /* ================== AYAR ================== */
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-const POLL_MS = 2500;
+const POLL_MS = 3000;
 const POLL_TIMEOUT_MS = 90000; // 90sn
 
 /* ================== STATE ================== */
@@ -294,6 +293,9 @@ let jobId = null;
 let pollTimer = null;
 let pollStartedAt = 0;
 
+// sürücü arama sırasında UI kilidi
+let isSearching = false;
+
 const $ = (id)=>document.getElementById(id);
 
 /* ================== UI ================== */
@@ -303,6 +305,18 @@ function toast(msg){
   t.style.display="block";
   clearTimeout(toast._tm);
   toast._tm=setTimeout(()=>t.style.display="none",2200);
+}
+
+function showSearching(){
+  $("searching").style.display="flex";
+  isSearching = true;
+  // CTA kilitle (çift tık, ikinci job yok)
+  $("ctaBtn").className = "disabled";
+}
+function hideSearching(){
+  $("searching").style.display="none";
+  isSearching = false;
+  setCtaState();
 }
 
 function courierValid(){
@@ -317,6 +331,8 @@ function canCall(){
   if(!service) return false;
   if(!fromM || !toM) return false;
   if(service==="courier" && !courierValid()) return false;
+  // arama sürerken yeni çağrı engeli
+  if(isSearching) return false;
   return true;
 }
 
@@ -328,7 +344,8 @@ function setCtaState(){
   btn.textContent = service ? (service==="taxi" ? "TAKSİ ÇAĞIR" : "KURYE ÇAĞIR") : "ÇAĞIR";
 
   const sub = $("ctaSub");
-  if(!registered) sub.textContent = "Devam etmek için kayıt gerekli.";
+  if(isSearching) sub.textContent = "Sürücü aranıyor…";
+  else if(!registered) sub.textContent = "Devam etmek için kayıt gerekli.";
   else if(!service) sub.textContent = "Hizmet seç.";
   else if(!fromM) sub.textContent = "Konum alınıyor…";
   else if(!toM) sub.textContent = "Haritadan varış noktası seç.";
@@ -347,10 +364,7 @@ function start(){
 /* ================== MAP ================== */
 function initMap(){
   map = L.map("map",{zoomControl:false}).setView([41,29],13);
-  L.control.zoom({position:"topleft"}).addTo(map);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-    maxZoom:19
-  }).addTo(map);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
   refreshLocation();
 
@@ -371,16 +385,16 @@ function refreshLocation(){
     reverse(latitude,longitude,$("fromAddr"));
     calc();
     setCtaState();
-    toast("Konum alındı");
   },()=>{
     $("fromAddr").placeholder="Konum izni gerekli";
     toast("Konum izni verilmeli");
     setCtaState();
-  },{enableHighAccuracy:true,timeout:9000,maximumAge:5000});
+  },{enableHighAccuracy:true,timeout:8000,maximumAge:5000});
 }
 
 /* ================== SERVICE ================== */
 function pickService(t){
+  if(isSearching) return; // arama sırasında hizmet değiştirme yok
   if(!registered){ openRegister(); return; }
   service=t;
 
@@ -396,11 +410,13 @@ function pickService(t){
 
 /* courier input listeners */
 ["pkgType","rcvName","rcvPhone"].forEach(id=>{
-  $(id).addEventListener("input",()=>{ calc(); setCtaState(); });
+  const el=$(id);
+  el.addEventListener("input",()=>{ calc(); setCtaState(); });
 });
 
 /* ================== REGISTER ================== */
 function openRegister(){
+  if(isSearching) return;
   $("app").classList.add("app-locked");
   $("register").style.display="flex";
   $("regErr").style.display="none";
@@ -432,10 +448,7 @@ function saveUser(){
 
 /* ================== CALC ================== */
 function calc(){
-  if(!service || !fromM || !toM){
-    if(!toM){ $("dist").textContent="—"; $("price").textContent="—"; }
-    return;
-  }
+  if(!service || !fromM || !toM) return;
   const a=fromM.getLatLng(), b=toM.getLatLng();
   const km = hav(a.lat,a.lng,b.lat,b.lng);
   $("dist").textContent = km.toFixed(2) + " km";
@@ -449,6 +462,8 @@ function calc(){
 
 /* ================== CTA ================== */
 function ctaClick(){
+  if(isSearching) return;
+
   if(!canCall()){
     if(!registered){ openRegister(); return; }
     toast("Eksikleri tamamla");
@@ -460,7 +475,10 @@ function ctaClick(){
 /* ================== CREATE JOB → POLL → TRACK ================== */
 async function createJob(){
   try{
-    $("searching").style.display="flex";
+    // çift istek engeli
+    if(isSearching) return;
+
+    showSearching();
 
     const payload={
       action:"createJob",
@@ -473,8 +491,7 @@ async function createJob(){
       dropoff_lng:toM.getLatLng().lng,
       customer_name:user.name,
       customer_phone:user.phone,
-      price:$("price").textContent,
-      distance_km: parseFloat(($("dist").textContent||"").replace(/[^\d.]/g,"")) || 0
+      price:$("price").textContent
     };
 
     if(service==="courier"){
@@ -489,57 +506,51 @@ async function createJob(){
     if(!data || !data.job_id) throw new Error("job_id yok");
     jobId=data.job_id;
 
-    // İlk token response ile geliyorsa sakla, gelmiyorsa getJobs'tan alınacak
-    const initialToken = data.track_token || "";
-
     toast("Talep oluşturuldu");
+
+    // polling başlat
     pollStartedAt=Date.now();
     clearInterval(pollTimer);
-    pollTimer=setInterval(()=>checkJob(initialToken),POLL_MS);
+    pollTimer=setInterval(checkJob,POLL_MS);
 
   }catch(e){
-    $("searching").style.display="none";
+    clearInterval(pollTimer);
+    jobId=null;
+    hideSearching();
     toast("Talep oluşturulamadı");
   }
 }
 
-async function checkJob(initialToken){
+async function checkJob(){
   try{
     if(!jobId) return;
 
+    // timeout
     if(Date.now()-pollStartedAt > POLL_TIMEOUT_MS){
       clearInterval(pollTimer);
-      $("searching").style.display="none";
+      const oldJob = jobId;
+      jobId=null;
+      hideSearching();
       toast("Sürücü bulunamadı. Tekrar dene.");
+      console.warn("search timeout job:", oldJob);
       return;
     }
 
-    // ✅ Backend ile uyumlu: getJobs'dan job'ı bul
-    const r=await fetch(`${BACKEND_URL}?action=getJobs`);
-    const jobs=await r.json();
-    const job = Array.isArray(jobs) ? jobs.find(j=>String(j.job_id)===String(jobId)) : null;
+    const r=await fetch(`${BACKEND_URL}?action=checkJob&job_id=${encodeURIComponent(jobId)}`);
+    const d=await r.json();
 
-    if(!job) return;
-
-    if(job.status==="assigned" || job.status==="on_route"){
+    // backend {status:"assigned"} döndürünce
+    if(d && d.status==="assigned"){
       clearInterval(pollTimer);
-
-      // ✅ Token önceliği: job.track_token (sheet) > initialToken (createJob response)
-      const token = String(job.track_token||initialToken||"").trim();
-
-      $("searching").style.display="none";
-
-      if(!token){
-        toast("Takip anahtarı bulunamadı (token).");
-        return;
-      }
-
-      // ✅ Track redirect FIX (job_id + token)
-      location.href = `track.html?job_id=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}`;
+      const goJob = jobId;
+      jobId=null;
+      // overlay kapat, sonra yönlendir
+      hideSearching();
+      location.href=`track.html?job_id=${encodeURIComponent(goJob)}`;
     }
 
   }catch(e){
-    /* sessiz devam */
+    // sessiz devam: geçici hata olursa polling dursun istemiyoruz
   }
 }
 
