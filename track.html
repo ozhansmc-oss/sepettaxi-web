@@ -3,182 +3,177 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Takip</title>
+<title>SepetTaxi – Canlı Takip</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-body{margin:0;font-family:Arial;background:#000;color:#fff}
-#map{height:60vh}
-.top{padding:12px}
-.badge{display:inline-block;padding:6px 10px;border-radius:10px;font-weight:700}
-.assigned{background:#555}
-.on_route{background:#f5c400;color:#000}
-.completed{background:#2ecc71;color:#000}
-.pending{background:#333}
-.card{background:#121212;border:1px solid #222;border-radius:14px;padding:12px;margin:12px}
-.muted{color:#aaa;font-size:13px}
-.err{padding:14px;color:#ffb3b3}
-.tl-item{padding:10px 0;border-top:1px solid #222}
-.tl-item:first-child{border-top:0}
-.tl-title{font-weight:700}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
+header{
+  height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  border-bottom:1px solid #222
+}
+header span{color:#f5c400}
+
+#map{height:100vh}
+
+.info{
+  position:fixed;
+  top:68px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#111;
+  border:1px solid #222;
+  border-radius:16px;
+  padding:12px 16px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);
+  z-index:999;
+  min-width:260px
+}
+.info .driver{
+  font-weight:900;
+  margin-bottom:4px
+}
+.info .status{
+  font-size:13px;
+  color:#aaa
+}
+.badge{
+  display:inline-block;
+  margin-top:6px;
+  padding:4px 10px;
+  border-radius:12px;
+  font-size:12px;
+  background:#f5c400;
+  color:#000;
+  font-weight:900
+}
 </style>
 </head>
 
 <body>
 
-<div class="top">
-  <span id="status" class="badge">—</span>
-</div>
+<header>Sepet<span>Taxi</span> – Canlı Takip</header>
 
 <div id="map"></div>
 
-<div class="card">
-  <div><b id="service">—</b></div>
-  <div class="muted" id="route">—</div>
-  <div class="muted">Son güncelleme: <span id="upd">—</span></div>
-  <div class="muted">Tahmini süre: <span id="eta">—</span></div>
+<div class="info">
+  <div class="driver" id="driverName">Sürücü: —</div>
+  <div class="status" id="statusText">Sürücü bekleniyor…</div>
+  <div class="badge" id="statusBadge" style="display:none">YOLDA</div>
 </div>
-
-<div class="card">
-  <div class="tl-title">Zaman Çizelgesi</div>
-  <div id="timeline" class="muted">Yükleniyor…</div>
-</div>
-
-<div id="err" class="err"></div>
 
 <script>
-/* ================== CONFIG ================== */
-const BACKEND = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+/* ================= CONFIG ================= */
+const BACKEND =
+  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-/* ================== PARAMS ================== */
-const qs = new URLSearchParams(location.search);
-const jobId = qs.get("job_id");
-const token = qs.get("token"); // opsiyonel
+/* ================= PARAM ================= */
+const q = new URLSearchParams(location.search);
+const jobId = q.get("job_id");
+const token = q.get("token"); // public tracking
 
-if(!jobId){
-  document.getElementById("err").innerText = "Eksik parametre: job_id gerekli.";
+if(!jobId || !token){
+  alert("Takip bilgisi eksik");
 }
 
-/* ================== MAP ================== */
-const map = L.map("map").setView([41,29],13);
+/* ================= MAP ================= */
+const map = L.map("map").setView([40.195,29.060],14);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-let marker=null, lastPos=null, lastTime=null;
+/* ================= ICON ================= */
+const carIcon = L.divIcon({
+  html: "🚗",
+  iconSize: [30,30],
+  className: ""
+});
 
-function showErr(m){ document.getElementById("err").innerText=m; }
+let carMarker = null;
+let lastPos = null;
 
-function statusText(s){
-  if(s==="pending") return "Beklemede";
-  if(s==="assigned") return "Atandı";
-  if(s==="on_route") return "Yolda";
-  if(s==="completed") return "Tamamlandı";
-  return s || "—";
+/* ================= UI ================= */
+function setStatus(job){
+  const s = job.status;
+  const text = document.getElementById("statusText");
+  const badge = document.getElementById("statusBadge");
+  const driver = document.getElementById("driverName");
+
+  driver.innerText = "Sürücü: " + (job.driver_id || "—");
+
+  if(s === "assigned"){
+    text.innerText = "Sürücü kabul etti";
+    badge.style.display = "none";
+  }
+  if(s === "on_route"){
+    text.innerText = "Sürücü yolda";
+    badge.style.display = "inline-block";
+    badge.innerText = "YOLDA";
+  }
+  if(s === "completed"){
+    text.innerText = "Teslim edildi";
+    badge.style.display = "inline-block";
+    badge.innerText = "TAMAMLANDI";
+  }
 }
 
-function eventText(e){
-  if(e==="created") return "Oluşturuldu";
-  if(e==="assigned") return "Sürücü atandı";
-  if(e==="accepted") return "Sürücü kabul etti";
-  if(e==="on_route") return "Yola çıktı";
-  if(e==="completed") return "Tamamlandı";
-  return e || "Güncelleme";
-}
-
-/* ================== JOB ================== */
-async function loadJob(){
-  let url;
-  if(token){
-    url = `${BACKEND}?action=getPublicJob&job_id=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}`;
-  }else{
-    // token yoksa, minimum bilgiyle status göster
-    url = `${BACKEND}?action=getJobs`;
-  }
-
-  const r = await fetch(url);
-  const data = await r.json();
-
-  let j = data;
-  if(Array.isArray(data)){
-    j = data.find(x=>String(x.job_id)===String(jobId));
-  }
-
-  if(!j){
-    showErr("Job bulunamadı.");
+/* ================= ANIMATE ================= */
+function moveMarker(lat,lng){
+  if(!carMarker){
+    carMarker = L.marker([lat,lng],{icon:carIcon}).addTo(map);
+    map.setView([lat,lng],15);
+    lastPos = {lat,lng};
     return;
   }
 
-  service.innerText = j.service_type || "Hizmet";
-  route.innerText = `${j.from_address || ""} → ${j.to_address || ""}`;
-  status.className = "badge " + (j.status || "pending");
-  status.innerText = statusText(j.status);
+  const steps = 20;
+  let i = 0;
+  const dLat = (lat - lastPos.lat) / steps;
+  const dLng = (lng - lastPos.lng) / steps;
+
+  const anim = setInterval(()=>{
+    i++;
+    const p = [
+      lastPos.lat + dLat * i,
+      lastPos.lng + dLng * i
+    ];
+    carMarker.setLatLng(p);
+    if(i >= steps){
+      clearInterval(anim);
+      lastPos = {lat,lng};
+    }
+  }, 50);
 }
 
-/* ================== LIVE ================== */
-async function pollLive(){
-  const r = await fetch(`${BACKEND}?action=getLive&job_id=${encodeURIComponent(jobId)}`);
-  const d = await r.json();
-  if(!d || !d.lat) return;
+/* ================= POLLING ================= */
+async function poll(){
+  // job status
+  const j = await fetch(`${BACKEND}?action=getPublicJob&job_id=${jobId}&token=${token}`)
+    .then(r=>r.json());
 
-  const p=[Number(d.lat), Number(d.lng)];
-  if(!marker){
-    marker=L.marker(p).addTo(map);
-    map.setView(p,16);
-  }else{
-    marker.setLatLng(p);
-  }
+  if(j.error) return;
 
-  upd.innerText = d.last_location_at
-    ? new Date(d.last_location_at).toLocaleTimeString()
-    : new Date().toLocaleTimeString();
+  setStatus(j);
 
-  const now=Date.now();
-  if(lastPos){
-    const dist = map.distance(lastPos, p);
-    const dt = (now-lastTime)/1000;
-    if(dt>0){
-      const speed = dist/dt;
-      if(speed>0.5){
-        const estMin = Math.round((500/speed)/60);
-        eta.innerText = `~${Math.max(1,estMin)} dk`;
-      }
+  // live location
+  if(j.status === "on_route"){
+    const l = await fetch(`${BACKEND}?action=getLive&job_id=${jobId}`)
+      .then(r=>r.json());
+
+    if(!l.error){
+      moveMarker(Number(l.lat), Number(l.lng));
     }
   }
-  lastPos=p; lastTime=now;
 }
 
-/* ================== TIMELINE ================== */
-async function loadTimeline(){
-  if(!token){
-    timeline.innerText = "Zaman çizelgesi için token gerekli.";
-    return;
-  }
-  const r = await fetch(`${BACKEND}?action=getTimeline&job_id=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}`);
-  const list = await r.json();
-
-  if(list.error){
-    timeline.innerText = "Zaman çizelgesi görüntülenemiyor.";
-    return;
-  }
-  if(!Array.isArray(list) || list.length===0){
-    timeline.innerText = "Henüz kayıt yok.";
-    return;
-  }
-
-  timeline.className = "";
-  timeline.innerHTML = list.map(x=>{
-    const t = x.at ? new Date(x.at).toLocaleTimeString() : "";
-    const actor = x.actor ? ` • ${x.actor}` : "";
-    return `<div class="tl-item"><b>${eventText(x.event)}</b><div class="muted">${t}${actor}</div></div>`;
-  }).join("");
-}
-
-/* ================== INIT ================== */
-loadJob();
-loadTimeline();
-setInterval(pollLive, 3000);
-setInterval(loadTimeline, 5000);
+setInterval(poll, 3000);
+poll();
 </script>
 
 </body>
