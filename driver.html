@@ -7,70 +7,14 @@
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:#000;
-  color:#fff
-}
-header{
-  height:56px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-bottom:1px solid #222;
-  font-size:18px;
-  font-weight:900
-}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900}
 header span{color:#f5c400}
-
-.wrap{
-  max-width:720px;
-  margin:0 auto;
-  padding:14px
-}
-.card{
-  background:#121212;
-  border:1px solid #222;
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:12px
-}
-input,button{
-  width:100%;
-  padding:14px;
-  border-radius:12px;
-  border:0;
-  font-size:15px
-}
-input{
-  background:#1b1b1b;
-  color:#fff;
-  margin-bottom:10px
-}
-button{
-  background:#f5c400;
-  color:#000;
-  font-weight:900;
-  cursor:pointer
-}
-button.secondary{
-  background:#333;
-  color:#fff;
-  margin-top:8px
-}
-.err{
-  background:#3a0000;
-  border:1px solid #ff4d4d;
-  color:#ffb3b3;
-  padding:10px;
-  border-radius:10px;
-  margin-bottom:12px;
-  display:none
-}
-.muted{color:#aaa;font-size:13px}
-.jobTitle{font-weight:900;margin-bottom:6px}
-.sep{height:8px}
+.wrap{padding:14px;max-width:720px;margin:auto}
+.card{background:#111;border-radius:14px;padding:14px;margin-bottom:12px}
+button{width:100%;padding:14px;border-radius:20px;border:0;font-weight:900;background:#f5c400;color:#000}
+.small{font-size:13px;color:#aaa}
+hr{border:0;border-top:1px solid #222;margin:8px 0}
 </style>
 </head>
 
@@ -80,143 +24,84 @@ button.secondary{
 
 <div class="wrap">
 
-  <div id="err" class="err"></div>
+<div class="card">
+  <input id="did" placeholder="Driver ID (örn DRV-001)"
+    style="width:100%;padding:12px;border-radius:12px;border:0;background:#222;color:#fff">
+  <button onclick="load()">İşleri Getir</button>
+</div>
 
-  <div class="card">
-    <input id="driverId" placeholder="Driver ID (örn: DRV001)">
-    <button onclick="loadJobs()">İşleri Getir</button>
-    <div class="muted">Son güncelleme: <span id="last">—</span></div>
-  </div>
+<div class="card">
+  <b>Bugünkü Kazanç</b>
+  <div style="font-size:26px;font-weight:900" id="earnToday">— TL</div>
+  <div class="small">Tamamlanan iş: <span id="cntToday">—</span></div>
+</div>
 
+<div class="card">
+  <b>Aktif / Bekleyen İşler</b>
   <div id="jobs"></div>
+</div>
+
+<div class="card">
+  <b>Son İşler</b>
+  <div id="history"></div>
+</div>
 
 </div>
 
 <script>
-/* ================== CONFIG ================== */
-const BACKEND_URL =
-  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+const BACKEND =
+"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-/* ================== STATE ================== */
-let pingTimer = null;
+async function load(){
+  const did=document.getElementById("did").value;
+  const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
 
-/* ================== UTIL ================== */
-const $ = id => document.getElementById(id);
-
-function showErr(msg){
-  $("err").innerText = msg;
-  $("err").style.display = "block";
-}
-function clearErr(){
-  $("err").style.display = "none";
-}
-
-/* ================== LOAD JOBS ================== */
-async function loadJobs(){
-  clearErr();
-  stopPing();
-
-  const did = $("driverId").value.trim();
-  if(!did) return showErr("Driver ID girilmedi");
-
-  try{
-    const r = await fetch(`${BACKEND_URL}?action=getJobs`);
-    const jobs = await r.json();
-
-    const box = $("jobs");
-    box.innerHTML = "";
-
-    /* 🔑 B MODU FİLTRE:
-       - pending → herkes görür
-       - assigned / on_route → sadece kendi driver’ı
-    */
-    const visible = jobs.filter(j =>
-      j.status === "pending" ||
-      (String(j.driver_id) === did && (j.status === "assigned" || j.status === "on_route"))
-    );
-
-    if(visible.length === 0){
-      box.innerHTML = `<div class="muted">Uygun iş yok.</div>`;
+  // Kazanç
+  const today=new Date().toISOString().slice(0,10);
+  let sum=0,cnt=0;
+  jobs.forEach(j=>{
+    if(j.driver_id===did && j.status==="completed" &&
+       String(j.completed_at||"").startsWith(today)){
+      sum+=Number(j.driver_earning||0);
+      cnt++;
     }
+  });
+  earnToday.innerText=sum+" TL";
+  cntToday.innerText=cnt;
 
-    visible.forEach(j=>{
-      const c = document.createElement("div");
-      c.className = "card";
+  // Aktif işler
+  jobsBox.innerHTML="";
+  const act=jobs.filter(j=>j.status==="pending" ||
+    (j.driver_id===did && j.status!=="completed"));
 
-      let actionBtn = "";
-      if(j.status === "pending"){
-        actionBtn = `<button onclick="acceptJob('${j.job_id}')">KABUL ET</button>`;
-      }else if(j.status === "assigned"){
-        actionBtn = `<button onclick="startJob('${j.job_id}')">YOLA ÇIK</button>`;
-      }else if(j.status === "on_route"){
-        actionBtn = `<button class="secondary" onclick="finishJob('${j.job_id}')">TAMAMLA</button>`;
-      }
+  act.forEach(j=>{
+    const d=document.createElement("div");
+    d.innerHTML=`
+      <hr>
+      <b>${j.from_address} → ${j.to_address}</b><br>
+      <span class="small">Mesafe: ${j.distance_km} km | Ücret: ${j.final_price} TL</span><br>
+      <button onclick="accept('${j.job_id}')">KABUL ET</button>
+    `;
+    jobs.appendChild(d);
+  });
 
-      c.innerHTML = `
-        <div class="jobTitle">${j.service || j.service_type}</div>
-        <div class="muted">${j.pickup_address || j.from_address}</div>
-        <div class="muted">→ ${j.dropoff_address || j.to_address}</div>
-        <div class="sep"></div>
-        <div>Durum: <b>${j.status}</b></div>
-        <div class="sep"></div>
-        ${actionBtn}
-      `;
-
-      box.appendChild(c);
-
-      if(j.status === "on_route"){
-        startPing(j.job_id);
-      }
+  // Geçmiş
+  history.innerHTML="";
+  jobs.filter(j=>j.driver_id===did && j.status==="completed")
+    .slice(-5).reverse()
+    .forEach(j=>{
+      history.innerHTML+=`
+        <div class="small">
+          ${j.from_address} → ${j.to_address}<br>
+          <b>${j.driver_earning} TL</b>
+        </div><hr>`;
     });
-
-    $("last").innerText = new Date().toLocaleTimeString();
-
-  }catch(e){
-    showErr("İşler yüklenemedi");
-  }
 }
 
-/* ================== ACTIONS ================== */
-async function acceptJob(jobId){
-  const did = $("driverId").value.trim();
-  await fetch(`${BACKEND_URL}?action=updateStatus&job_id=${jobId}&status=assigned&driver_id=${did}`);
-  loadJobs();
-}
-
-async function startJob(jobId){
-  await fetch(`${BACKEND_URL}?action=updateStatus&job_id=${jobId}&status=on_route`);
-  loadJobs();
-}
-
-async function finishJob(jobId){
-  stopPing();
-  await fetch(`${BACKEND_URL}?action=updateStatus&job_id=${jobId}&status=completed`);
-  loadJobs();
-}
-
-/* ================== LIVE LOCATION PING ================== */
-function startPing(jobId){
-  if(pingTimer || !navigator.geolocation) return;
-
-  pingTimer = setInterval(()=>{
-    navigator.geolocation.getCurrentPosition(
-      pos=>{
-        fetch(
-          `${BACKEND_URL}?action=ping` +
-          `&job_id=${jobId}` +
-          `&driver_id=${$("driverId").value}` +
-          `&lat=${pos.coords.latitude}` +
-          `&lng=${pos.coords.longitude}`
-        );
-      },
-      ()=>{ showErr("Konum izni gerekli"); }
-    );
-  }, 7000);
-}
-
-function stopPing(){
-  clearInterval(pingTimer);
-  pingTimer = null;
+async function accept(id){
+  const did=document.getElementById("did").value;
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${id}&status=assigned&driver_id=${did}`);
+  load();
 }
 </script>
 
