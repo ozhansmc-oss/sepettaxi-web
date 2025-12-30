@@ -8,13 +8,31 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#000;color:#fff}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900}
+header{
+  height:56px;display:flex;align-items:center;justify-content:center;
+  font-weight:900;border-bottom:1px solid #222
+}
 header span{color:#f5c400}
 .wrap{padding:14px;max-width:720px;margin:auto}
 .card{background:#111;border-radius:14px;padding:14px;margin-bottom:12px}
-button{width:100%;padding:14px;border-radius:20px;border:0;font-weight:900;background:#f5c400;color:#000}
+button{
+  width:100%;padding:14px;border-radius:20px;border:0;
+  font-weight:900;background:#f5c400;color:#000;cursor:pointer
+}
+button.secondary{
+  background:#222;color:#ddd;margin-top:6px
+}
 .small{font-size:13px;color:#aaa}
-hr{border:0;border-top:1px solid #222;margin:8px 0}
+hr{border:0;border-top:1px solid #222;margin:10px 0}
+input{
+  width:100%;padding:12px;border-radius:12px;
+  border:0;background:#222;color:#fff
+}
+.badge{
+  display:inline-block;padding:4px 10px;border-radius:999px;
+  font-size:12px;background:#222;color:#aaa
+}
+.badge.active{background:#163;border-color:#2f8}
 </style>
 </head>
 
@@ -24,25 +42,31 @@ hr{border:0;border-top:1px solid #222;margin:8px 0}
 
 <div class="wrap">
 
+<!-- LOGIN -->
 <div class="card">
-  <input id="did" placeholder="Driver ID (örn DRV-001)"
-    style="width:100%;padding:12px;border-radius:12px;border:0;background:#222;color:#fff">
-  <button onclick="load()">İşleri Getir</button>
+  <b>Sürücü Girişi</b>
+  <div style="height:8px"></div>
+  <input id="did" placeholder="Driver ID (örn: DRV-001)">
+  <div style="height:10px"></div>
+  <button onclick="loadJobs()">İşleri Getir</button>
 </div>
 
+<!-- STATS -->
 <div class="card">
   <b>Bugünkü Kazanç</b>
   <div style="font-size:26px;font-weight:900" id="earnToday">— TL</div>
   <div class="small">Tamamlanan iş: <span id="cntToday">—</span></div>
 </div>
 
+<!-- JOBS -->
 <div class="card">
-  <b>Aktif / Bekleyen İşler</b>
+  <b>Bekleyen / Aktif İşler</b>
   <div id="jobs"></div>
 </div>
 
+<!-- HISTORY -->
 <div class="card">
-  <b>Son İşler</b>
+  <b>Son Tamamlanan İşler</b>
   <div id="history"></div>
 </div>
 
@@ -52,56 +76,115 @@ hr{border:0;border-top:1px solid #222;margin:8px 0}
 const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-async function load(){
-  const did=document.getElementById("did").value;
-  const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
+const $ = id => document.getElementById(id);
 
-  // Kazanç
-  const today=new Date().toISOString().slice(0,10);
+/* ================= LOAD ================= */
+async function loadJobs(){
+  const did = $("did").value.trim();
+  if(!did){ alert("Driver ID gir"); return; }
+
+  const jobs = await fetch(`${BACKEND}?action=getJobs`)
+    .then(r=>r.json());
+
+  renderStats(jobs,did);
+  renderJobs(jobs,did);
+  renderHistory(jobs,did);
+}
+
+/* ================= STATS ================= */
+function renderStats(jobs,did){
+  const today = new Date().toISOString().slice(0,10);
   let sum=0,cnt=0;
+
   jobs.forEach(j=>{
-    if(j.driver_id===did && j.status==="completed" &&
+    if(j.driver_id===did &&
+       j.status==="completed" &&
        String(j.completed_at||"").startsWith(today)){
-      sum+=Number(j.driver_earning||0);
+      sum += Number(j.final_price||0);
       cnt++;
     }
   });
-  earnToday.innerText=sum+" TL";
-  cntToday.innerText=cnt;
 
-  // Aktif işler
-  jobsBox.innerHTML="";
-  const act=jobs.filter(j=>j.status==="pending" ||
-    (j.driver_id===did && j.status!=="completed"));
+  $("earnToday").innerText = sum + " TL";
+  $("cntToday").innerText = cnt;
+}
 
-  act.forEach(j=>{
+/* ================= JOB LIST ================= */
+function renderJobs(jobs,did){
+  const box = $("jobs");
+  box.innerHTML = "";
+
+  const list = jobs.filter(j =>
+    j.status==="pending" ||
+    (j.driver_id===did && j.status!=="completed")
+  );
+
+  if(!list.length){
+    box.innerHTML = `<div class="small">Aktif iş yok.</div>`;
+    return;
+  }
+
+  list.forEach(j=>{
     const d=document.createElement("div");
-    d.innerHTML=`
+
+    let actions = "";
+    if(j.status==="pending"){
+      actions = `<button onclick="acceptJob('${j.job_id}')">KABUL ET</button>`;
+    }
+    if(j.status==="assigned" && j.driver_id===did){
+      actions = `
+        <button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>
+      `;
+    }
+    if(j.status==="on_route" && j.driver_id===did){
+      actions = `
+        <button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>
+      `;
+    }
+
+    d.innerHTML = `
       <hr>
       <b>${j.from_address} → ${j.to_address}</b><br>
-      <span class="small">Mesafe: ${j.distance_km} km | Ücret: ${j.final_price} TL</span><br>
-      <button onclick="accept('${j.job_id}')">KABUL ET</button>
+      <span class="small">
+        Mesafe: ${j.distance_km} km · Ücret: ${j.final_price} TL
+      </span><br>
+      <span class="badge">${j.status}</span>
+      <div style="height:8px"></div>
+      ${actions}
     `;
-    jobs.appendChild(d);
+    box.appendChild(d);
   });
+}
 
-  // Geçmiş
-  history.innerHTML="";
-  jobs.filter(j=>j.driver_id===did && j.status==="completed")
+/* ================= HISTORY ================= */
+function renderHistory(jobs,did){
+  const box = $("history");
+  box.innerHTML = "";
+
+  jobs
+    .filter(j=>j.driver_id===did && j.status==="completed")
     .slice(-5).reverse()
     .forEach(j=>{
-      history.innerHTML+=`
+      box.innerHTML += `
         <div class="small">
           ${j.from_address} → ${j.to_address}<br>
-          <b>${j.driver_earning} TL</b>
-        </div><hr>`;
+          <b>${j.final_price} TL</b>
+        </div><hr>
+      `;
     });
 }
 
-async function accept(id){
-  const did=document.getElementById("did").value;
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${id}&status=assigned&driver_id=${did}`);
-  load();
+/* ================= ACTIONS ================= */
+async function acceptJob(jobId){
+  const did = $("did").value.trim();
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=assigned&driver_id=${did}`);
+  loadJobs();
+}
+
+async function setStatus(jobId,status){
+  const did = $("did").value.trim();
+  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=${status}&driver_id=${did}`);
+  loadJobs();
 }
 </script>
 
