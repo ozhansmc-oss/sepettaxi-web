@@ -11,24 +11,35 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#000;color:#fff}
+
 header{
   height:56px;display:flex;align-items:center;justify-content:center;
   font-weight:900;border-bottom:1px solid #222
 }
 header span{color:#f5c400}
+
 #map{height:calc(100vh - 56px)}
 
-.status{
-  position:fixed;top:70px;left:50%;transform:translateX(-50%);
-  background:#111;border:1px solid #333;
-  padding:6px 14px;border-radius:999px;
-  font-size:13px;z-index:1000
+.overlay{
+  position:fixed;left:50%;transform:translateX(-50%);
+  z-index:1000;border-radius:999px;
+  padding:6px 14px;font-size:13px
 }
-.eta{
-  position:fixed;top:110px;left:50%;transform:translateX(-50%);
-  background:#f5c400;color:#000;
-  padding:6px 14px;border-radius:999px;
-  font-size:13px;font-weight:900;z-index:1000
+
+.status{top:70px;background:#111;border:1px solid #333}
+.eta{top:110px;background:#f5c400;color:#000;font-weight:900}
+
+.driver-card{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#111;border:1px solid #333;
+  padding:12px 16px;border-radius:16px;
+  min-width:260px;z-index:1000
+}
+.driver-card b{color:#f5c400}
+.badge{
+  display:inline-block;margin-top:6px;
+  padding:4px 10px;border-radius:999px;
+  background:#222;color:#aaa;font-size:12px
 }
 </style>
 </head>
@@ -36,82 +47,90 @@ header span{color:#f5c400}
 <body>
 
 <header>Sepet<span>Taxi</span> – Takip</header>
-<div class="status" id="status">Yükleniyor…</div>
-<div class="eta" id="eta">ETA: —</div>
+
+<div id="status" class="overlay status">Yükleniyor…</div>
+<div id="eta" class="overlay eta">ETA: —</div>
+
+<div id="driverCard" class="driver-card" style="display:none">
+  <div><b>Sürücü</b>: <span id="drvId">—</span></div>
+  <div class="badge" id="drvStatus">—</div>
+</div>
+
 <div id="map"></div>
 
 <script>
 const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-const AVG_SPEED_KMH = 30; // şehir içi ortalama hız
+const AVG_SPEED_KMH = 30;
 
-const params = new URLSearchParams(location.search);
-const JOB_ID = params.get("job_id");
+const qs = new URLSearchParams(location.search);
+const JOB_ID = qs.get("job_id");
 if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
 
-let map;
-let pickupM, dropM, driverM;
-let routeLine;
+let map,pickupM,dropM,driverM,routeLine;
 
 function initMap(){
-  map = L.map("map").setView([41,29],12);
+  map=L.map("map").setView([41,29],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   setTimeout(()=>map.invalidateSize(),200);
 }
 
-function hav(lat1,lon1,lat2,lon2){
+function hav(a,b,c,d){
   const R=6371;
-  const dLat=(lat2-lat1)*Math.PI/180;
-  const dLon=(lon2-lon1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2 +
-    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2 +
+    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
     Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-function calcETA(lat1,lng1,lat2,lng2){
-  const km = hav(lat1,lng1,lat2,lng2);
-  const minutes = Math.max(1, Math.round((km / AVG_SPEED_KMH) * 60));
-  return minutes;
+function calcETA(a,b,c,d){
+  const km=hav(a,b,c,d);
+  return Math.max(1,Math.round((km/AVG_SPEED_KMH)*60));
 }
 
 async function loadJob(){
-  const job = await fetch(
+  const job=await fetch(
     `${BACKEND}?action=checkJob&job_id=${JOB_ID}`
   ).then(r=>r.json());
 
-  if(!job || job.error){
+  if(!job||job.error){
     status.innerText="İş bulunamadı";
     return;
   }
 
-  status.innerText =
-    job.status==="on_route" ? "Sürücü yolda" :
-    job.status==="assigned" ? "Sürücü atandı" :
-    job.status==="completed" ? "İş tamamlandı" : job.status;
+  status.innerText=
+    job.status==="on_route"?"Sürücü yolda":
+    job.status==="assigned"?"Sürücü atandı":
+    job.status==="completed"?"İş tamamlandı":job.status;
 
-  const jobs = await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
-  const j = jobs.find(x=>x.job_id===JOB_ID);
+  const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
+  const j=jobs.find(x=>x.job_id===JOB_ID);
   if(!j) return;
 
   if(!pickupM)
-    pickupM=L.marker([j.pickup_lat,j.pickup_lng]).addTo(map).bindPopup("Alış");
+    pickupM=L.marker([j.pickup_lat,j.pickup_lng]).addTo(map);
 
   if(!dropM)
-    dropM=L.marker([j.dropoff_lat,j.dropoff_lng]).addTo(map).bindPopup("Varış");
+    dropM=L.marker([j.dropoff_lat,j.dropoff_lng]).addTo(map);
 
   if(j.driver_lat && j.driver_lng){
     if(!driverM)
-      driverM=L.marker([j.driver_lat,j.driver_lng]).addTo(map).bindPopup("Sürücü");
+      driverM=L.marker([j.driver_lat,j.driver_lng]).addTo(map);
     else
       driverM.setLatLng([j.driver_lat,j.driver_lng]);
 
-    const etaMin = calcETA(
+    const m=calcETA(
       j.driver_lat,j.driver_lng,
       j.dropoff_lat,j.dropoff_lng
     );
-    eta.innerText = "ETA: " + etaMin + " dk";
+    eta.innerText="ETA: "+m+" dk";
+
+    drvId.innerText=j.driver_id||"—";
+    drvStatus.innerText=job.status;
+    driverCard.style.display="block";
   }
 
   drawRoute(j);
@@ -127,13 +146,9 @@ function drawRoute(j){
   ];
 
   if(routeLine) routeLine.setLatLngs(pts);
-  else{
-    routeLine=L.polyline(pts,{
-      color:"#f5c400",
-      weight:5,
-      dashArray:"8,6"
-    }).addTo(map);
-  }
+  else routeLine=L.polyline(pts,{
+    color:"#f5c400",weight:5,dashArray:"8,6"
+  }).addTo(map);
 
   map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
 }
