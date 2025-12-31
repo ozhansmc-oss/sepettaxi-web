@@ -42,17 +42,16 @@ header span{color:#f5c400}
 .call{background:#f5c400;color:#000}
 .wa{background:#1ebe5d;color:#000}
 .cancel{background:#444;color:#fff}
-
 .hidden{display:none}
 
-/* MODAL */
+/* MODALS */
 .modal{
   position:fixed;inset:0;background:rgba(0,0,0,.92);
   display:none;align-items:center;justify-content:center;z-index:2000
 }
 .box{
   background:#111;border:1px solid #333;border-radius:16px;
-  padding:16px;width:90%;max-width:360px
+  padding:16px;width:90%;max-width:360px;text-align:center
 }
 .cta{
   margin-top:10px;background:#f5c400;color:#000;
@@ -61,6 +60,15 @@ header span{color:#f5c400}
 .secondary{
   margin-top:6px;background:#222;color:#ddd;
   border-radius:999px;padding:10px;text-align:center;cursor:pointer
+}
+
+/* RATING */
+.stars{display:flex;justify-content:center;gap:8px;margin:12px 0}
+.star{font-size:30px;cursor:pointer;color:#333}
+.star.active{color:#f5c400}
+textarea{
+  width:100%;min-height:60px;border-radius:10px;
+  border:0;background:#222;color:#fff;padding:10px
 }
 </style>
 </head>
@@ -75,7 +83,6 @@ header span{color:#f5c400}
 <div id="driverCard" class="driver-card" style="display:none">
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
   <div class="badge" id="drvStatus">—</div>
-  <div class="small" id="etaNote">—</div>
 
   <div class="actions" id="contactBtns">
     <a id="callBtn" class="btn call" href="#">📞 Ara</a>
@@ -89,15 +96,32 @@ header span{color:#f5c400}
 
 <div id="map"></div>
 
-<!-- CANCEL MODAL -->
-<div id="cancelModal" class="modal">
+<!-- RATING -->
+<div id="ratingModal" class="modal">
   <div class="box">
-    <div style="font-weight:900;text-align:center">İptal Onayı</div>
-    <div class="small" style="margin-top:8px;text-align:center">
-      Bu yolculuğu iptal etmek istediğinize emin misiniz?
+    <div style="font-weight:900">Yolculuk Tamamlandı</div>
+    <div class="stars" id="stars"></div>
+    <textarea id="comment" placeholder="Yorum (isteğe bağlı)"></textarea>
+    <div class="cta" onclick="submitRating()">PUANI GÖNDER</div>
+  </div>
+</div>
+
+<!-- THANK YOU / LOYALTY -->
+<div id="thanksModal" class="modal">
+  <div class="box">
+    <div style="font-size:22px;font-weight:900">🎉 Teşekkürler!</div>
+    <div class="small" style="margin-top:8px">
+      SepetTaxi’yi tercih ettiğiniz için teşekkür ederiz.
     </div>
-    <div class="cta" onclick="confirmCancel()">İPTALİ ONAYLA</div>
-    <div class="secondary" onclick="closeCancel()">Vazgeç</div>
+
+    <div style="margin-top:12px">
+      <div class="small">Bir sonraki yolculuğunuz için</div>
+      <div style="font-size:18px;font-weight:900;color:#f5c400" id="coupon">—</div>
+      <div class="small">indirim kuponu kazandınız</div>
+    </div>
+
+    <div class="cta" onclick="location.href='index.html'">TEKRAR ÇAĞIR</div>
+    <div class="secondary" onclick="closeThanks()">Kapat</div>
   </div>
 </div>
 
@@ -110,6 +134,7 @@ const JOB_ID=qs.get("job_id");
 if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
 
 let map,pickupM,dropM,driverM,routeLine;
+let rated=false, thanked=false, rating=0;
 let CURRENT_STATUS="";
 
 /* MAP */
@@ -129,10 +154,10 @@ async function loadJob(){
 
   CURRENT_STATUS=job.status;
   status.innerText=
+    job.status==="completed"?"İş tamamlandı":
     job.status==="on_route"?"Sürücü yolda":
     job.status==="assigned"?"Sürücü atandı":
     job.status==="cancelled"?"İptal edildi":
-    job.status==="completed"?"İş tamamlandı":
     job.status;
 
   const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
@@ -159,6 +184,11 @@ async function loadJob(){
   }
 
   drawRoute(j);
+
+  if(job.status==="completed"){
+    if(!rated) openRating();
+    else if(!thanked) openThanks();
+  }
 }
 
 /* ROUTE */
@@ -174,29 +204,56 @@ function drawRoute(j){
   map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
 }
 
+/* RATING */
+function openRating(){
+  ratingModal.style.display="flex";
+  stars.innerHTML="";
+  for(let i=1;i<=5;i++){
+    const s=document.createElement("div");
+    s.className="star";
+    s.innerText="★";
+    s.onclick=()=>setStar(i);
+    stars.appendChild(s);
+  }
+}
+function setStar(n){
+  rating=n;
+  [...stars.children].forEach((s,i)=>s.classList.toggle("active",i<n));
+}
+function submitRating(){
+  if(rating===0){ alert("Puan seç"); return; }
+  rated=true;
+  ratingModal.style.display="none";
+}
+
+/* THANKS / COUPON */
+function openThanks(){
+  thanked=true;
+  coupon.innerText="SEPET10";
+  thanksModal.style.display="flex";
+}
+function closeThanks(){
+  thanksModal.style.display="none";
+}
+
 /* CANCEL (NO PENALTY) */
 function openCancel(){
   if(CURRENT_STATUS==="completed"){
     alert("Tamamlanan iş iptal edilemez");
     return;
   }
-  cancelModal.style.display="flex";
-}
-function closeCancel(){
-  cancelModal.style.display="none";
-}
-async function confirmCancel(){
-  cancelModal.style.display="none";
-  await fetch(BACKEND,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"updateStatus",
-      job_id:JOB_ID,
-      status:"cancelled"
-    })
-  }).catch(()=>{});
-  alert("İş iptal edildi");
-  loadJob();
+  if(confirm("Bu yolculuğu iptal etmek istiyor musunuz?")){
+    fetch(BACKEND,{
+      method:"POST",
+      body:JSON.stringify({
+        action:"updateStatus",
+        job_id:JOB_ID,
+        status:"cancelled"
+      })
+    }).catch(()=>{});
+    alert("İş iptal edildi");
+    loadJob();
+  }
 }
 
 initMap();
