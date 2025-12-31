@@ -31,8 +31,8 @@ header span{color:#f5c400}
 .driver-card{
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
   background:#111;border:1px solid #333;
-  padding:12px 16px;border-radius:16px;
-  min-width:260px;z-index:1000
+  padding:14px 16px;border-radius:18px;
+  min-width:280px;z-index:1000
 }
 .driver-card b{color:#f5c400}
 .badge{
@@ -41,6 +41,18 @@ header span{color:#f5c400}
   background:#222;color:#aaa;font-size:12px
 }
 .small{font-size:11px;color:#aaa;margin-top:4px}
+
+.actions{
+  display:flex;gap:8px;margin-top:10px
+}
+.btn{
+  flex:1;text-align:center;padding:10px 0;
+  border-radius:999px;font-weight:900;
+  font-size:13px;cursor:pointer;text-decoration:none
+}
+.call{background:#f5c400;color:#000}
+.wa{background:#1ebe5d;color:#000}
+.hidden{display:none}
 </style>
 </head>
 
@@ -55,6 +67,11 @@ header span{color:#f5c400}
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
   <div class="badge" id="drvStatus">—</div>
   <div class="small" id="etaNote">—</div>
+
+  <div class="actions" id="contactBtns">
+    <a id="callBtn" class="btn call" href="#">📞 Ara</a>
+    <a id="waBtn" class="btn wa" href="#" target="_blank">💬 WhatsApp</a>
+  </div>
 </div>
 
 <div id="map"></div>
@@ -87,19 +104,16 @@ function hav(a,b,c,d){
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-/* AKILLI HIZ */
+/* AKILLI ETA */
 function calcSpeed(km,status){
   const h=new Date().getHours();
-  const rush = (h>=7&&h<=10)||(h>=16&&h<=20);
-
+  const rush=(h>=7&&h<=10)||(h>=16&&h<=20);
   if(km<2) return 18;
   if(km>15) return 38;
   if(rush) return 20;
   if(status==="assigned") return 26;
   return 30;
 }
-
-/* ETA */
 function calcETA(a,b,c,d,status){
   const km=hav(a,b,c,d);
   const sp=calcSpeed(km,status);
@@ -139,13 +153,21 @@ async function loadJob(){
       j.dropoff_lat,j.dropoff_lng,
       job.status
     );
-
     eta.innerText="ETA: "+e.min+" dk";
-    etaNote.innerText=
-      `≈ ${e.km.toFixed(1)} km · ${e.sp} km/h (trafik uyumlu)`;
+    etaNote.innerText=`≈ ${e.km.toFixed(1)} km · ${e.sp} km/h`;
 
     drvId.innerText=j.driver_id||"—";
     drvStatus.innerText=job.status;
+
+    // İLETİŞİM
+    if(j.driver_phone){
+      callBtn.href="tel:"+j.driver_phone;
+      waBtn.href="https://wa.me/"+j.driver_phone.replace(/^0/,"90");
+      contactBtns.classList.remove("hidden");
+    }else{
+      contactBtns.classList.add("hidden");
+    }
+
     driverCard.style.display="block";
   }
 
@@ -155,18 +177,15 @@ async function loadJob(){
 /* ROUTE */
 function drawRoute(j){
   if(!driverM) return;
-
   const pts=[
     [j.pickup_lat,j.pickup_lng],
     [j.driver_lat,j.driver_lng],
     [j.dropoff_lat,j.dropoff_lng]
   ];
-
   if(routeLine) routeLine.setLatLngs(pts);
   else routeLine=L.polyline(pts,{
     color:"#f5c400",weight:5,dashArray:"8,6"
   }).addTo(map);
-
   map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
 }
 
