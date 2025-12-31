@@ -11,9 +11,10 @@ body{margin:0;font-family:Arial;background:#0b0b0b;color:#fff}
 .hidden{display:none}
 header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
 header span{color:#f5c400}
+
 #loginWrap{height:100vh;display:flex;align-items:center;justify-content:center}
 .loginCard{background:#111;border-radius:18px;padding:20px;width:100%;max-width:340px;border:1px solid #222}
-.Card h1{text-align:center;margin:0 0 14px 0}
+.loginCard h1{text-align:center;margin:0 0 14px 0}
 .loginCard h1 span{color:#f5c400}
 .loginCard input{width:100%;padding:14px;border-radius:14px;border:0;background:#222;color:#fff;margin-bottom:10px}
 .loginCard button{width:100%;padding:14px;border-radius:18px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
@@ -46,12 +47,13 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
 </head>
 
 <body>
-<div id="Wrap">
-  <div class="Card">
+
+<div id="loginWrap">
+  <div class="loginCard">
     <h1>Sepet<span>Taxi</span></h1>
     <input id="aid" placeholder="Admin ID">
     <input id="pin" type="password" placeholder="PIN">
-    <button onclick="()">GİRİŞ</button>
+    <button onclick="login()">GİRİŞ</button>
     <div id="err" class="err">Hatalı giriş</div>
   </div>
 </div>
@@ -102,30 +104,50 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
     <b>Son Olaylar (Timeline)</b>
     <div id="tl" class="small" style="margin-top:10px"></div>
   </div>
+</div>
+</div>
 
-</div>
-</div>
+<!-- ================= LOG CORE ================= -->
+<script>
+(function(){
+  const L={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
+  function log(l,t,m,d){
+    const p=`[SepetTaxi][${l}][${t}]`;
+    if(l===L.ERROR) console.error(p,m,d||'');
+    else if(l===L.WARN) console.warn(p,m,d||'');
+    else console.log(p,m,d||'');
+  }
+  window.logInfo=(t,m,d)=>log(L.INFO,t,m,d);
+  window.logWarn=(t,m,d)=>log(L.WARN,t,m,d);
+  window.logError=(t,m,d)=>log(L.ERROR,t,m,d);
+  window.logFlow=(t,m,d)=>log(L.FLOW,t,m,d);
+})();
+</script>
 
 <script>
 const ADMIN_ID="admin";
 const ADMIN_PIN="1234";
 
-const BACKEND_URL = window.SEPT.BACKEND_URL;
-"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+const BACKEND_URL =
+  (window.SEPT && window.SEPT.BACKEND_URL) ||
+  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+
 const COMMISSION=0.15;
 
-function login(){
-  const aidVal = document.getElementById("aid").value.trim();
-  const pinVal = document.getElementById("pin").value.trim();
+logFlow("INIT","admin.html loaded",{BACKEND_URL});
 
-  if(aidVal === ADMIN_ID && pinVal === ADMIN_PIN){
+function login(){
+  const aid=aidInput.value.trim();
+  const pin=pinInput.value.trim();
+  if(aid===ADMIN_ID && pin===ADMIN_PIN){
     sessionStorage.setItem("admin_auth","ok");
+    logInfo("ADMIN","login ok",{aid});
     showAdmin();
   }else{
-    document.getElementById("err").style.display="block";
+    err.style.display="block";
+    logWarn("ADMIN","login failed",{aid});
   }
 }
-
 function logout(){
   sessionStorage.removeItem("admin_auth");
   location.reload();
@@ -139,27 +161,29 @@ function showAdmin(){
 if(sessionStorage.getItem("admin_auth")==="ok") showAdmin();
 
 function toNum(v){
-  const n = Number(String(v||0).replace(/[^\d.]/g,""));
+  const n=Number(String(v||0).replace(/[^\d.]/g,""));
   return isFinite(n)?n:0;
 }
 
 async function loadAll(){
-  const [jobs, drivers, sum, tline] = await Promise.all([
-    fetch(`${BACKEND}?action=getJobs`).then(r=>r.json()),
-    fetch(`${BACKEND}?action=getDrivers`).then(r=>r.json()),
-    fetch(`${BACKEND}?action=dailySummary`).then(r=>r.json()),
-    fetch(`${BACKEND}?action=getTimeline&limit=30`).then(r=>r.json())
-  ]);
-
-  renderKpi(sum);
-  renderTable(Array.isArray(jobs)?jobs:[], Array.isArray(drivers)?drivers:[]);
-  renderTimeline(tline);
+  try{
+    const [jobs,drivers,sum,tline]=await Promise.all([
+      fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json()),
+      fetch(`${BACKEND_URL}?action=getDrivers`).then(r=>r.json()),
+      fetch(`${BACKEND_URL}?action=dailySummary`).then(r=>r.json()),
+      fetch(`${BACKEND_URL}?action=getTimeline&limit=30`).then(r=>r.json())
+    ]);
+    renderKpi(sum);
+    renderTable(jobs||[],drivers||[]);
+    renderTimeline(tline);
+    logFlow("API","admin loadAll ok");
+  }catch(e){
+    logError("API","admin loadAll failed",e);
+  }
 }
 
 function renderKpi(sum){
-  if(!sum || !sum.ok){
-    kTotal.innerText="—"; return;
-  }
+  if(!sum||!sum.ok) return;
   kTotal.innerText=sum.total;
   kActive.innerText=sum.active;
   kCompleted.innerText=sum.completed;
@@ -170,66 +194,46 @@ function renderKpi(sum){
   kTodayR.innerText=(sum.todayRevenue||0).toFixed(0)+" TL";
 }
 
-async function assign(job_id, driver_id){
+async function assign(job_id,driver_id){
   if(!driver_id){ alert("Sürücü seç"); return; }
-  const res = await fetch(BACKEND,{
+  logInfo("ADMIN","assign",{job_id,driver_id});
+  await fetch(BACKEND_URL,{
     method:"POST",
-    body:JSON.stringify({ action:"assignDriver", job_id, driver_id, actor:"admin" })
-  }).then(r=>r.json()).catch(()=>({ok:false,error:"network"}));
-  if(!res || !res.ok){ alert("Atama başarısız: "+(res.error||"")); }
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action:"assignDriver",job_id,driver_id,actor:"admin"})
+  });
   loadAll();
 }
 
-function renderTable(jobs, drivers){
+function renderTable(jobs,drivers){
   rows.innerHTML="";
-  const avail = drivers.filter(d=>String(d.status)==="available");
-
+  const avail=drivers.filter(d=>d.status==="available");
   jobs.slice().reverse().forEach(j=>{
-    const price = toNum(j.final_price || j.price || 0);
-    const comm = price*COMMISSION;
-    const st = String(j.status||"");
-
-    const tr=document.createElement("tr");
-
-    let drvCell = (j.driver_id||"-");
+    const price=toNum(j.final_price||j.price||0);
+    const comm=price*COMMISSION;
+    const st=j.status||"";
+    let drv=j.driver_id||"-";
     if(st==="pending"){
-      const opts = avail.map(d=>`<option value="${d.driver_id}">${d.driver_id} · ${d.name||""}</option>`).join("");
-      drvCell = `
-        <select id="sel_${j.job_id}">
-          <option value="">Sürücü seç</option>
-          ${opts}
-        </select>
-        <div>
-          <button class="btnSmall" onclick="assign('${j.job_id}', document.getElementById('sel_${j.job_id}').value)">ATA</button>
-        </div>
-      `;
+      const opts=avail.map(d=>`<option value="${d.driver_id}">${d.driver_id}</option>`).join("");
+      drv=`<select id="sel_${j.job_id}"><option value="">Seç</option>${opts}</select>
+           <button class="btnSmall" onclick="assign('${j.job_id}',document.getElementById('sel_${j.job_id}').value)">ATA</button>`;
     }
-
-    tr.innerHTML=`
-      <td>${j.job_id}</td>
-      <td><span class="badge ${
-        st==="completed"?"ok":
-        st==="cancelled"?"cancel":"pending"
-      }">${st}</span></td>
-      <td>${drvCell}</td>
-      <td>${toNum(j.distance_km||0).toFixed(2)} km</td>
-      <td>${price.toFixed(0)} TL</td>
-      <td>${comm.toFixed(0)} TL</td>
-      <td>${(j.created_at||"").slice(0,16).replace("T"," ")}</td>
-    `;
-    rows.appendChild(tr);
+    rows.innerHTML+=`
+      <tr>
+        <td>${j.job_id}</td>
+        <td><span class="badge ${st}">${st}</span></td>
+        <td>${drv}</td>
+        <td>${toNum(j.distance_km||0).toFixed(2)} km</td>
+        <td>${price.toFixed(0)} TL</td>
+        <td>${comm.toFixed(0)} TL</td>
+        <td>${(j.created_at||"").slice(0,16).replace("T"," ")}</td>
+      </tr>`;
   });
 }
 
-function renderTimeline(tline){
-  if(!tline || !tline.ok || !Array.isArray(tline.items)){
-    tl.innerText="Timeline yok.";
-    return;
-  }
-  tl.innerHTML = tline.items.map(x=>{
-    const at = String(x.at||"").slice(0,19).replace("T"," ");
-    return `<div>• <b>${x.job_id}</b> — ${x.event} — <span style="color:#f5c400">${x.status}</span> — ${x.actor} <span style="opacity:.6">(${at})</span></div>`;
-  }).join("");
+function renderTimeline(t){
+  if(!t||!t.ok){ tl.innerText="Timeline yok."; return; }
+  tl.innerHTML=t.items.map(x=>`• <b>${x.job_id}</b> ${x.event} ${x.status}`).join("<br>");
 }
 </script>
 </body>
