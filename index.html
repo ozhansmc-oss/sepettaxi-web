@@ -433,5 +433,34 @@ function reverse(lat,lng,input){
     .catch(()=>{});
 }
 </script>
+  <script>
+(function () {
+  const host = window.location.hostname.toLowerCase();
+  const path = window.location.pathname;
+
+  // admin subdomain
+  if (host.startsWith("admin.") && !path.includes("admin.html")) {
+    window.location.replace("/admin.html");
+    return;
+  }
+
+  // driver subdomain
+  if (host.startsWith("driver.") && !path.includes("driver.html")) {
+    window.location.replace("/driver.html");
+    return;
+  }
+
+  // root domain (www dahil)
+  if (
+    (host === "sepettaxi.com" || host === "www.sepettaxi.com") &&
+    path !== "/" &&
+    !path.includes("index.html")
+  ) {
+    window.location.replace("/index.html");
+    return;
+  }
+})();
+</script>
+
 </body>
 </html>
