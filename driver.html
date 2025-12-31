@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Driver Panel</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#000;color:#fff}
@@ -26,6 +27,7 @@ hr{border:0;border-top:1px solid #222;margin:10px 0}
 <header>Sepet<span>Taxi</span> – Driver</header>
 
 <div class="wrap">
+
 <div class="card" id="loginCard">
   <b>Sürücü Girişi</b>
   <div style="height:8px"></div>
@@ -57,36 +59,80 @@ hr{border:0;border-top:1px solid #222;margin:10px 0}
   <b>Geçmiş İşler</b>
   <div id="history"></div>
 </div>
+
 </div>
 
+<!-- =====================================================
+     LOG.JS (INLINE) – LOCKED
+===================================================== -->
 <script>
-const BACKEND_URL = window.SEPT.BACKEND_URL;
-"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-const COMMISSION=0.15;
+(function(){
+  const LOG_LEVEL={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
+  const DEBUG_ENABLED=true;
+
+  function log(level,tag,msg,data){
+    if(!DEBUG_ENABLED) return;
+    const p=`[SepetTaxi][${level}][${tag}]`;
+    if(level===LOG_LEVEL.ERROR) console.error(p,msg,data||'');
+    else if(level===LOG_LEVEL.WARN) console.warn(p,msg,data||'');
+    else console.log(p,msg,data||'');
+  }
+  window.logInfo =(t,m,d)=>log(LOG_LEVEL.INFO,t,m,d);
+  window.logWarn =(t,m,d)=>log(LOG_LEVEL.WARN,t,m,d);
+  window.logError=(t,m,d)=>log(LOG_LEVEL.ERROR,t,m,d);
+  window.logFlow =(t,m,d)=>log(LOG_LEVEL.FLOW,t,m,d);
+
+  window.addEventListener("error",e=>{
+    logError("GLOBAL","window.onerror",{msg:e.message,line:e.lineno});
+  });
+  window.addEventListener("unhandledrejection",e=>{
+    logError("GLOBAL","unhandledrejection",{reason:String(e.reason)});
+  });
+})();
+</script>
+
+<script>
+/* ================= CONFIG ================= */
+
+const BACKEND_URL =
+  (window.SEPT && window.SEPT.BACKEND_URL) ||
+  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+
+const COMMISSION = 0.15;
 
 let DRIVER_ID=null;
 let LIVE_TIMER=null;
 
 const $ = id => document.getElementById(id);
 
+logFlow("INIT","driver.html loaded",{BACKEND_URL});
+
+/* ================= LOGIN ================= */
+
 async function login(){
-  DRIVER_ID = $("did").value.trim();
+  DRIVER_ID=$("did").value.trim();
   if(!DRIVER_ID){ alert("Driver ID gir"); return; }
 
-  // sanitize optional phone
-  $("dphone").value = $("dphone").value.replace(/\D/g,"").slice(0,11);
+  $("dphone").value=$("dphone").value.replace(/\D/g,"").slice(0,11);
 
-  // ensure driver exists / update meta
-  await fetch(BACKEND,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"ensureDriver",
-      driver_id:DRIVER_ID,
-      name:$("dname").value.trim(),
-      phone:$("dphone").value.trim(),
-      status:"available"
-    })
-  }).catch(()=>{});
+  logInfo("DRIVER","Login attempt",{DRIVER_ID});
+
+  try{
+    await fetch(BACKEND_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        action:"ensureDriver",
+        driver_id:DRIVER_ID,
+        name:$("dname").value.trim(),
+        phone:$("dphone").value.trim(),
+        status:"available"
+      })
+    });
+    logInfo("API","ensureDriver ok",{DRIVER_ID});
+  }catch(e){
+    logError("API","ensureDriver failed",e);
+  }
 
   document.querySelectorAll(".auth-only").forEach(e=>e.style.display="block");
   $("loginCard").style.display="none";
@@ -95,102 +141,102 @@ async function login(){
   setInterval(loadData,5000);
 }
 
-async function loadData(){
-  const jobs = await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
-  const mine = (Array.isArray(jobs)?jobs:[]).filter(j=>String(j.driver_id||"")===String(DRIVER_ID));
+/* ================= DATA ================= */
 
-  renderSummary(mine);
-  renderActive(mine);
-  renderHistory(mine);
+async function loadData(){
+  try{
+    const jobs=await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
+    const mine=(Array.isArray(jobs)?jobs:[]).filter(j=>String(j.driver_id)===String(DRIVER_ID));
+    logFlow("API","Jobs fetched",{count:mine.length});
+    renderSummary(mine);
+    renderActive(mine);
+    renderHistory(mine);
+  }catch(e){
+    logWarn("API","loadData failed",e);
+  }
 }
 
 function priceOf(j){
-  const p = Number(String(j.final_price||j.price||0).replace(/[^\d.]/g,""));
-  return isFinite(p) ? p : 0;
+  const p=Number(String(j.final_price||j.price||0).replace(/[^\d.]/g,""));
+  return isFinite(p)?p:0;
 }
 
 function renderSummary(jobs){
-  const today = new Date().toISOString().slice(0,10);
+  const today=new Date().toISOString().slice(0,10);
   let todaySum=0,total=0,comm=0;
-
   jobs.forEach(j=>{
-    if(String(j.status)==="completed"){
+    if(j.status==="completed"){
       const p=priceOf(j);
       total+=p; comm+=p*COMMISSION;
       if(String(j.completed_at||"").startsWith(today)) todaySum+=p;
     }
   });
-
-  $("todayEarn").innerText = todaySum.toFixed(0)+" TL";
-  $("totalEarn").innerText = total.toFixed(0)+" TL";
-  $("totalComm").innerText = comm.toFixed(0)+" TL";
-  $("netEarn").innerText = (total-comm).toFixed(0)+" TL";
+  $("todayEarn").innerText=todaySum.toFixed(0)+" TL";
+  $("totalEarn").innerText=total.toFixed(0)+" TL";
+  $("totalComm").innerText=comm.toFixed(0)+" TL";
+  $("netEarn").innerText=(total-comm).toFixed(0)+" TL";
 }
 
 function renderActive(jobs){
   const box=$("activeJob");
-  const j=jobs.find(x=>String(x.status)==="assigned" || String(x.status)==="on_route");
+  const j=jobs.find(x=>x.status==="assigned"||x.status==="on_route");
+  if(!j){ box.innerText="Aktif iş yok."; stopLive(); return; }
 
-  if(!j){
-    box.innerText="Aktif iş yok.";
-    stopLive();
-    return;
-  }
-
-  const st = String(j.status);
-  const p = priceOf(j);
-
+  const p=priceOf(j);
   let btn="";
-  if(st==="assigned") btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
-  if(st==="on_route") btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
+  if(j.status==="assigned") btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
+  if(j.status==="on_route") btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
 
   box.innerHTML=`
     <b>${j.from_address||"-"} → ${j.to_address||"-"}</b><br>
     <span class="small">Ücret: ${p.toFixed(0)} TL</span><br>
-    <span class="badge">${st}</span><br><br>
-    ${btn}
+    <span class="badge">${j.status}</span><br><br>${btn}
   `;
 
-  if(st==="on_route") startLive(j.job_id);
+  if(j.status==="on_route") startLive(j.job_id);
   else stopLive();
 }
 
 function renderHistory(jobs){
   $("history").innerHTML="";
-  jobs.filter(j=>String(j.status)==="completed")
-    .slice(-10).reverse()
-    .forEach(j=>{
-      const p = priceOf(j);
-      const c = p*COMMISSION;
-      $("history").innerHTML+=`
-        <div class="small">
-          ${j.from_address||"-"} → ${j.to_address||"-"}<br>
-          Ücret: ${p.toFixed(0)} TL · Komisyon: ${c.toFixed(0)} TL
-        </div><hr>`;
-    });
+  jobs.filter(j=>j.status==="completed").slice(-10).reverse().forEach(j=>{
+    const p=priceOf(j);
+    $("history").innerHTML+=`
+      <div class="small">${j.from_address||"-"} → ${j.to_address||"-"}<br>
+      Ücret: ${p.toFixed(0)} TL · Komisyon: ${(p*COMMISSION).toFixed(0)} TL</div><hr>`;
+  });
 }
 
+/* ================= ACTIONS ================= */
+
 async function setStatus(jobId,status){
-  await fetch(BACKEND,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"updateStatus",
-      job_id:jobId,
-      status:status,
-      driver_id:DRIVER_ID,
-      actor:"driver:"+DRIVER_ID
-    })
-  }).catch(()=>{});
-  loadData();
+  logInfo("DRIVER","Status update",{jobId,status});
+  try{
+    await fetch(BACKEND_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        action:"updateStatus",
+        job_id:jobId,
+        status,
+        driver_id:DRIVER_ID,
+        actor:"driver:"+DRIVER_ID
+      })
+    });
+    loadData();
+  }catch(e){
+    logError("API","updateStatus failed",e);
+  }
 }
 
 function startLive(jobId){
-  if(LIVE_TIMER || !navigator.geolocation) return;
-
+  if(LIVE_TIMER||!navigator.geolocation) return;
+  logFlow("GPS","Live tracking start",{jobId});
   LIVE_TIMER=setInterval(()=>{
     navigator.geolocation.getCurrentPosition(p=>{
-      fetch(BACKEND,{
+      fetch(BACKEND_URL,{
         method:"POST",
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           action:"ping",
           job_id:jobId,
@@ -198,12 +244,12 @@ function startLive(jobId){
           lat:p.coords.latitude,
           lng:p.coords.longitude
         })
-      }).catch(()=>{});
-    },()=>{}, {enableHighAccuracy:true,timeout:7000,maximumAge:4000});
+      });
+    });
   },5000);
 }
 function stopLive(){
-  if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; }
+  if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; logFlow("GPS","Live tracking stop"); }
 }
 </script>
 </body>
