@@ -3,213 +3,135 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Driver Panel</title>
+<title>SepetTaxi – Takip</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#000;color:#fff}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
+
+html,body{
+  margin:0;
+  height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#000;
+  color:#fff;
+}
+
+/* HEADER */
+header{
+  height:56px;
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  border-bottom:1px solid #222;
+}
 header span{color:#f5c400}
-.wrap{padding:14px;max-width:760px;margin:auto}
-.card{background:#111;border-radius:16px;padding:14px;margin-bottom:12px}
-input{width:100%;padding:12px;border-radius:12px;border:0;background:#222;color:#fff}
-button{width:100%;padding:14px;border-radius:22px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
-button.secondary{background:#222;color:#ddd;margin-top:6px}
-.small{font-size:12px;color:#aaa}
-.big{font-size:26px;font-weight:900}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
-.auth-only{display:none}
-hr{border:0;border-top:1px solid #222;margin:10px 0}
+
+/* MAP – 🔴 KRİTİK */
+#map{
+  width:100%;
+  height:calc(100vh - 56px);
+}
+
+/* STATUS BADGE */
+#statusBadge{
+  position:fixed;
+  top:66px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#111;
+  border:1px solid #222;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:13px;
+  z-index:1000;
+}
 </style>
 </head>
 
 <body>
 
-<header>Sepet<span>Taxi</span> – Driver</header>
-
-<div class="wrap">
-
-<!-- LOGIN -->
-<div class="card" id="loginCard">
-  <b>Sürücü Girişi</b>
-  <div style="height:8px"></div>
-  <input id="did" placeholder="Driver ID (örn: DRV-001)">
-  <div style="height:10px"></div>
-  <button onclick="login()">Panele Gir</button>
-</div>
-
-<!-- SUMMARY -->
-<div class="card auth-only">
-  <b>Sürücü Özeti</b>
-  <div class="grid" style="margin-top:10px">
-    <div>
-      <div class="small">Bugünkü Kazanç</div>
-      <div class="big" id="todayEarn">—</div>
-    </div>
-    <div>
-      <div class="small">Toplam Kazanç</div>
-      <div class="big" id="totalEarn">—</div>
-    </div>
-    <div>
-      <div class="small">Toplam Komisyon</div>
-      <div class="big" id="totalComm">—</div>
-    </div>
-    <div>
-      <div class="small">Net Kazanç</div>
-      <div class="big" id="netEarn">—</div>
-    </div>
-  </div>
-</div>
-
-<!-- ACTIVE JOB -->
-<div class="card auth-only">
-  <b>Aktif İş</b>
-  <div id="activeJob" class="small">Aktif iş yok.</div>
-</div>
-
-<!-- HISTORY -->
-<div class="card auth-only">
-  <b>Geçmiş İşler</b>
-  <div id="history"></div>
-</div>
-
-</div>
+<header>Sepet<span>Taxi</span> – Takip</header>
+<div id="map"></div>
+<div id="statusBadge">Sürücü bekleniyor…</div>
 
 <script>
-const BACKEND = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-const COMMISSION = 0.15;
+const BACKEND =
+"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-let DRIVER_ID = null;
-let LIVE_TIMER = null;
-let ACTIVE_JOB_ID = null;
-
-const $ = id => document.getElementById(id);
-
-/* ---- LOGIN ---- */
-async function login(){
-  const did = $("did").value.trim();
-  if(!did){ alert("Driver ID gir"); return; }
-  DRIVER_ID = did;
-
-  // Konum iznini ÖNCE tetikle
-  requestGeoPermission();
-
-  document.querySelectorAll(".auth-only").forEach(e=>e.style.display="block");
-  $("loginCard").style.display="none";
-  loadData();
+const jobId = new URLSearchParams(location.search).get("job_id");
+if(!jobId){
+  alert("job_id bulunamadı");
 }
 
-/* ---- GEO PERMISSION ---- */
-function requestGeoPermission(){
-  if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(()=>{}, ()=>{});
-}
+/* MAP INIT */
+let map = L.map("map",{zoomControl:true}).setView([41,29],13);
 
-/* ---- LOAD ALL ---- */
-async function loadData(){
-  const jobs = await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
-  const mine = jobs.filter(j=>j.driver_id===DRIVER_ID);
-  renderSummary(mine);
-  renderActive(mine);
-  renderHistory(mine);
-}
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  maxZoom:19,
+  attribution:"© OpenStreetMap"
+}).addTo(map);
 
-/* ---- SUMMARY ---- */
-function renderSummary(jobs){
-  const today = new Date().toISOString().slice(0,10);
-  let todaySum=0,total=0,comm=0;
-  jobs.forEach(j=>{
-    if(j.status==="completed"){
-      const p = Number(j.final_price||0);
-      total += p; comm += p*COMMISSION;
-      if(String(j.completed_at||"").startsWith(today)) todaySum+=p;
+/* 🔴 LEAFLET FIX – OLMAZSA HARİTA GELMEZ */
+setTimeout(()=>{
+  map.invalidateSize(true);
+},500);
+
+let driverMarker = null;
+let pollTimer = null;
+
+/* POLL JOB STATUS */
+async function pollJob(){
+  try{
+    const r = await fetch(`${BACKEND}?action=checkJob&job_id=${jobId}`);
+    const j = await r.json();
+    if(!j || j.error) return;
+
+    if(j.status==="assigned"){
+      setBadge("Sürücü atandı");
     }
-  });
-  $("todayEarn").innerText = todaySum.toFixed(0)+" TL";
-  $("totalEarn").innerText = total.toFixed(0)+" TL";
-  $("totalComm").innerText = comm.toFixed(0)+" TL";
-  $("netEarn").innerText = (total-comm).toFixed(0)+" TL";
+
+    if(j.status==="on_route"){
+      setBadge("Sürücü yolda");
+      loadLive();
+    }
+
+    if(j.status==="completed"){
+      setBadge("İş tamamlandı");
+      clearInterval(pollTimer);
+    }
+  }catch(e){}
 }
 
-/* ---- ACTIVE JOB ---- */
-function renderActive(jobs){
-  const box = $("activeJob");
-  const j = jobs.find(x=>x.status==="assigned"||x.status==="on_route");
-  if(!j){
-    box.innerHTML="Aktif iş yok.";
-    ACTIVE_JOB_ID=null;
-    stopLivePing();
-    return;
-  }
-  ACTIVE_JOB_ID = j.job_id;
+/* LOAD LIVE LOCATION */
+async function loadLive(){
+  try{
+    const r = await fetch(`${BACKEND}?action=getLive&job_id=${jobId}`);
+    const d = await r.json();
+    if(!d || !d.lat) return;
 
-  let btn="";
-  if(j.status==="assigned")
-    btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
-  if(j.status==="on_route")
-    btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
+    const latlng=[Number(d.lat),Number(d.lng)];
 
-  box.innerHTML=`
-    <b>${j.from_address} → ${j.to_address}</b><br>
-    <span class="small">Ücret: ${j.final_price} TL</span><br>
-    <span class="badge">${j.status}</span>
-    <div style="height:8px"></div>
-    ${btn}
-  `;
-
-  if(j.status==="on_route") startLivePing(j.job_id);
+    if(!driverMarker){
+      driverMarker = L.marker(latlng).addTo(map);
+      map.setView(latlng,15);
+    }else{
+      driverMarker.setLatLng(latlng);
+    }
+  }catch(e){}
 }
 
-/* ---- HISTORY ---- */
-function renderHistory(jobs){
-  const box = $("history");
-  box.innerHTML="";
-  jobs.filter(j=>j.status==="completed").slice(-10).reverse().forEach(j=>{
-    const c = j.final_price*COMMISSION;
-    box.innerHTML+=`
-      <div class="small">
-        ${j.from_address} → ${j.to_address}<br>
-        Ücret: ${j.final_price} TL · Komisyon: ${c.toFixed(0)} TL
-      </div><hr>`;
-  });
+/* UI */
+function setBadge(t){
+  document.getElementById("statusBadge").innerText=t;
 }
 
-/* ---- STATUS UPDATE ---- */
-async function setStatus(jobId,status){
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=${status}&driver_id=${DRIVER_ID}`);
-  if(status==="on_route") startLivePing(jobId);
-  if(status==="completed") stopLivePing();
-  loadData();
-}
-
-/* ---- LIVE LOCATION PING ---- */
-function startLivePing(jobId){
-  if(!navigator.geolocation) return;
-  if(LIVE_TIMER) return;
-
-  ACTIVE_JOB_ID = jobId;
-
-  LIVE_TIMER = setInterval(()=>{
-    navigator.geolocation.getCurrentPosition(pos=>{
-      fetch(`${BACKEND}?action=ping&job_id=${ACTIVE_JOB_ID}&driver_id=${DRIVER_ID}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
-    });
-  },5000);
-}
-
-function stopLivePing(){
-  if(LIVE_TIMER){
-    clearInterval(LIVE_TIMER);
-    LIVE_TIMER=null;
-  }
-}
-
-/* ---- VISIBILITY / UNLOAD SAFETY ---- */
-document.addEventListener("visibilitychange", ()=>{
-  if(document.hidden){ stopLivePing(); }
-  else if(ACTIVE_JOB_ID){ startLivePing(ACTIVE_JOB_ID); }
-});
-window.addEventListener("beforeunload", stopLivePing);
+/* START */
+pollTimer = setInterval(pollJob,3000);
 </script>
 
 </body>
