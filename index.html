@@ -9,176 +9,65 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
+/* (Senin CSS'in aynen) */
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-:root{
-  --y:#f5c400;
-  --line:#222;
-  --muted:#9a9a9a;
-  --card1:#141414;
-  --card2:#0f0f0f;
-}
-
-/* LANDING */
+:root{--y:#f5c400;--line:#222;--muted:#9a9a9a;--card1:#141414;--card2:#0f0f0f}
 #landing{position:fixed;inset:0;background:#000 url("assets/landing.png") center/cover no-repeat;z-index:1000}
 #landing .overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center}
 #landing h1{font-size:40px;margin:0 0 18px 0;letter-spacing:.3px}
 #landing span{color:var(--y)}
-#landing button{
-  background:var(--y);color:#000;border:0;border-radius:28px;
-  padding:14px 46px;font-size:17px;font-weight:900;
-  box-shadow:0 10px 30px rgba(245,196,0,.40)
-}
-
-/* APP */
+#landing button{background:var(--y);color:#000;border:0;border-radius:28px;padding:14px 46px;font-size:17px;font-weight:900;box-shadow:0 10px 30px rgba(245,196,0,.40)}
 #app{display:none;height:100%}
-header{
-  height:56px;background:#000;
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:900;border-bottom:1px solid var(--line)
-}
+header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;border-bottom:1px solid var(--line)}
 header span{color:var(--y)}
-
-/* MAP */
 #map{height:32vh}
 @media(min-width:768px){ #map{height:26vh} }
-
-/* PANEL */
-#panel{
-  height:calc(68vh - 56px);
-  padding:10px;
-  display:flex;flex-direction:column;gap:8px;
-  padding-bottom:220px;
-}
+#panel{height:calc(68vh - 56px);padding:10px;display:flex;flex-direction:column;gap:8px;padding-bottom:220px}
 @media(min-width:768px){ #panel{height:calc(74vh - 56px)} }
-
-/* CARDS */
-.card{
-  background:linear-gradient(180deg,var(--card1),var(--card2));
-  border-radius:14px;padding:10px;
-  box-shadow:0 8px 20px rgba(0,0,0,.60);
-  border:1px solid rgba(255,255,255,.04)
-}
+.card{background:linear-gradient(180deg,var(--card1),var(--card2));border-radius:14px;padding:10px;box-shadow:0 8px 20px rgba(0,0,0,.60);border:1px solid rgba(255,255,255,.04)}
 .cardTitle{display:flex;align-items:center;justify-content:space-between}
-.badge{
-  font-size:11px;color:var(--muted);
-  border:1px solid var(--line);
-  padding:4px 8px;border-radius:999px
-}
-
-/* SERVICE */
+.badge{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:4px 8px;border-radius:999px}
 .serviceRow{display:flex;gap:8px;margin-top:8px}
-.serviceBtn{
-  flex:1;padding:11px;border-radius:12px;text-align:center;
-  font-size:13px;border:1px solid var(--line);
-  color:#bdbdbd;background:#0b0b0b;user-select:none;
-  transition:.18s
-}
-.serviceBtn.active{
-  border-color:var(--y);color:#fff;
-  background:rgba(245,196,0,.10);
-  box-shadow:0 0 0 1px rgba(245,196,0,.25)
-}
-
-/* INPUTS */
-.input{
-  width:100%;padding:11px 12px;border-radius:12px;
-  border:1px solid #1f1f1f;background:#000;color:#fff;font-size:13px
-}
+.serviceBtn{flex:1;padding:11px;border-radius:12px;text-align:center;font-size:13px;border:1px solid var(--line);color:#bdbdbd;background:#0b0b0b;user-select:none;transition:.18s}
+.serviceBtn.active{border-color:var(--y);color:#fff;background:rgba(245,196,0,.10);box-shadow:0 0 0 1px rgba(245,196,0,.25)}
+.input{width:100%;padding:11px 12px;border-radius:12px;border:1px solid #1f1f1f;background:#000;color:#fff;font-size:13px}
 .input::placeholder{color:#666}
 .helper{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.3}
-.miniBtn{
-  border:1px solid var(--line);
-  background:#0b0b0b;color:#ddd;
-  border-radius:999px;padding:6px 10px;
-  font-size:11px;user-select:none;white-space:nowrap
-}
+.miniBtn{border:1px solid var(--line);background:#0b0b0b;color:#ddd;border-radius:999px;padding:6px 10px;font-size:11px;user-select:none;white-space:nowrap}
 .miniBtn:active{transform:scale(.98)}
-
-/* COURIER BOX */
 #courierBox{display:none}
 .sep{height:8px}
-
-/* STATS */
-.statsWrap{
-  margin-top:auto;
-  background:linear-gradient(180deg,rgba(0,0,0,0),#000);
-  padding-top:10px
-}
+.statsWrap{margin-top:auto;background:linear-gradient(180deg,rgba(0,0,0,0),#000);padding-top:10px}
 .stats{display:flex;gap:8px}
-.stat{
-  flex:1;background:#0b0b0b;border-radius:14px;padding:12px;
-  text-align:center;border:1px solid rgba(255,255,255,.06)
-}
+.stat{flex:1;background:#0b0b0b;border-radius:14px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.06)}
 .stat .lbl{font-size:11px;color:#aaa}
 .stat .val{font-size:18px;font-weight:900;margin-top:4px}
-
-/* STICKY CTA */
-#stickyBar{
-  position:fixed;left:0;right:0;bottom:0;
-  padding:10px;background:linear-gradient(180deg,rgba(0,0,0,.55),#000);
-  z-index:200
-}
-#ctaBtn{
-  border-radius:30px;padding:16px;text-align:center;font-weight:900;
-  user-select:none;transition:.12s;
-}
+#stickyBar{position:fixed;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(180deg,rgba(0,0,0,.55),#000);z-index:200}
+#ctaBtn{border-radius:30px;padding:16px;text-align:center;font-weight:900;user-select:none;transition:.12s}
 #ctaBtn.enabled{background:var(--y);color:#000;box-shadow:0 12px 30px rgba(245,196,0,.45)}
 #ctaBtn.disabled{background:#2a2a2a;color:#999;box-shadow:none}
 #ctaBtn:active{transform:scale(.98)}
 #ctaSub{margin-top:6px;text-align:center;font-size:11px;color:#9a9a9a}
-
-/* DRIVER CTA (SECONDARY) */
-#driverCta{
-  position:fixed;bottom:92px;left:50%;
-  transform:translateX(-50%);
-  background:#0f0f0f;border:1px solid var(--line);
-  border-radius:18px;padding:5px 12px;
-  font-size:11px;opacity:.65;z-index:150
-}
+#driverCta{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:#0f0f0f;border:1px solid var(--line);border-radius:18px;padding:5px 12px;font-size:11px;opacity:.65;z-index:150}
 #driverCta a{color:#aaa;text-decoration:none}
 #driverCta:hover{opacity:.85}
-
-/* REGISTER */
-#register{
-  position:fixed;inset:0;background:rgba(0,0,0,.90);
-  display:none;align-items:center;justify-content:center;z-index:500
-}
-#register .box{
-  width:88%;max-width:340px;background:#0f0f0f;
-  border-radius:16px;padding:14px;
-  box-shadow:0 20px 50px rgba(0,0,0,.80);
-  border:1px solid rgba(255,255,255,.06)
-}
+#register{position:fixed;inset:0;background:rgba(0,0,0,.90);display:none;align-items:center;justify-content:center;z-index:500}
+#register .box{width:88%;max-width:340px;background:#0f0f0f;border-radius:16px;padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.80);border:1px solid rgba(255,255,255,.06)}
 .err{color:#ff5c5c;font-size:12px;display:none;margin-top:8px}
 .app-locked{filter:blur(4px) brightness(.6);pointer-events:none;transition:.2s}
-
-/* SEARCHING */
-#searching{
-  position:fixed;inset:0;background:rgba(0,0,0,.95);
-  display:none;align-items:center;justify-content:center;flex-direction:column;z-index:600
-}
+#searching{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:600}
 #searching .txt{font-size:18px;font-weight:900}
 #dots::after{content:"";animation:dots 1.4s infinite}
 @keyframes dots{0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}}
-
-/* TOAST */
-#toast{
-  position:fixed;left:50%;top:12px;transform:translateX(-50%);
-  background:#111;border:1px solid rgba(255,255,255,.08);
-  padding:10px 12px;border-radius:999px;
-  font-size:12px;color:#ddd;display:none;z-index:800;
-  box-shadow:0 10px 24px rgba(0,0,0,.65)
-}
+#toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:#111;border:1px solid rgba(255,255,255,.08);padding:10px 12px;border-radius:999px;font-size:12px;color:#ddd;display:none;z-index:800;box-shadow:0 10px 24px rgba(0,0,0,.65)}
 #toast b{color:var(--y)}
 </style>
 </head>
 
 <body>
-
 <div id="toast"></div>
 
-<!-- LANDING -->
 <div id="landing">
   <div class="overlay">
     <h1>Sepet<span>Taxi</span></h1>
@@ -186,7 +75,6 @@ header span{color:var(--y)}
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <header>Sepet<span>Taxi</span></header>
   <div id="map"></div>
@@ -239,7 +127,6 @@ header span{color:var(--y)}
   </div>
 </div>
 
-<!-- STICKY CTA -->
 <div id="stickyBar">
   <div id="ctaBtn" class="disabled" onclick="ctaClick()">ÇAĞIR</div>
   <div id="ctaSub">Hizmet seç, haritadan varış noktası belirle.</div>
@@ -247,13 +134,11 @@ header span{color:var(--y)}
 
 <div id="driverCta">🚗 <a href="driver.html">Sürücü müsün?</a></div>
 
-<!-- SEARCH (LOCKED OVERLAY) -->
 <div id="searching">
   <div class="txt">Sürücü aranıyor<span id="dots"></span></div>
   <div style="font-size:12px;color:#888;margin-top:6px">Lütfen bekleyin</div>
 </div>
 
-<!-- REGISTER -->
 <div id="register">
   <div class="box">
     <div style="font-weight:900;margin-bottom:10px">Kayıt</div>
@@ -278,27 +163,19 @@ header span{color:var(--y)}
 </div>
 
 <script>
-/* ================== AYAR ================== */
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 const POLL_MS = 3000;
-const POLL_TIMEOUT_MS = 90000; // 90sn
+const POLL_TIMEOUT_MS = 90000;
 
-/* ================== STATE ================== */
 let map, fromM, toM;
-let service = null;
-let registered = false;
-let user = null;
-
-let jobId = null;
-let pollTimer = null;
-let pollStartedAt = 0;
-
-// sürücü arama sırasında UI kilidi
-let isSearching = false;
+let service=null, registered=false, user=null;
+let jobId=null, pollTimer=null, pollStartedAt=0;
+let isSearching=false;
+let lastKm = 0;
+let lastPrice = 0;
 
 const $ = (id)=>document.getElementById(id);
 
-/* ================== UI ================== */
 function toast(msg){
   const t=$("toast");
   t.innerHTML=msg;
@@ -309,21 +186,20 @@ function toast(msg){
 
 function showSearching(){
   $("searching").style.display="flex";
-  isSearching = true;
-  // CTA kilitle (çift tık, ikinci job yok)
-  $("ctaBtn").className = "disabled";
+  isSearching=true;
+  $("ctaBtn").className="disabled";
 }
 function hideSearching(){
   $("searching").style.display="none";
-  isSearching = false;
+  isSearching=false;
   setCtaState();
 }
 
 function courierValid(){
-  const a = $("pkgType").value.trim().length >= 2;
-  const b = $("rcvName").value.trim().length >= 2;
-  const c = /^05\d{9}$/.test($("rcvPhone").value.trim());
-  return a && b && c;
+  const a=$("pkgType").value.trim().length>=2;
+  const b=$("rcvName").value.trim().length>=2;
+  const c=/^05\d{9}$/.test($("rcvPhone").value.trim());
+  return a&&b&&c;
 }
 
 function canCall(){
@@ -331,7 +207,6 @@ function canCall(){
   if(!service) return false;
   if(!fromM || !toM) return false;
   if(service==="courier" && !courierValid()) return false;
-  // arama sürerken yeni çağrı engeli
   if(isSearching) return false;
   return true;
 }
@@ -339,7 +214,6 @@ function canCall(){
 function setCtaState(){
   const ok = canCall();
   const btn = $("ctaBtn");
-
   btn.className = ok ? "enabled" : "disabled";
   btn.textContent = service ? (service==="taxi" ? "TAKSİ ÇAĞIR" : "KURYE ÇAĞIR") : "ÇAĞIR";
 
@@ -353,7 +227,6 @@ function setCtaState(){
   else sub.textContent = "Çağır’a basarak talep oluştur.";
 }
 
-/* ================== START ================== */
 function start(){
   $("landing").style.display="none";
   $("app").style.display="block";
@@ -361,11 +234,9 @@ function start(){
   setCtaState();
 }
 
-/* ================== MAP ================== */
 function initMap(){
   map = L.map("map",{zoomControl:false}).setView([41,29],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
   refreshLocation();
 
   map.on("click",(e)=>{
@@ -392,15 +263,13 @@ function refreshLocation(){
   },{enableHighAccuracy:true,timeout:8000,maximumAge:5000});
 }
 
-/* ================== SERVICE ================== */
 function pickService(t){
-  if(isSearching) return; // arama sırasında hizmet değiştirme yok
+  if(isSearching) return;
   if(!registered){ openRegister(); return; }
   service=t;
 
   $("svcTaxi").classList.toggle("active",t==="taxi");
   $("svcCourier").classList.toggle("active",t==="courier");
-
   $("courierBox").style.display = (t==="courier") ? "block" : "none";
 
   calc();
@@ -408,13 +277,16 @@ function pickService(t){
   toast(`<b>${t==="taxi"?"Taksi":"Kurye"}</b> seçildi`);
 }
 
-/* courier input listeners */
 ["pkgType","rcvName","rcvPhone"].forEach(id=>{
   const el=$(id);
-  el.addEventListener("input",()=>{ calc(); setCtaState(); });
+  el.addEventListener("input",()=>{
+    if(id==="rcvPhone"){
+      el.value = el.value.replace(/\D/g,"").slice(0,11);
+    }
+    calc(); setCtaState();
+  });
 });
 
-/* ================== REGISTER ================== */
 function openRegister(){
   if(isSearching) return;
   $("app").classList.add("app-locked");
@@ -446,24 +318,24 @@ function saveUser(){
   setCtaState();
 }
 
-/* ================== CALC ================== */
 function calc(){
   if(!service || !fromM || !toM) return;
   const a=fromM.getLatLng(), b=toM.getLatLng();
   const km = hav(a.lat,a.lng,b.lat,b.lng);
+  lastKm = km;
+
   $("dist").textContent = km.toFixed(2) + " km";
 
   const pr = (service==="taxi")
     ? Math.max(120, 60 + km*22)
     : Math.max(80,  40 + km*15);
 
-  $("price").textContent = Math.round(pr) + " TL";
+  lastPrice = Math.round(pr);
+  $("price").textContent = lastPrice + " TL";
 }
 
-/* ================== CTA ================== */
 function ctaClick(){
   if(isSearching) return;
-
   if(!canCall()){
     if(!registered){ openRegister(); return; }
     toast("Eksikleri tamamla");
@@ -472,12 +344,9 @@ function ctaClick(){
   createJob();
 }
 
-/* ================== CREATE JOB → POLL → TRACK ================== */
 async function createJob(){
   try{
-    // çift istek engeli
     if(isSearching) return;
-
     showSearching();
 
     const payload={
@@ -491,7 +360,8 @@ async function createJob(){
       dropoff_lng:toM.getLatLng().lng,
       customer_name:user.name,
       customer_phone:user.phone,
-      price:$("price").textContent
+      distance_km:lastKm,
+      price:lastPrice
     };
 
     if(service==="courier"){
@@ -502,13 +372,11 @@ async function createJob(){
 
     const res=await fetch(BACKEND_URL,{method:"POST",body:JSON.stringify(payload)});
     const data=await res.json();
-
     if(!data || !data.job_id) throw new Error("job_id yok");
-    jobId=data.job_id;
 
+    jobId=data.job_id;
     toast("Talep oluşturuldu");
 
-    // polling başlat
     pollStartedAt=Date.now();
     clearInterval(pollTimer);
     pollTimer=setInterval(checkJob,POLL_MS);
@@ -525,7 +393,6 @@ async function checkJob(){
   try{
     if(!jobId) return;
 
-    // timeout
     if(Date.now()-pollStartedAt > POLL_TIMEOUT_MS){
       clearInterval(pollTimer);
       const oldJob = jobId;
@@ -539,22 +406,18 @@ async function checkJob(){
     const r=await fetch(`${BACKEND_URL}?action=checkJob&job_id=${encodeURIComponent(jobId)}`);
     const d=await r.json();
 
-    // backend {status:"assigned"} döndürünce
-    if(d && d.status==="assigned"){
+    if(d && (d.status==="assigned" || d.status==="on_route")){
       clearInterval(pollTimer);
       const goJob = jobId;
       jobId=null;
-      // overlay kapat, sonra yönlendir
       hideSearching();
       location.href=`track.html?job_id=${encodeURIComponent(goJob)}`;
     }
-
   }catch(e){
-    // sessiz devam: geçici hata olursa polling dursun istemiyoruz
+    // transient: ignore
   }
 }
 
-/* ================== UTIL ================== */
 function hav(a,b,c,d){
   const R=6371;
   const dLat=(c-a)*Math.PI/180;
@@ -569,6 +432,5 @@ function reverse(lat,lng,input){
     .catch(()=>{});
 }
 </script>
-
 </body>
 </html>
