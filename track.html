@@ -25,7 +25,6 @@ header span{color:#f5c400}
   z-index:1000;border-radius:999px;
   padding:6px 14px;font-size:13px
 }
-
 .status{top:70px;background:#111;border:1px solid #333}
 .eta{top:110px;background:#f5c400;color:#000;font-weight:900}
 
@@ -41,6 +40,7 @@ header span{color:#f5c400}
   padding:4px 10px;border-radius:999px;
   background:#222;color:#aaa;font-size:12px
 }
+.small{font-size:11px;color:#aaa;margin-top:4px}
 </style>
 </head>
 
@@ -54,6 +54,7 @@ header span{color:#f5c400}
 <div id="driverCard" class="driver-card" style="display:none">
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
   <div class="badge" id="drvStatus">—</div>
+  <div class="small" id="etaNote">—</div>
 </div>
 
 <div id="map"></div>
@@ -62,20 +63,20 @@ header span{color:#f5c400}
 const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-const AVG_SPEED_KMH = 30;
-
-const qs = new URLSearchParams(location.search);
-const JOB_ID = qs.get("job_id");
+const qs=new URLSearchParams(location.search);
+const JOB_ID=qs.get("job_id");
 if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
 
 let map,pickupM,dropM,driverM,routeLine;
 
+/* MAP */
 function initMap(){
   map=L.map("map").setView([41,29],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   setTimeout(()=>map.invalidateSize(),200);
 }
 
+/* HAVERSINE */
 function hav(a,b,c,d){
   const R=6371;
   const dLat=(c-a)*Math.PI/180;
@@ -86,11 +87,27 @@ function hav(a,b,c,d){
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-function calcETA(a,b,c,d){
-  const km=hav(a,b,c,d);
-  return Math.max(1,Math.round((km/AVG_SPEED_KMH)*60));
+/* AKILLI HIZ */
+function calcSpeed(km,status){
+  const h=new Date().getHours();
+  const rush = (h>=7&&h<=10)||(h>=16&&h<=20);
+
+  if(km<2) return 18;
+  if(km>15) return 38;
+  if(rush) return 20;
+  if(status==="assigned") return 26;
+  return 30;
 }
 
+/* ETA */
+function calcETA(a,b,c,d,status){
+  const km=hav(a,b,c,d);
+  const sp=calcSpeed(km,status);
+  const min=Math.max(1,Math.round((km/sp)*60));
+  return {min,sp,km};
+}
+
+/* LOAD */
 async function loadJob(){
   const job=await fetch(
     `${BACKEND}?action=checkJob&job_id=${JOB_ID}`
@@ -110,23 +127,22 @@ async function loadJob(){
   const j=jobs.find(x=>x.job_id===JOB_ID);
   if(!j) return;
 
-  if(!pickupM)
-    pickupM=L.marker([j.pickup_lat,j.pickup_lng]).addTo(map);
-
-  if(!dropM)
-    dropM=L.marker([j.dropoff_lat,j.dropoff_lng]).addTo(map);
+  if(!pickupM) pickupM=L.marker([j.pickup_lat,j.pickup_lng]).addTo(map);
+  if(!dropM) dropM=L.marker([j.dropoff_lat,j.dropoff_lng]).addTo(map);
 
   if(j.driver_lat && j.driver_lng){
-    if(!driverM)
-      driverM=L.marker([j.driver_lat,j.driver_lng]).addTo(map);
-    else
-      driverM.setLatLng([j.driver_lat,j.driver_lng]);
+    if(!driverM) driverM=L.marker([j.driver_lat,j.driver_lng]).addTo(map);
+    else driverM.setLatLng([j.driver_lat,j.driver_lng]);
 
-    const m=calcETA(
+    const e=calcETA(
       j.driver_lat,j.driver_lng,
-      j.dropoff_lat,j.dropoff_lng
+      j.dropoff_lat,j.dropoff_lng,
+      job.status
     );
-    eta.innerText="ETA: "+m+" dk";
+
+    eta.innerText="ETA: "+e.min+" dk";
+    etaNote.innerText=
+      `≈ ${e.km.toFixed(1)} km · ${e.sp} km/h (trafik uyumlu)`;
 
     drvId.innerText=j.driver_id||"—";
     drvStatus.innerText=job.status;
@@ -136,6 +152,7 @@ async function loadJob(){
   drawRoute(j);
 }
 
+/* ROUTE */
 function drawRoute(j){
   if(!driverM) return;
 
