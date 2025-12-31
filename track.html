@@ -41,9 +41,11 @@ header span{color:#f5c400}
 }
 .call{background:#f5c400;color:#000}
 .wa{background:#1ebe5d;color:#000}
+.cancel{background:#444;color:#fff}
+
 .hidden{display:none}
 
-/* MODALS */
+/* MODAL */
 .modal{
   position:fixed;inset:0;background:rgba(0,0,0,.92);
   display:none;align-items:center;justify-content:center;z-index:2000
@@ -52,20 +54,6 @@ header span{color:#f5c400}
   background:#111;border:1px solid #333;border-radius:16px;
   padding:16px;width:90%;max-width:360px
 }
-
-/* RATING */
-.stars{display:flex;justify-content:center;gap:8px;margin:12px 0}
-.star{font-size:30px;cursor:pointer;color:#333}
-.star.active{color:#f5c400}
-textarea{
-  width:100%;min-height:60px;border-radius:10px;
-  border:0;background:#222;color:#fff;padding:10px
-}
-
-/* RECEIPT */
-.row{display:flex;justify-content:space-between;margin:6px 0;font-size:13px}
-.total{font-size:18px;font-weight:900;margin-top:8px}
-.sep{border-top:1px dashed #333;margin:10px 0}
 .cta{
   margin-top:10px;background:#f5c400;color:#000;
   border-radius:999px;padding:12px;text-align:center;font-weight:900;cursor:pointer
@@ -88,40 +76,28 @@ textarea{
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
   <div class="badge" id="drvStatus">—</div>
   <div class="small" id="etaNote">—</div>
+
   <div class="actions" id="contactBtns">
     <a id="callBtn" class="btn call" href="#">📞 Ara</a>
     <a id="waBtn" class="btn wa" href="#" target="_blank">💬 WhatsApp</a>
+  </div>
+
+  <div class="actions">
+    <div class="btn cancel" onclick="openCancel()">İPTAL ET</div>
   </div>
 </div>
 
 <div id="map"></div>
 
-<!-- RATING -->
-<div id="ratingModal" class="modal">
+<!-- CANCEL MODAL -->
+<div id="cancelModal" class="modal">
   <div class="box">
-    <div style="font-weight:900;text-align:center">Yolculuk Tamamlandı</div>
-    <div class="stars" id="stars"></div>
-    <textarea id="comment" placeholder="Yorum (isteğe bağlı)"></textarea>
-    <div class="cta" onclick="submitRating()">PUANI GÖNDER</div>
-  </div>
-</div>
-
-<!-- RECEIPT -->
-<div id="receiptModal" class="modal">
-  <div class="box">
-    <div style="font-weight:900;text-align:center">Ödeme Özeti</div>
-
-    <div class="row"><span>Mesafe</span><span id="rDist">—</span></div>
-    <div class="row"><span>Hizmet Bedeli</span><span id="rBase">—</span></div>
-    <div class="row"><span>Platform Komisyonu</span><span id="rComm">—</span></div>
-
-    <div class="sep"></div>
-    <div class="row total"><span>Toplam</span><span id="rTotal">—</span></div>
-
-    <div class="small" style="margin-top:6px">Ödeme: Nakit / Kart</div>
-
-    <div class="cta" onclick="location.href='index.html'">TEKRAR ÇAĞIR</div>
-    <div class="secondary" onclick="closeReceipt()">Kapat</div>
+    <div style="font-weight:900;text-align:center">İptal Onayı</div>
+    <div class="small" style="margin-top:8px;text-align:center">
+      Bu yolculuğu iptal etmek istediğinize emin misiniz?
+    </div>
+    <div class="cta" onclick="confirmCancel()">İPTALİ ONAYLA</div>
+    <div class="secondary" onclick="closeCancel()">Vazgeç</div>
   </div>
 </div>
 
@@ -129,31 +105,18 @@ textarea{
 const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-const COMMISSION = 0.15;
-
 const qs=new URLSearchParams(location.search);
 const JOB_ID=qs.get("job_id");
 if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
 
 let map,pickupM,dropM,driverM,routeLine;
-let rated=false, receiptShown=false, rating=0;
+let CURRENT_STATUS="";
 
 /* MAP */
 function initMap(){
   map=L.map("map").setView([41,29],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   setTimeout(()=>map.invalidateSize(),200);
-}
-
-/* HAVERSINE */
-function hav(a,b,c,d){
-  const R=6371;
-  const dLat=(c-a)*Math.PI/180;
-  const dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2 +
-    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
-    Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
 /* LOAD */
@@ -164,10 +127,13 @@ async function loadJob(){
 
   if(!job||job.error){ status.innerText="İş bulunamadı"; return; }
 
+  CURRENT_STATUS=job.status;
   status.innerText=
-    job.status==="completed"?"İş tamamlandı":
     job.status==="on_route"?"Sürücü yolda":
-    job.status==="assigned"?"Sürücü atandı":job.status;
+    job.status==="assigned"?"Sürücü atandı":
+    job.status==="cancelled"?"İptal edildi":
+    job.status==="completed"?"İş tamamlandı":
+    job.status;
 
   const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
   const j=jobs.find(x=>x.job_id===JOB_ID);
@@ -193,11 +159,6 @@ async function loadJob(){
   }
 
   drawRoute(j);
-
-  if(job.status==="completed"){
-    if(!rated) openRating();
-    else if(!receiptShown) showReceipt(j);
-  }
 }
 
 /* ROUTE */
@@ -213,54 +174,29 @@ function drawRoute(j){
   map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
 }
 
-/* RATING */
-function openRating(){
-  ratingModal.style.display="flex";
-  stars.innerHTML="";
-  for(let i=1;i<=5;i++){
-    const s=document.createElement("div");
-    s.className="star";
-    s.innerText="★";
-    s.onclick=()=>setStar(i);
-    stars.appendChild(s);
+/* CANCEL (NO PENALTY) */
+function openCancel(){
+  if(CURRENT_STATUS==="completed"){
+    alert("Tamamlanan iş iptal edilemez");
+    return;
   }
+  cancelModal.style.display="flex";
 }
-function setStar(n){
-  rating=n;
-  [...stars.children].forEach((s,i)=>s.classList.toggle("active",i<n));
+function closeCancel(){
+  cancelModal.style.display="none";
 }
-function submitRating(){
-  if(rating===0){ alert("Puan seç"); return; }
-  rated=true;
-  ratingModal.style.display="none";
-
-  fetch(BACKEND,{
+async function confirmCancel(){
+  cancelModal.style.display="none";
+  await fetch(BACKEND,{
     method:"POST",
     body:JSON.stringify({
-      action:"submitRating",
+      action:"updateStatus",
       job_id:JOB_ID,
-      rating,
-      comment:comment.value||""
+      status:"cancelled"
     })
   }).catch(()=>{});
-}
-
-/* RECEIPT */
-function showReceipt(j){
-  receiptShown=true;
-  const dist=hav(j.pickup_lat,j.pickup_lng,j.dropoff_lat,j.dropoff_lng);
-  const base=Number(j.final_price||0);
-  const comm=base*COMMISSION;
-
-  rDist.innerText=dist.toFixed(2)+" km";
-  rBase.innerText=base.toFixed(0)+" TL";
-  rComm.innerText=comm.toFixed(0)+" TL";
-  rTotal.innerText=base.toFixed(0)+" TL";
-
-  receiptModal.style.display="flex";
-}
-function closeReceipt(){
-  receiptModal.style.display="none";
+  alert("İş iptal edildi");
+  loadJob();
 }
 
 initMap();
