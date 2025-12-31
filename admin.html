@@ -13,7 +13,7 @@ header{height:56px;display:flex;align-items:center;justify-content:center;font-w
 header span{color:#f5c400}
 #loginWrap{height:100vh;display:flex;align-items:center;justify-content:center}
 .loginCard{background:#111;border-radius:18px;padding:20px;width:100%;max-width:340px;border:1px solid #222}
-.loginCard h1{text-align:center;margin:0 0 14px 0}
+.Card h1{text-align:center;margin:0 0 14px 0}
 .loginCard h1 span{color:#f5c400}
 .loginCard input{width:100%;padding:14px;border-radius:14px;border:0;background:#222;color:#fff;margin-bottom:10px}
 .loginCard button{width:100%;padding:14px;border-radius:18px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
@@ -46,12 +46,12 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
 </head>
 
 <body>
-<div id="loginWrap">
-  <div class="loginCard">
+<div id="Wrap">
+  <div class="Card">
     <h1>Sepet<span>Taxi</span></h1>
     <input id="aid" placeholder="Admin ID">
     <input id="pin" type="password" placeholder="PIN">
-    <button onclick="login()">GİRİŞ</button>
+    <button onclick="()">GİRİŞ</button>
     <div id="err" class="err">Hatalı giriş</div>
   </div>
 </div>
@@ -115,13 +115,17 @@ const BACKEND_URL = window.SEPT.BACKEND_URL;
 const COMMISSION=0.15;
 
 function login(){
-  if(aid.value===ADMIN_ID && pin.value===ADMIN_PIN){
+  const aidVal = document.getElementById("aid").value.trim();
+  const pinVal = document.getElementById("pin").value.trim();
+
+  if(aidVal === ADMIN_ID && pinVal === ADMIN_PIN){
     sessionStorage.setItem("admin_auth","ok");
     showAdmin();
   }else{
-    err.style.display="block";
+    document.getElementById("err").style.display="block";
   }
 }
+
 function logout(){
   sessionStorage.removeItem("admin_auth");
   location.reload();
