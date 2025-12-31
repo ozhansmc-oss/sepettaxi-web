@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Canlı Takip</title>
+<title>SepetTaxi – Takip</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -17,10 +17,11 @@ header{
 }
 header span{color:#f5c400}
 #map{height:calc(100vh - 56px)}
-.badge{
-  position:fixed;top:66px;left:50%;transform:translateX(-50%);
-  background:#111;border:1px solid #222;
-  padding:8px 14px;border-radius:999px;font-size:13px
+.status{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%);
+  background:#111;border:1px solid #333;
+  padding:6px 14px;border-radius:999px;
+  font-size:13px;z-index:1000
 }
 </style>
 </head>
@@ -28,56 +29,100 @@ header span{color:#f5c400}
 <body>
 
 <header>Sepet<span>Taxi</span> – Takip</header>
+<div class="status" id="status">Yükleniyor…</div>
 <div id="map"></div>
-<div id="statusBadge" class="badge">Sürücü bekleniyor…</div>
 
 <script>
 const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-const jobId = new URLSearchParams(location.search).get("job_id");
-if(!jobId){ alert("job_id yok"); }
+const urlParams = new URLSearchParams(location.search);
+const JOB_ID = urlParams.get("job_id");
 
-let map, driverMarker, pollTimer;
-
-map = L.map("map").setView([41,29],13);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
-async function poll(){
-  const j = await fetch(`${BACKEND}?action=checkJob&job_id=${jobId}`)
-    .then(r=>r.json());
-
-  if(!j || j.error) return;
-
-  if(j.status==="assigned"){
-    document.getElementById("statusBadge").innerText="Sürücü atandı";
-  }
-  if(j.status==="on_route"){
-    document.getElementById("statusBadge").innerText="Sürücü yolda";
-    loadLive();
-  }
-  if(j.status==="completed"){
-    document.getElementById("statusBadge").innerText="İş tamamlandı";
-    clearInterval(pollTimer);
-  }
+if(!JOB_ID){
+  alert("job_id bulunamadı");
+  throw new Error("job_id yok");
 }
 
-async function loadLive(){
-  const r = await fetch(`${BACKEND}?action=getLive&job_id=${jobId}`)
-    .then(r=>r.json());
+let map;
+let pickupM, dropM, driverM;
+let routeLine;
 
-  if(!r || !r.lat) return;
+function initMap(){
+  map = L.map("map",{zoomControl:true}).setView([41,29],12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  setTimeout(()=>map.invalidateSize(),200);
+}
 
-  const latlng=[r.lat,r.lng];
-  if(!driverMarker){
-    driverMarker=L.marker(latlng).addTo(map);
-    map.setView(latlng,15);
+async function loadJob(){
+  const job = await fetch(
+    `${BACKEND}?action=checkJob&job_id=${JOB_ID}`
+  ).then(r=>r.json());
+
+  if(!job || job.error){
+    document.getElementById("status").innerText="İş bulunamadı";
+    return;
+  }
+
+  document.getElementById("status").innerText =
+    job.status==="on_route" ? "Sürücü yolda" :
+    job.status==="assigned" ? "Sürücü atandı" :
+    job.status==="completed" ? "İş tamamlandı" : job.status;
+
+  const jobs = await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
+  const j = jobs.find(x=>x.job_id===JOB_ID);
+  if(!j) return;
+
+  // Pickup
+  if(!pickupM){
+    pickupM = L.marker([j.pickup_lat,j.pickup_lng])
+      .addTo(map).bindPopup("Alış Noktası");
+  }
+
+  // Dropoff
+  if(!dropM){
+    dropM = L.marker([j.dropoff_lat,j.dropoff_lng])
+      .addTo(map).bindPopup("Varış Noktası");
+  }
+
+  // Driver
+  if(j.driver_lat && j.driver_lng){
+    if(!driverM){
+      driverM = L.marker([j.driver_lat,j.driver_lng])
+        .addTo(map).bindPopup("Sürücü");
+    }else{
+      driverM.setLatLng([j.driver_lat,j.driver_lng]);
+    }
+  }
+
+  drawRoute(j);
+}
+
+function drawRoute(j){
+  if(!driverM) return;
+
+  const points = [
+    [j.pickup_lat,j.pickup_lng],
+    [j.driver_lat,j.driver_lng],
+    [j.dropoff_lat,j.dropoff_lng]
+  ];
+
+  if(routeLine){
+    routeLine.setLatLngs(points);
   }else{
-    driverMarker.setLatLng(latlng);
+    routeLine = L.polyline(points,{
+      color:"#f5c400",
+      weight:5,
+      dashArray:"8,6"
+    }).addTo(map);
   }
+
+  map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
 }
 
-pollTimer=setInterval(poll,3000);
+initMap();
+loadJob();
+setInterval(loadJob,4000);
 </script>
 
 </body>
