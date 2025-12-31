@@ -11,70 +11,34 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#000;color:#fff}
-header{
-  height:56px;display:flex;align-items:center;justify-content:center;
-  font-weight:900;border-bottom:1px solid #222
-}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
 header span{color:#f5c400}
 #map{height:calc(100vh - 56px)}
-
-.overlay{
-  position:fixed;left:50%;transform:translateX(-50%);
-  z-index:1000;border-radius:999px;padding:6px 14px;font-size:13px
-}
+.overlay{position:fixed;left:50%;transform:translateX(-50%);z-index:1000;border-radius:999px;padding:6px 14px;font-size:13px}
 .status{top:70px;background:#111;border:1px solid #333}
 .eta{top:110px;background:#f5c400;color:#000;font-weight:900}
-
-.driver-card{
-  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-  background:#111;border:1px solid #333;
-  padding:14px 16px;border-radius:18px;min-width:280px;z-index:1000
-}
+.driver-card{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #333;padding:14px 16px;border-radius:18px;min-width:280px;z-index:1000}
 .driver-card b{color:#f5c400}
 .badge{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
 .small{font-size:11px;color:#aaa;margin-top:4px}
-
 .actions{display:flex;gap:8px;margin-top:10px}
-.btn{
-  flex:1;text-align:center;padding:10px 0;border-radius:999px;
-  font-weight:900;font-size:13px;cursor:pointer;text-decoration:none
-}
+.btn{flex:1;text-align:center;padding:10px 0;border-radius:999px;font-weight:900;font-size:13px;cursor:pointer;text-decoration:none}
 .call{background:#f5c400;color:#000}
 .wa{background:#1ebe5d;color:#000}
 .cancel{background:#444;color:#fff}
 .hidden{display:none}
-
-/* MODALS */
-.modal{
-  position:fixed;inset:0;background:rgba(0,0,0,.92);
-  display:none;align-items:center;justify-content:center;z-index:2000
-}
-.box{
-  background:#111;border:1px solid #333;border-radius:16px;
-  padding:16px;width:90%;max-width:360px;text-align:center
-}
-.cta{
-  margin-top:10px;background:#f5c400;color:#000;
-  border-radius:999px;padding:12px;text-align:center;font-weight:900;cursor:pointer
-}
-.secondary{
-  margin-top:6px;background:#222;color:#ddd;
-  border-radius:999px;padding:10px;text-align:center;cursor:pointer
-}
-
-/* RATING */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:2000}
+.box{background:#111;border:1px solid #333;border-radius:16px;padding:16px;width:90%;max-width:360px;text-align:center}
+.cta{margin-top:10px;background:#f5c400;color:#000;border-radius:999px;padding:12px;text-align:center;font-weight:900;cursor:pointer}
+.secondary{margin-top:6px;background:#222;color:#ddd;border-radius:999px;padding:10px;text-align:center;cursor:pointer}
 .stars{display:flex;justify-content:center;gap:8px;margin:12px 0}
 .star{font-size:30px;cursor:pointer;color:#333}
 .star.active{color:#f5c400}
-textarea{
-  width:100%;min-height:60px;border-radius:10px;
-  border:0;background:#222;color:#fff;padding:10px
-}
+textarea{width:100%;min-height:60px;border-radius:10px;border:0;background:#222;color:#fff;padding:10px}
 </style>
 </head>
 
 <body>
-
 <header>Sepet<span>Taxi</span> – Takip</header>
 
 <div id="status" class="overlay status">Yükleniyor…</div>
@@ -83,20 +47,18 @@ textarea{
 <div id="driverCard" class="driver-card" style="display:none">
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
   <div class="badge" id="drvStatus">—</div>
-
   <div class="actions" id="contactBtns">
     <a id="callBtn" class="btn call" href="#">📞 Ara</a>
     <a id="waBtn" class="btn wa" href="#" target="_blank">💬 WhatsApp</a>
   </div>
-
   <div class="actions">
     <div class="btn cancel" onclick="openCancel()">İPTAL ET</div>
   </div>
+  <div class="small" id="drvMeta"></div>
 </div>
 
 <div id="map"></div>
 
-<!-- RATING -->
 <div id="ratingModal" class="modal">
   <div class="box">
     <div style="font-weight:900">Yolculuk Tamamlandı</div>
@@ -106,29 +68,22 @@ textarea{
   </div>
 </div>
 
-<!-- THANK YOU / LOYALTY -->
 <div id="thanksModal" class="modal">
   <div class="box">
-    <div style="font-size:22px;font-weight:900">🎉 Teşekkürler!</div>
-    <div class="small" style="margin-top:8px">
-      SepetTaxi’yi tercih ettiğiniz için teşekkür ederiz.
-    </div>
-
+    <div style="font-size:22px;font-weight:900">Teşekkürler!</div>
+    <div class="small" style="margin-top:8px">SepetTaxi’yi tercih ettiğiniz için teşekkür ederiz.</div>
     <div style="margin-top:12px">
       <div class="small">Bir sonraki yolculuğunuz için</div>
       <div style="font-size:18px;font-weight:900;color:#f5c400" id="coupon">—</div>
       <div class="small">indirim kuponu kazandınız</div>
     </div>
-
     <div class="cta" onclick="location.href='index.html'">TEKRAR ÇAĞIR</div>
     <div class="secondary" onclick="closeThanks()">Kapat</div>
   </div>
 </div>
 
 <script>
-const BACKEND =
-"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-
+const BACKEND="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 const qs=new URLSearchParams(location.search);
 const JOB_ID=qs.get("job_id");
 if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
@@ -136,75 +91,152 @@ if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
 let map,pickupM,dropM,driverM,routeLine;
 let rated=false, thanked=false, rating=0;
 let CURRENT_STATUS="";
+let firstFitDone=false;
 
-/* MAP */
 function initMap(){
   map=L.map("map").setView([41,29],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   setTimeout(()=>map.invalidateSize(),200);
 }
 
-/* LOAD */
+function n(v){ const x=Number(v); return isFinite(x)?x:null; }
+
+function hav(a,b,c,d){
+  const R=6371;
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+function calcETA(fromLat,fromLng,toLat,toLng,status){
+  const km = hav(fromLat,fromLng,toLat,toLng);
+  const sp = (status==="on_route") ? 28 : 24;
+  const min = Math.max(2, Math.round((km/sp)*60));
+  return { km, sp, min };
+}
+
 async function loadJob(){
-  const job=await fetch(
-    `${BACKEND}?action=checkJob&job_id=${JOB_ID}`
-  ).then(r=>r.json());
+  const jobInfo=await fetch(`${BACKEND}?action=checkJob&job_id=${encodeURIComponent(JOB_ID)}`).then(r=>r.json());
+  if(!jobInfo || jobInfo.error){ status.innerText="İş bulunamadı"; return; }
 
-  if(!job||job.error){ status.innerText="İş bulunamadı"; return; }
-
-  CURRENT_STATUS=job.status;
+  CURRENT_STATUS=jobInfo.status;
   status.innerText=
-    job.status==="completed"?"İş tamamlandı":
-    job.status==="on_route"?"Sürücü yolda":
-    job.status==="assigned"?"Sürücü atandı":
-    job.status==="cancelled"?"İptal edildi":
-    job.status;
+    jobInfo.status==="completed"?"İş tamamlandı":
+    jobInfo.status==="on_route"?"Varışa gidiliyor":
+    jobInfo.status==="assigned"?"Sürücü geliyor":
+    jobInfo.status==="cancelled"?"İptal edildi":
+    jobInfo.status;
 
   const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
-  const j=jobs.find(x=>x.job_id===JOB_ID);
+  const j=jobs.find(x=>String(x.job_id)===String(JOB_ID));
   if(!j) return;
 
-  if(!pickupM) pickupM=L.marker([j.pickup_lat,j.pickup_lng]).addTo(map);
-  if(!dropM) dropM=L.marker([j.dropoff_lat,j.dropoff_lng]).addTo(map);
+  const pLat=n(j.pickup_lat), pLng=n(j.pickup_lng);
+  const dLat=n(j.dropoff_lat), dLng=n(j.dropoff_lng);
 
-  if(j.driver_lat&&j.driver_lng){
-    if(!driverM) driverM=L.marker([j.driver_lat,j.driver_lng]).addTo(map);
-    else driverM.setLatLng([j.driver_lat,j.driver_lng]);
-
-    drvId.innerText=j.driver_id||"—";
-    drvStatus.innerText=job.status;
-
-    if(j.driver_phone){
-      callBtn.href="tel:"+j.driver_phone;
-      waBtn.href="https://wa.me/"+j.driver_phone.replace(/^0/,"90");
-      contactBtns.classList.remove("hidden");
-    }else contactBtns.classList.add("hidden");
-
-    driverCard.style.display="block";
+  if(pLat==null||pLng==null||dLat==null||dLng==null){
+    eta.innerText="ETA: —";
+    return;
   }
 
-  drawRoute(j);
+  if(!pickupM) pickupM=L.marker([pLat,pLng]).addTo(map);
+  if(!dropM) dropM=L.marker([dLat,dLng]).addTo(map);
 
-  if(job.status==="completed"){
+  // live (most accurate)
+  let live=null;
+  try{
+    live=await fetch(`${BACKEND}?action=getLive&job_id=${encodeURIComponent(JOB_ID)}`).then(r=>r.json());
+  }catch(e){}
+
+  let drvLat=null, drvLng=null;
+  let drvIdVal = jobInfo.driver_id || j.driver_id || "";
+
+  if(live && live.ok && live.has){
+    drvLat=n(live.lat);
+    drvLng=n(live.lng);
+    drvIdVal = drvIdVal || live.driver_id || "";
+  }
+
+  // driver card show for assigned/on_route/completed
+  if(jobInfo.status==="assigned" || jobInfo.status==="on_route" || jobInfo.status==="completed"){
+    drvId.innerText = drvIdVal || "—";
+    drvStatus.innerText = jobInfo.status;
+    driverCard.style.display="block";
+
+    // fetch driver info (phone/name) for contact buttons
+    if(drvIdVal){
+      const dd = await fetch(`${BACKEND}?action=getDriver&driver_id=${encodeURIComponent(drvIdVal)}`).then(r=>r.json());
+      if(dd && dd.ok && dd.driver){
+        const phone = String(dd.driver.phone||"").replace(/\D/g,"");
+        drvMeta.innerText = dd.driver.name ? (`Sürücü: ${dd.driver.name}`) : "";
+        if(phone){
+          callBtn.href = "tel:0"+phone.replace(/^90/,"").replace(/^0/,"");
+          waBtn.href   = "https://wa.me/"+(phone.startsWith("90")?phone:("90"+phone.replace(/^0/,"")));
+          contactBtns.classList.remove("hidden");
+        }else{
+          contactBtns.classList.add("hidden");
+        }
+      }else{
+        contactBtns.classList.add("hidden");
+      }
+    }else{
+      contactBtns.classList.add("hidden");
+    }
+  }else{
+    driverCard.style.display="none";
+  }
+
+  // driver marker
+  if(drvLat!=null && drvLng!=null){
+    if(!driverM) driverM=L.marker([drvLat,drvLng]).addTo(map);
+    else driverM.setLatLng([drvLat,drvLng]);
+  }
+
+  // ETA logic
+  if(jobInfo.status==="completed"){
+    eta.innerText="Tamamlandı";
+  }else{
+    let fromLat=pLat, fromLng=pLng, toLat=dLat, toLng=dLng;
+
+    if(jobInfo.status==="assigned" && drvLat!=null){
+      fromLat=drvLat; fromLng=drvLng;
+      toLat=pLat; toLng=pLng;
+    }else if(jobInfo.status==="on_route" && drvLat!=null){
+      fromLat=drvLat; fromLng=drvLng;
+      toLat=dLat; toLng=dLng;
+    }
+    const e = calcETA(fromLat,fromLng,toLat,toLng,jobInfo.status);
+    eta.innerText = `ETA: ${e.min} dk`;
+  }
+
+  drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,jobInfo.status);
+
+  if(jobInfo.status==="completed"){
     if(!rated) openRating();
     else if(!thanked) openThanks();
   }
 }
 
-/* ROUTE */
-function drawRoute(j){
-  if(!driverM) return;
-  const pts=[
-    [j.pickup_lat,j.pickup_lng],
-    [j.driver_lat,j.driver_lng],
-    [j.dropoff_lat,j.dropoff_lng]
-  ];
+function drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,status){
+  let pts;
+  if(drvLat!=null && drvLng!=null){
+    pts = (status==="assigned")
+      ? [[drvLat,drvLng],[pLat,pLng],[dLat,dLng]]
+      : [[pLat,pLng],[drvLat,drvLng],[dLat,dLng]];
+  }else{
+    pts = [[pLat,pLng],[dLat,dLng]];
+  }
+
   if(routeLine) routeLine.setLatLngs(pts);
   else routeLine=L.polyline(pts,{color:"#f5c400",weight:5,dashArray:"8,6"}).addTo(map);
-  map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
+
+  if(!firstFitDone){
+    map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
+    firstFitDone=true;
+  }
 }
 
-/* RATING */
 function openRating(){
   ratingModal.style.display="flex";
   stars.innerHTML="";
@@ -216,40 +248,50 @@ function openRating(){
     stars.appendChild(s);
   }
 }
-function setStar(n){
-  rating=n;
-  [...stars.children].forEach((s,i)=>s.classList.toggle("active",i<n));
+function setStar(nv){
+  rating=nv;
+  [...stars.children].forEach((s,i)=>s.classList.toggle("active",i<nv));
 }
-function submitRating(){
+async function submitRating(){
   if(rating===0){ alert("Puan seç"); return; }
   rated=true;
   ratingModal.style.display="none";
+
+  // backend write
+  try{
+    const res = await fetch(BACKEND,{
+      method:"POST",
+      body:JSON.stringify({
+        action:"rateJob",
+        job_id:JOB_ID,
+        rating:rating,
+        comment:comment.value || ""
+      })
+    });
+    const d = await res.json();
+    coupon.innerText = (d && d.ok && d.coupon) ? d.coupon : "SEPET10";
+  }catch(e){
+    coupon.innerText="SEPET10";
+  }
+
+  openThanks();
 }
 
-/* THANKS / COUPON */
 function openThanks(){
   thanked=true;
-  coupon.innerText="SEPET10";
   thanksModal.style.display="flex";
 }
-function closeThanks(){
-  thanksModal.style.display="none";
-}
+function closeThanks(){ thanksModal.style.display="none"; }
 
-/* CANCEL (NO PENALTY) */
-function openCancel(){
+async function openCancel(){
   if(CURRENT_STATUS==="completed"){
     alert("Tamamlanan iş iptal edilemez");
     return;
   }
   if(confirm("Bu yolculuğu iptal etmek istiyor musunuz?")){
-    fetch(BACKEND,{
+    await fetch(BACKEND,{
       method:"POST",
-      body:JSON.stringify({
-        action:"updateStatus",
-        job_id:JOB_ID,
-        status:"cancelled"
-      })
+      body:JSON.stringify({ action:"updateStatus", job_id:JOB_ID, status:"cancelled" })
     }).catch(()=>{});
     alert("İş iptal edildi");
     loadJob();
@@ -260,6 +302,5 @@ initMap();
 loadJob();
 setInterval(loadJob,4000);
 </script>
-
 </body>
 </html>
