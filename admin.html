@@ -3,16 +3,43 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Admin Rapor</title>
+<title>SepetTaxi – Admin</title>
 
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#0b0b0b;color:#fff}
+.hidden{display:none}
+
+/* HEADER */
 header{
   height:56px;display:flex;align-items:center;justify-content:center;
   font-weight:900;border-bottom:1px solid #222
 }
 header span{color:#f5c400}
+
+/* LOGIN */
+#loginWrap{
+  height:100vh;display:flex;align-items:center;justify-content:center
+}
+.loginCard{
+  background:#111;border-radius:18px;
+  padding:20px;width:100%;max-width:340px;
+  border:1px solid #222
+}
+.loginCard h1{text-align:center;margin:0 0 14px 0}
+.loginCard h1 span{color:#f5c400}
+.loginCard input{
+  width:100%;padding:14px;border-radius:14px;
+  border:0;background:#222;color:#fff;margin-bottom:10px
+}
+.loginCard button{
+  width:100%;padding:14px;border-radius:18px;
+  border:0;font-weight:900;
+  background:#f5c400;color:#000;cursor:pointer
+}
+.err{color:#ff6b6b;font-size:13px;text-align:center;display:none}
+
+/* ADMIN */
 .wrap{padding:14px;max-width:1200px;margin:auto}
 .card{
   background:#111;border-radius:16px;padding:14px;margin-bottom:14px;
@@ -46,15 +73,40 @@ tr:hover{background:#151515}
 .cancel{background:#6f1f1f;color:#ffb0b0}
 .pending{background:#444}
 
-.small{font-size:11px;color:#aaa}
+.topbar{
+  display:flex;justify-content:space-between;align-items:center
+}
+.logout{
+  background:#222;color:#ccc;border:0;border-radius:14px;
+  padding:8px 14px;cursor:pointer
+}
 </style>
 </head>
 
 <body>
 
-<header>Sepet<span>Taxi</span> – Admin Rapor</header>
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="loginCard">
+    <h1>Sepet<span>Taxi</span></h1>
+    <input id="aid" placeholder="Admin ID">
+    <input id="pin" type="password" placeholder="PIN">
+    <button onclick="login()">GİRİŞ</button>
+    <div id="err" class="err">Hatalı giriş</div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminWrap" class="hidden">
+
+<header>Sepet<span>Taxi</span> – Admin</header>
 
 <div class="wrap">
+
+<div class="card topbar">
+  <b>Yönetim Paneli</b>
+  <button class="logout" onclick="logout()">Çıkış</button>
+</div>
 
 <!-- KPI -->
 <div class="card">
@@ -64,16 +116,6 @@ tr:hover{background:#151515}
     <div class="kpi"><div class="lbl">İptal</div><div id="kCancelled" class="val">—</div></div>
     <div class="kpi"><div class="lbl">Toplam Ciro</div><div id="kRevenue" class="val">—</div></div>
     <div class="kpi"><div class="lbl">Platform Geliri</div><div id="kCommission" class="val">—</div></div>
-  </div>
-</div>
-
-<!-- DAILY -->
-<div class="card">
-  <b>Bugün</b>
-  <div class="grid" style="margin-top:10px">
-    <div class="kpi"><div class="lbl">İş</div><div id="dJobs" class="val">—</div></div>
-    <div class="kpi"><div class="lbl">Ciro</div><div id="dRevenue" class="val">—</div></div>
-    <div class="kpi"><div class="lbl">İptal</div><div id="dCancel" class="val">—</div></div>
   </div>
 </div>
 
@@ -99,72 +141,83 @@ tr:hover{background:#151515}
 </div>
 
 </div>
+</div>
 
 <script>
+/* ================= CONFIG ================= */
+const ADMIN_ID="admin";
+const ADMIN_PIN="1234";
+
 const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-const COMMISSION = 0.15;
+const COMMISSION=0.15;
 
-load();
+/* ================= AUTH ================= */
+function login(){
+  if(aid.value===ADMIN_ID && pin.value===ADMIN_PIN){
+    sessionStorage.setItem("admin_auth","ok");
+    showAdmin();
+  }else{
+    err.style.display="block";
+  }
+}
 
-async function load(){
-  const jobs = await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
+function logout(){
+  sessionStorage.removeItem("admin_auth");
+  location.reload();
+}
 
-  let total=0, completed=0, cancelled=0;
-  let revenue=0, commission=0;
+function showAdmin(){
+  loginWrap.classList.add("hidden");
+  adminWrap.classList.remove("hidden");
+  loadData();
+}
 
-  const today = new Date().toISOString().slice(0,10);
-  let dJobs=0,dRev=0,dCancel=0;
+if(sessionStorage.getItem("admin_auth")==="ok"){
+  showAdmin();
+}
+
+/* ================= DATA ================= */
+async function loadData(){
+  const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
+
+  let total=0,completed=0,cancelled=0;
+  let revenue=0,commission=0;
 
   rows.innerHTML="";
 
   jobs.slice().reverse().forEach(j=>{
     total++;
-
-    const price = Number(j.final_price||0);
-    const comm = price * COMMISSION;
+    const price=Number(j.final_price||0);
+    const comm=price*COMMISSION;
 
     if(j.status==="completed"){
-      completed++;
-      revenue+=price;
-      commission+=comm;
+      completed++; revenue+=price; commission+=comm;
     }
     if(j.status==="cancelled") cancelled++;
-
-    if(String(j.created_at||"").startsWith(today)){
-      dJobs++;
-      if(j.status==="completed") dRev+=price;
-      if(j.status==="cancelled") dCancel++;
-    }
 
     const tr=document.createElement("tr");
     tr.innerHTML=`
       <td>${j.job_id}</td>
-      <td>
-        <span class="badge ${
-          j.status==="completed"?"ok":
-          j.status==="cancelled"?"cancel":"pending"
-        }">${j.status}</span>
-      </td>
+      <td><span class="badge ${
+        j.status==="completed"?"ok":
+        j.status==="cancelled"?"cancel":"pending"
+      }">${j.status}</span></td>
       <td>${j.driver_id||"-"}</td>
       <td>${Number(j.distance_km||0).toFixed(2)} km</td>
       <td>${price.toFixed(0)} TL</td>
       <td>${comm.toFixed(0)} TL</td>
-      <td class="small">${(j.created_at||"").slice(0,16).replace("T"," ")}</td>
+      <td>${(j.created_at||"").slice(0,16).replace("T"," ")}</td>
     `;
     rows.appendChild(tr);
   });
 
-  kTotal.innerText = total;
-  kCompleted.innerText = completed;
-  kCancelled.innerText = cancelled;
-  kRevenue.innerText = revenue.toFixed(0)+" TL";
-  kCommission.innerText = commission.toFixed(0)+" TL";
-
-  dJobs.innerText = dJobs;
-  dRevenue.innerText = dRev.toFixed(0)+" TL";
-  dCancel.innerText = dCancel;
+  kTotal.innerText=total;
+  kCompleted.innerText=completed;
+  kCancelled.innerText=cancelled;
+  kRevenue.innerText=revenue.toFixed(0)+" TL";
+  kCommission.innerText=commission.toFixed(0)+" TL";
 }
 </script>
 
