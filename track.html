@@ -83,7 +83,8 @@ textarea{width:100%;min-height:60px;border-radius:10px;border:0;background:#222;
 </div>
 
 <script>
-const BACKEND="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+const BACKEND_URL = window.SEPT.BACKEND_URL;
+"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 const qs=new URLSearchParams(location.search);
 const JOB_ID=qs.get("job_id");
 if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
