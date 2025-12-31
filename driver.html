@@ -4,127 +4,117 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Driver Panel</title>
-
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#000;color:#fff}
-header{
-  height:56px;display:flex;align-items:center;justify-content:center;
-  font-weight:900;border-bottom:1px solid #222
-}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
 header span{color:#f5c400}
 .wrap{padding:14px;max-width:760px;margin:auto}
 .card{background:#111;border-radius:16px;padding:14px;margin-bottom:12px}
-input{
-  width:100%;padding:12px;border-radius:12px;
-  border:0;background:#222;color:#fff
-}
-button{
-  width:100%;padding:14px;border-radius:22px;border:0;
-  font-weight:900;background:#f5c400;color:#000;cursor:pointer
-}
+input{width:100%;padding:12px;border-radius:12px;border:0;background:#222;color:#fff}
+button{width:100%;padding:14px;border-radius:22px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
 .small{font-size:12px;color:#aaa}
 .big{font-size:26px;font-weight:900}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.badge{
-  display:inline-block;padding:4px 10px;border-radius:999px;
-  background:#222;color:#aaa;font-size:12px
-}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
 .auth-only{display:none}
 hr{border:0;border-top:1px solid #222;margin:10px 0}
 </style>
 </head>
 
 <body>
-
 <header>Sepet<span>Taxi</span> – Driver</header>
 
 <div class="wrap">
-
-<!-- LOGIN -->
 <div class="card" id="loginCard">
   <b>Sürücü Girişi</b>
   <div style="height:8px"></div>
   <input id="did" placeholder="Driver ID (örn: DRV-001)">
   <div style="height:10px"></div>
+  <input id="dname" placeholder="Ad Soyad (opsiyonel)">
+  <div style="height:10px"></div>
+  <input id="dphone" placeholder="Telefon (05XXXXXXXXX, opsiyonel)" maxlength="11">
+  <div style="height:10px"></div>
   <button onclick="login()">Panele Gir</button>
 </div>
 
-<!-- SUMMARY -->
 <div class="card auth-only">
   <b>Sürücü Özeti</b>
   <div class="grid" style="margin-top:10px">
-    <div>
-      <div class="small">Bugünkü Kazanç</div>
-      <div class="big" id="todayEarn">—</div>
-    </div>
-    <div>
-      <div class="small">Toplam Kazanç</div>
-      <div class="big" id="totalEarn">—</div>
-    </div>
-    <div>
-      <div class="small">Toplam Komisyon</div>
-      <div class="big" id="totalComm">—</div>
-    </div>
-    <div>
-      <div class="small">Net Kazanç</div>
-      <div class="big" id="netEarn">—</div>
-    </div>
+    <div><div class="small">Bugünkü Kazanç</div><div class="big" id="todayEarn">—</div></div>
+    <div><div class="small">Toplam Kazanç</div><div class="big" id="totalEarn">—</div></div>
+    <div><div class="small">Toplam Komisyon</div><div class="big" id="totalComm">—</div></div>
+    <div><div class="small">Net Kazanç</div><div class="big" id="netEarn">—</div></div>
   </div>
 </div>
 
-<!-- ACTIVE JOB -->
 <div class="card auth-only">
   <b>Aktif İş</b>
   <div id="activeJob" class="small">Aktif iş yok.</div>
 </div>
 
-<!-- HISTORY -->
 <div class="card auth-only">
   <b>Geçmiş İşler</b>
   <div id="history"></div>
 </div>
-
 </div>
 
 <script>
-const BACKEND =
-"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+const BACKEND="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+const COMMISSION=0.15;
 
-const COMMISSION = 0.15;
-let DRIVER_ID = null;
-let LIVE_TIMER = null;
+let DRIVER_ID=null;
+let LIVE_TIMER=null;
+
 const $ = id => document.getElementById(id);
 
-/* LOGIN */
 async function login(){
   DRIVER_ID = $("did").value.trim();
   if(!DRIVER_ID){ alert("Driver ID gir"); return; }
+
+  // sanitize optional phone
+  $("dphone").value = $("dphone").value.replace(/\D/g,"").slice(0,11);
+
+  // ensure driver exists / update meta
+  await fetch(BACKEND,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"ensureDriver",
+      driver_id:DRIVER_ID,
+      name:$("dname").value.trim(),
+      phone:$("dphone").value.trim(),
+      status:"available"
+    })
+  }).catch(()=>{});
 
   document.querySelectorAll(".auth-only").forEach(e=>e.style.display="block");
   $("loginCard").style.display="none";
 
   loadData();
+  setInterval(loadData,5000);
 }
 
-/* LOAD */
 async function loadData(){
   const jobs = await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
-  const mine = jobs.filter(j=>j.driver_id===DRIVER_ID);
+  const mine = (Array.isArray(jobs)?jobs:[]).filter(j=>String(j.driver_id||"")===String(DRIVER_ID));
 
   renderSummary(mine);
   renderActive(mine);
   renderHistory(mine);
 }
 
-/* SUMMARY */
+function priceOf(j){
+  const p = Number(String(j.final_price||j.price||0).replace(/[^\d.]/g,""));
+  return isFinite(p) ? p : 0;
+}
+
 function renderSummary(jobs){
   const today = new Date().toISOString().slice(0,10);
   let todaySum=0,total=0,comm=0;
 
   jobs.forEach(j=>{
-    if(j.status==="completed"){
-      const p=Number(j.final_price||0);
+    if(String(j.status)==="completed"){
+      const p=priceOf(j);
       total+=p; comm+=p*COMMISSION;
       if(String(j.completed_at||"").startsWith(today)) todaySum+=p;
     }
@@ -136,63 +126,84 @@ function renderSummary(jobs){
   $("netEarn").innerText = (total-comm).toFixed(0)+" TL";
 }
 
-/* ACTIVE */
 function renderActive(jobs){
   const box=$("activeJob");
-  const j=jobs.find(x=>x.status==="assigned"||x.status==="on_route");
+  const j=jobs.find(x=>String(x.status)==="assigned" || String(x.status)==="on_route");
 
-  if(!j){ box.innerText="Aktif iş yok."; stopLive(); return; }
+  if(!j){
+    box.innerText="Aktif iş yok.";
+    stopLive();
+    return;
+  }
+
+  const st = String(j.status);
+  const p = priceOf(j);
 
   let btn="";
-  if(j.status==="assigned")
-    btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
-  if(j.status==="on_route")
-    btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
+  if(st==="assigned") btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
+  if(st==="on_route") btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
 
   box.innerHTML=`
-    <b>${j.from_address} → ${j.to_address}</b><br>
-    <span class="small">Ücret: ${j.final_price} TL</span><br>
-    <span class="badge">${j.status}</span><br><br>
+    <b>${j.from_address||"-"} → ${j.to_address||"-"}</b><br>
+    <span class="small">Ücret: ${p.toFixed(0)} TL</span><br>
+    <span class="badge">${st}</span><br><br>
     ${btn}
   `;
 
-  if(j.status==="on_route") startLive(j.job_id);
+  if(st==="on_route") startLive(j.job_id);
+  else stopLive();
 }
 
-/* HISTORY */
 function renderHistory(jobs){
   $("history").innerHTML="";
-  jobs.filter(j=>j.status==="completed")
+  jobs.filter(j=>String(j.status)==="completed")
     .slice(-10).reverse()
     .forEach(j=>{
-      const c=j.final_price*COMMISSION;
+      const p = priceOf(j);
+      const c = p*COMMISSION;
       $("history").innerHTML+=`
         <div class="small">
-          ${j.from_address} → ${j.to_address}<br>
-          Ücret: ${j.final_price} TL · Komisyon: ${c.toFixed(0)} TL
+          ${j.from_address||"-"} → ${j.to_address||"-"}<br>
+          Ücret: ${p.toFixed(0)} TL · Komisyon: ${c.toFixed(0)} TL
         </div><hr>`;
     });
 }
 
-/* STATUS */
 async function setStatus(jobId,status){
-  await fetch(`${BACKEND}?action=updateStatus&job_id=${jobId}&status=${status}&driver_id=${DRIVER_ID}`);
+  await fetch(BACKEND,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"updateStatus",
+      job_id:jobId,
+      status:status,
+      driver_id:DRIVER_ID,
+      actor:"driver:"+DRIVER_ID
+    })
+  }).catch(()=>{});
   loadData();
 }
 
-/* LIVE PING */
 function startLive(jobId){
   if(LIVE_TIMER || !navigator.geolocation) return;
+
   LIVE_TIMER=setInterval(()=>{
     navigator.geolocation.getCurrentPosition(p=>{
-      fetch(`${BACKEND}?action=ping&job_id=${jobId}&driver_id=${DRIVER_ID}&lat=${p.coords.latitude}&lng=${p.coords.longitude}`);
-    });
+      fetch(BACKEND,{
+        method:"POST",
+        body:JSON.stringify({
+          action:"ping",
+          job_id:jobId,
+          driver_id:DRIVER_ID,
+          lat:p.coords.latitude,
+          lng:p.coords.longitude
+        })
+      }).catch(()=>{});
+    },()=>{}, {enableHighAccuracy:true,timeout:7000,maximumAge:4000});
   },5000);
 }
 function stopLive(){
   if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; }
 }
 </script>
-
 </body>
 </html>
