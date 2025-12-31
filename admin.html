@@ -9,83 +9,43 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#0b0b0b;color:#fff}
 .hidden{display:none}
-
-/* HEADER */
-header{
-  height:56px;display:flex;align-items:center;justify-content:center;
-  font-weight:900;border-bottom:1px solid #222
-}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
 header span{color:#f5c400}
-
-/* LOGIN */
-#loginWrap{
-  height:100vh;display:flex;align-items:center;justify-content:center
-}
-.loginCard{
-  background:#111;border-radius:18px;
-  padding:20px;width:100%;max-width:340px;
-  border:1px solid #222
-}
+#loginWrap{height:100vh;display:flex;align-items:center;justify-content:center}
+.loginCard{background:#111;border-radius:18px;padding:20px;width:100%;max-width:340px;border:1px solid #222}
 .loginCard h1{text-align:center;margin:0 0 14px 0}
 .loginCard h1 span{color:#f5c400}
-.loginCard input{
-  width:100%;padding:14px;border-radius:14px;
-  border:0;background:#222;color:#fff;margin-bottom:10px
-}
-.loginCard button{
-  width:100%;padding:14px;border-radius:18px;
-  border:0;font-weight:900;
-  background:#f5c400;color:#000;cursor:pointer
-}
+.loginCard input{width:100%;padding:14px;border-radius:14px;border:0;background:#222;color:#fff;margin-bottom:10px}
+.loginCard button{width:100%;padding:14px;border-radius:18px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
 .err{color:#ff6b6b;font-size:13px;text-align:center;display:none}
 
-/* ADMIN */
 .wrap{padding:14px;max-width:1200px;margin:auto}
-.card{
-  background:#111;border-radius:16px;padding:14px;margin-bottom:14px;
-  border:1px solid #222
-}
-.grid{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px
-}
-.kpi{
-  background:#0f0f0f;border-radius:14px;padding:12px;text-align:center;
-  border:1px solid #1f1f1f
-}
+.card{background:#111;border-radius:16px;padding:14px;margin-bottom:14px;border:1px solid #222}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{background:#0f0f0f;border-radius:14px;padding:12px;text-align:center;border:1px solid #1f1f1f}
 .kpi .lbl{font-size:12px;color:#aaa}
 .kpi .val{font-size:22px;font-weight:900;margin-top:6px}
 
-table{
-  width:100%;border-collapse:collapse;font-size:12px
-}
-th,td{
-  padding:8px;border-bottom:1px solid #222;text-align:left
-}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:8px;border-bottom:1px solid #222;text-align:left;vertical-align:top}
 th{color:#f5c400;font-weight:900}
 tr:hover{background:#151515}
 
-.badge{
-  padding:4px 8px;border-radius:999px;font-size:11px;
-  background:#222;color:#aaa
-}
+.badge{padding:4px 8px;border-radius:999px;font-size:11px;background:#222;color:#aaa}
 .ok{background:#1f6f3f;color:#9fffc7}
 .cancel{background:#6f1f1f;color:#ffb0b0}
 .pending{background:#444}
 
-.topbar{
-  display:flex;justify-content:space-between;align-items:center
-}
-.logout{
-  background:#222;color:#ccc;border:0;border-radius:14px;
-  padding:8px 14px;cursor:pointer
-}
+.topbar{display:flex;justify-content:space-between;align-items:center}
+.logout{background:#222;color:#ccc;border:0;border-radius:14px;padding:8px 14px;cursor:pointer}
+
+select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:180px}
+.btnSmall{background:#f5c400;border:0;border-radius:12px;padding:8px 10px;font-weight:900;cursor:pointer;margin-top:6px}
+.small{font-size:12px;color:#aaa}
 </style>
 </head>
 
 <body>
-
-<!-- LOGIN -->
 <div id="loginWrap">
   <div class="loginCard">
     <h1>Sepet<span>Taxi</span></h1>
@@ -96,64 +56,63 @@ tr:hover{background:#151515}
   </div>
 </div>
 
-<!-- ADMIN PANEL -->
 <div id="adminWrap" class="hidden">
-
 <header>Sepet<span>Taxi</span> – Admin</header>
 
 <div class="wrap">
-
-<div class="card topbar">
-  <b>Yönetim Paneli</b>
-  <button class="logout" onclick="logout()">Çıkış</button>
-</div>
-
-<!-- KPI -->
-<div class="card">
-  <div class="grid">
-    <div class="kpi"><div class="lbl">Toplam İş</div><div id="kTotal" class="val">—</div></div>
-    <div class="kpi"><div class="lbl">Tamamlanan</div><div id="kCompleted" class="val">—</div></div>
-    <div class="kpi"><div class="lbl">İptal</div><div id="kCancelled" class="val">—</div></div>
-    <div class="kpi"><div class="lbl">Toplam Ciro</div><div id="kRevenue" class="val">—</div></div>
-    <div class="kpi"><div class="lbl">Platform Geliri</div><div id="kCommission" class="val">—</div></div>
+  <div class="card topbar">
+    <b>Yönetim Paneli</b>
+    <button class="logout" onclick="logout()">Çıkış</button>
   </div>
-</div>
 
-<!-- TABLE -->
-<div class="card">
-  <b>İş Detayları</b>
-  <div style="overflow:auto;margin-top:10px">
-    <table>
-      <thead>
-        <tr>
-          <th>Job</th>
-          <th>Durum</th>
-          <th>Sürücü</th>
-          <th>Mesafe</th>
-          <th>Ücret</th>
-          <th>Komisyon</th>
-          <th>Tarih</th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
+  <div class="card">
+    <div class="grid">
+      <div class="kpi"><div class="lbl">Toplam İş</div><div id="kTotal" class="val">—</div></div>
+      <div class="kpi"><div class="lbl">Aktif</div><div id="kActive" class="val">—</div></div>
+      <div class="kpi"><div class="lbl">Tamamlanan</div><div id="kCompleted" class="val">—</div></div>
+      <div class="kpi"><div class="lbl">İptal</div><div id="kCancelled" class="val">—</div></div>
+      <div class="kpi"><div class="lbl">Toplam Ciro</div><div id="kRevenue" class="val">—</div></div>
+      <div class="kpi"><div class="lbl">Platform Geliri</div><div id="kCommission" class="val">—</div></div>
+      <div class="kpi"><div class="lbl">Bugün Tamamlanan</div><div id="kTodayC" class="val">—</div></div>
+      <div class="kpi"><div class="lbl">Bugün Ciro</div><div id="kTodayR" class="val">—</div></div>
+    </div>
   </div>
-</div>
+
+  <div class="card">
+    <b>İş Detayları (Pending işlere manuel atama)</b>
+    <div style="overflow:auto;margin-top:10px">
+      <table>
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Durum</th>
+            <th>Sürücü / Atama</th>
+            <th>Mesafe</th>
+            <th>Ücret</th>
+            <th>Komisyon</th>
+            <th>Tarih</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <b>Son Olaylar (Timeline)</b>
+    <div id="tl" class="small" style="margin-top:10px"></div>
+  </div>
 
 </div>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
 const ADMIN_ID="admin";
 const ADMIN_PIN="1234";
 
-const BACKEND =
-"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-
+const BACKEND="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 const COMMISSION=0.15;
 
-/* ================= AUTH ================= */
 function login(){
   if(aid.value===ADMIN_ID && pin.value===ADMIN_PIN){
     sessionStorage.setItem("admin_auth","ok");
@@ -162,64 +121,111 @@ function login(){
     err.style.display="block";
   }
 }
-
 function logout(){
   sessionStorage.removeItem("admin_auth");
   location.reload();
 }
-
 function showAdmin(){
   loginWrap.classList.add("hidden");
   adminWrap.classList.remove("hidden");
-  loadData();
+  loadAll();
+  setInterval(loadAll,5000);
+}
+if(sessionStorage.getItem("admin_auth")==="ok") showAdmin();
+
+function toNum(v){
+  const n = Number(String(v||0).replace(/[^\d.]/g,""));
+  return isFinite(n)?n:0;
 }
 
-if(sessionStorage.getItem("admin_auth")==="ok"){
-  showAdmin();
+async function loadAll(){
+  const [jobs, drivers, sum, tline] = await Promise.all([
+    fetch(`${BACKEND}?action=getJobs`).then(r=>r.json()),
+    fetch(`${BACKEND}?action=getDrivers`).then(r=>r.json()),
+    fetch(`${BACKEND}?action=dailySummary`).then(r=>r.json()),
+    fetch(`${BACKEND}?action=getTimeline&limit=30`).then(r=>r.json())
+  ]);
+
+  renderKpi(sum);
+  renderTable(Array.isArray(jobs)?jobs:[], Array.isArray(drivers)?drivers:[]);
+  renderTimeline(tline);
 }
 
-/* ================= DATA ================= */
-async function loadData(){
-  const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
+function renderKpi(sum){
+  if(!sum || !sum.ok){
+    kTotal.innerText="—"; return;
+  }
+  kTotal.innerText=sum.total;
+  kActive.innerText=sum.active;
+  kCompleted.innerText=sum.completed;
+  kCancelled.innerText=sum.cancelled;
+  kRevenue.innerText=(sum.revenue||0).toFixed(0)+" TL";
+  kCommission.innerText=(sum.commission||0).toFixed(0)+" TL";
+  kTodayC.innerText=sum.todayCompleted;
+  kTodayR.innerText=(sum.todayRevenue||0).toFixed(0)+" TL";
+}
 
-  let total=0,completed=0,cancelled=0;
-  let revenue=0,commission=0;
+async function assign(job_id, driver_id){
+  if(!driver_id){ alert("Sürücü seç"); return; }
+  const res = await fetch(BACKEND,{
+    method:"POST",
+    body:JSON.stringify({ action:"assignDriver", job_id, driver_id, actor:"admin" })
+  }).then(r=>r.json()).catch(()=>({ok:false,error:"network"}));
+  if(!res || !res.ok){ alert("Atama başarısız: "+(res.error||"")); }
+  loadAll();
+}
 
+function renderTable(jobs, drivers){
   rows.innerHTML="";
+  const avail = drivers.filter(d=>String(d.status)==="available");
 
   jobs.slice().reverse().forEach(j=>{
-    total++;
-    const price=Number(j.final_price||0);
-    const comm=price*COMMISSION;
-
-    if(j.status==="completed"){
-      completed++; revenue+=price; commission+=comm;
-    }
-    if(j.status==="cancelled") cancelled++;
+    const price = toNum(j.final_price || j.price || 0);
+    const comm = price*COMMISSION;
+    const st = String(j.status||"");
 
     const tr=document.createElement("tr");
+
+    let drvCell = (j.driver_id||"-");
+    if(st==="pending"){
+      const opts = avail.map(d=>`<option value="${d.driver_id}">${d.driver_id} · ${d.name||""}</option>`).join("");
+      drvCell = `
+        <select id="sel_${j.job_id}">
+          <option value="">Sürücü seç</option>
+          ${opts}
+        </select>
+        <div>
+          <button class="btnSmall" onclick="assign('${j.job_id}', document.getElementById('sel_${j.job_id}').value)">ATA</button>
+        </div>
+      `;
+    }
+
     tr.innerHTML=`
       <td>${j.job_id}</td>
       <td><span class="badge ${
-        j.status==="completed"?"ok":
-        j.status==="cancelled"?"cancel":"pending"
-      }">${j.status}</span></td>
-      <td>${j.driver_id||"-"}</td>
-      <td>${Number(j.distance_km||0).toFixed(2)} km</td>
+        st==="completed"?"ok":
+        st==="cancelled"?"cancel":"pending"
+      }">${st}</span></td>
+      <td>${drvCell}</td>
+      <td>${toNum(j.distance_km||0).toFixed(2)} km</td>
       <td>${price.toFixed(0)} TL</td>
       <td>${comm.toFixed(0)} TL</td>
       <td>${(j.created_at||"").slice(0,16).replace("T"," ")}</td>
     `;
     rows.appendChild(tr);
   });
+}
 
-  kTotal.innerText=total;
-  kCompleted.innerText=completed;
-  kCancelled.innerText=cancelled;
-  kRevenue.innerText=revenue.toFixed(0)+" TL";
-  kCommission.innerText=commission.toFixed(0)+" TL";
+function renderTimeline(tline){
+  if(!tline || !tline.ok || !Array.isArray(tline.items)){
+    tl.innerText="Timeline yok.";
+    return;
+  }
+  tl.innerHTML = tline.items.map(x=>{
+    const at = String(x.at||"").slice(0,19).replace("T"," ");
+    return `<div>• <b>${x.job_id}</b> — ${x.event} — <span style="color:#f5c400">${x.status}</span> — ${x.actor} <span style="opacity:.6">(${at})</span></div>`;
+  }).join("");
 }
 </script>
-
 </body>
 </html>
