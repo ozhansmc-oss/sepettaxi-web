@@ -162,9 +162,55 @@ header span{color:var(--y)}
   </div>
 </div>
 
+<!-- =========================================================
+     LOG.JS (INLINE) – LOCKED
+========================================================= -->
 <script>
-const BACKEND_URL = window.SEPT.BACKEND_URL;
- "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+/*************************************************
+ * SepetTaxi – LOG & DEBUG CORE
+ * Version: 1.0 (LOCKED)
+ *************************************************/
+(function(){
+  const LOG_LEVEL = { INFO:'INFO', WARN:'WARN', ERROR:'ERROR', FLOW:'FLOW' };
+  const DEBUG_ENABLED = true;
+
+  function logTime(){ return new Date().toISOString(); }
+
+  function log(level, tag, message, data){
+    if(!DEBUG_ENABLED) return;
+    const prefix = `[SepetTaxi][${level}][${tag}]`;
+    const extra = (data !== undefined && data !== null) ? data : '';
+
+    if(level === LOG_LEVEL.ERROR) console.error(prefix, message, extra);
+    else if(level === LOG_LEVEL.WARN) console.warn(prefix, message, extra);
+    else console.log(prefix, message, extra);
+  }
+
+  window.logInfo = (tag, message, data)=>log(LOG_LEVEL.INFO, tag, message, data);
+  window.logWarn = (tag, message, data)=>log(LOG_LEVEL.WARN, tag, message, data);
+  window.logError = (tag, message, data)=>log(LOG_LEVEL.ERROR, tag, message, data);
+  window.logFlow = (tag, message, data)=>log(LOG_LEVEL.FLOW, tag, message, data);
+
+  // Global error capture (minimum, debug için faydalı)
+  window.addEventListener('error', (e)=>{
+    window.logError('GLOBAL', 'window.onerror', { message:e.message, filename:e.filename, lineno:e.lineno, colno:e.colno, error:String(e.error||'') });
+  });
+  window.addEventListener('unhandledrejection', (e)=>{
+    window.logError('GLOBAL', 'unhandledrejection', { reason: String(e.reason||'') });
+  });
+})();
+</script>
+
+<script>
+/* =========================================================
+   CONFIG
+========================================================= */
+
+// BACKEND_URL: önce window.SEPT?.BACKEND_URL varsa onu kullan, yoksa sabit URL'ye düş
+const BACKEND_URL =
+  (window.SEPT && window.SEPT.BACKEND_URL) ||
+  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+
 const POLL_MS = 3000;
 const POLL_TIMEOUT_MS = 90000;
 
@@ -176,6 +222,8 @@ let lastKm = 0;
 let lastPrice = 0;
 
 const $ = (id)=>document.getElementById(id);
+
+logFlow('INIT', 'index.html loaded', { BACKEND_URL });
 
 function toast(msg){
   const t=$("toast");
@@ -189,11 +237,13 @@ function showSearching(){
   $("searching").style.display="flex";
   isSearching=true;
   $("ctaBtn").className="disabled";
+  logFlow('FLOW', 'Searching screen shown');
 }
 function hideSearching(){
   $("searching").style.display="none";
   isSearching=false;
   setCtaState();
+  logFlow('FLOW', 'Searching screen hidden');
 }
 
 function courierValid(){
@@ -231,16 +281,19 @@ function setCtaState(){
 function start(){
   $("landing").style.display="none";
   $("app").style.display="block";
+  logFlow('INIT', 'Start clicked -> app shown');
   initMap();
   setCtaState();
 }
 
 function initMap(){
+  logFlow('MAP', 'Map init start');
   map = L.map("map",{zoomControl:false}).setView([41,29],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   refreshLocation();
 
   map.on("click",(e)=>{
+    logInfo('MAP', 'Map click -> set destination', { lat:e.latlng.lat, lng:e.latlng.lng });
     toM ? toM.setLatLng(e.latlng) : (toM=L.marker(e.latlng).addTo(map));
     reverse(e.latlng.lat,e.latlng.lng,$("toAddr"));
     calc();
@@ -249,29 +302,36 @@ function initMap(){
 }
 
 function refreshLocation(){
-  if(!navigator.geolocation){ toast("Konum desteklenmiyor"); return; }
+  logFlow('GPS', 'refreshLocation called');
+  if(!navigator.geolocation){ toast("Konum desteklenmiyor"); logWarn('GPS','Geolocation not supported'); return; }
+
   navigator.geolocation.getCurrentPosition(p=>{
     const {latitude,longitude}=p.coords;
+    logInfo('GPS', 'Location acquired', { latitude, longitude, accuracy:p.coords.accuracy });
+
     fromM ? fromM.setLatLng([latitude,longitude]) : (fromM=L.marker([latitude,longitude]).addTo(map));
     map.setView([latitude,longitude],15);
     reverse(latitude,longitude,$("fromAddr"));
     calc();
     setCtaState();
-  },()=>{
+  },(err)=>{
     $("fromAddr").placeholder="Konum izni gerekli";
     toast("Konum izni verilmeli");
+    logWarn('GPS', 'Location failed', { code: err && err.code, message: err && err.message });
     setCtaState();
   },{enableHighAccuracy:true,timeout:8000,maximumAge:5000});
 }
 
 function pickService(t){
   if(isSearching) return;
-  if(!registered){ openRegister(); return; }
+  if(!registered){ logInfo('USER','Service pick blocked: not registered'); openRegister(); return; }
   service=t;
 
   $("svcTaxi").classList.toggle("active",t==="taxi");
   $("svcCourier").classList.toggle("active",t==="courier");
   $("courierBox").style.display = (t==="courier") ? "block" : "none";
+
+  logInfo('USER', 'Service selected', { service:t });
 
   calc();
   setCtaState();
@@ -293,10 +353,12 @@ function openRegister(){
   $("app").classList.add("app-locked");
   $("register").style.display="flex";
   $("regErr").style.display="none";
+  logFlow('FLOW', 'Register modal opened');
 }
 function closeRegister(){
   $("register").style.display="none";
   $("app").classList.remove("app-locked");
+  logFlow('FLOW', 'Register modal closed');
 }
 function saveUser(){
   const fn=$("fn").value.trim();
@@ -305,6 +367,7 @@ function saveUser(){
 
   if(fn.length<2 || ln.length<2 || !/^05\d{9}$/.test(ph) || !$("kvkk").checked){
     $("regErr").style.display="block";
+    logWarn('USER', 'Register validation failed', { fn_len:fn.length, ln_len:ln.length, phone:ph, kvkk:$("kvkk").checked });
     return;
   }
   user={name:fn+" "+ln,phone:ph};
@@ -316,6 +379,7 @@ function saveUser(){
 
   closeRegister();
   toast("Kayıt tamamlandı");
+  logInfo('USER', 'Registered', { user });
   setCtaState();
 }
 
@@ -333,6 +397,8 @@ function calc(){
 
   lastPrice = Math.round(pr);
   $("price").textContent = lastPrice + " TL";
+
+  logFlow('STATE', 'Pricing updated', { service, km: Number(km.toFixed(3)), price:lastPrice });
 }
 
 function ctaClick(){
@@ -340,8 +406,10 @@ function ctaClick(){
   if(!canCall()){
     if(!registered){ openRegister(); return; }
     toast("Eksikleri tamamla");
+    logWarn('USER', 'CTA blocked: missing requirements', { registered, service, hasFrom:!!fromM, hasTo:!!toM, courierValid:(service==="courier"?courierValid():null) });
     return;
   }
+  logInfo('USER', 'CTA clicked -> createJob');
   createJob();
 }
 
@@ -371,12 +439,22 @@ async function createJob(){
       payload.package_type=$("pkgType").value.trim();
     }
 
-    const res=await fetch(BACKEND_URL,{method:"POST",body:JSON.stringify(payload)});
+    logFlow('API', 'createJob POST', payload);
+
+    const res=await fetch(BACKEND_URL,{
+      method:"POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+
     const data=await res.json();
-    if(!data || !data.job_id) throw new Error("job_id yok");
+    logFlow('API', 'createJob response', data);
+
+    if(!data || !data.job_id) throw new Error("createJob: job_id yok");
 
     jobId=data.job_id;
     toast("Talep oluşturuldu");
+    logInfo('FLOW', 'Job created', { jobId });
 
     pollStartedAt=Date.now();
     clearInterval(pollTimer);
@@ -387,6 +465,7 @@ async function createJob(){
     jobId=null;
     hideSearching();
     toast("Talep oluşturulamadı");
+    logError('API', 'createJob failed', { error: String(e && e.message ? e.message : e), e });
   }
 }
 
@@ -400,22 +479,28 @@ async function checkJob(){
       jobId=null;
       hideSearching();
       toast("Sürücü bulunamadı. Tekrar dene.");
-      console.warn("search timeout job:", oldJob);
+      logWarn('FLOW', 'Search timeout', { jobId: oldJob, timeout_ms: POLL_TIMEOUT_MS });
       return;
     }
 
     const r=await fetch(`${BACKEND_URL}?action=checkJob&job_id=${encodeURIComponent(jobId)}`);
     const d=await r.json();
 
+    if(d && d.status){
+      logFlow('API', 'checkJob status', { jobId, status:d.status });
+    }
+
     if(d && (d.status==="assigned" || d.status==="on_route")){
       clearInterval(pollTimer);
       const goJob = jobId;
       jobId=null;
       hideSearching();
+      logInfo('FLOW', 'Assigned -> redirect track', { jobId: goJob, status:d.status });
       location.href=`track.html?job_id=${encodeURIComponent(goJob)}`;
     }
   }catch(e){
-    // transient: ignore
+    // transient: ignore but log as debug
+    logWarn('API', 'checkJob transient error', { error:String(e && e.message ? e.message : e) });
   }
 }
 
@@ -426,26 +511,38 @@ function hav(a,b,c,d){
   const x=Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
+
 function reverse(lat,lng,input){
+  logFlow('API', 'reverse geocode', { lat, lng });
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
     .then(r=>r.json())
-    .then(d=>{ if(d && d.display_name) input.value=d.display_name; })
-    .catch(()=>{});
+    .then(d=>{
+      if(d && d.display_name){
+        input.value=d.display_name;
+        logInfo('API', 'reverse geocode ok', { target: input.id, display_name: d.display_name });
+      }
+    })
+    .catch((e)=>{
+      logWarn('API', 'reverse geocode failed', { error:String(e) });
+    });
 }
 </script>
-  <script>
+
+<script>
 (function () {
   const host = window.location.hostname.toLowerCase();
   const path = window.location.pathname;
 
   // admin subdomain
   if (host.startsWith("admin.") && !path.includes("admin.html")) {
+    logFlow('FLOW', 'Domain route -> admin.html', { host, path });
     window.location.replace("/admin.html");
     return;
   }
 
   // driver subdomain
   if (host.startsWith("driver.") && !path.includes("driver.html")) {
+    logFlow('FLOW', 'Domain route -> driver.html', { host, path });
     window.location.replace("/driver.html");
     return;
   }
@@ -456,6 +553,7 @@ function reverse(lat,lng,input){
     path !== "/" &&
     !path.includes("index.html")
   ) {
+    logFlow('FLOW', 'Domain route -> index.html', { host, path });
     window.location.replace("/index.html");
     return;
   }
