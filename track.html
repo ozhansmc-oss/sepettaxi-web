@@ -11,7 +11,6 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#000;color:#fff}
-
 header{
   height:56px;display:flex;align-items:center;justify-content:center;
   font-weight:900;border-bottom:1px solid #222
@@ -44,27 +43,36 @@ header span{color:#f5c400}
 .wa{background:#1ebe5d;color:#000}
 .hidden{display:none}
 
-/* RATING MODAL */
-#ratingModal{
-  position:fixed;inset:0;background:rgba(0,0,0,.9);
+/* MODALS */
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.92);
   display:none;align-items:center;justify-content:center;z-index:2000
 }
-#ratingBox{
+.box{
   background:#111;border:1px solid #333;border-radius:16px;
   padding:16px;width:90%;max-width:360px
 }
+
+/* RATING */
 .stars{display:flex;justify-content:center;gap:8px;margin:12px 0}
-.star{
-  font-size:30px;cursor:pointer;color:#333
-}
+.star{font-size:30px;cursor:pointer;color:#333}
 .star.active{color:#f5c400}
 textarea{
-  width:100%;min-height:70px;border-radius:10px;
+  width:100%;min-height:60px;border-radius:10px;
   border:0;background:#222;color:#fff;padding:10px
 }
-.submitBtn{
+
+/* RECEIPT */
+.row{display:flex;justify-content:space-between;margin:6px 0;font-size:13px}
+.total{font-size:18px;font-weight:900;margin-top:8px}
+.sep{border-top:1px dashed #333;margin:10px 0}
+.cta{
   margin-top:10px;background:#f5c400;color:#000;
   border-radius:999px;padding:12px;text-align:center;font-weight:900;cursor:pointer
+}
+.secondary{
+  margin-top:6px;background:#222;color:#ddd;
+  border-radius:999px;padding:10px;text-align:center;cursor:pointer
 }
 </style>
 </head>
@@ -89,12 +97,31 @@ textarea{
 <div id="map"></div>
 
 <!-- RATING -->
-<div id="ratingModal">
-  <div id="ratingBox">
+<div id="ratingModal" class="modal">
+  <div class="box">
     <div style="font-weight:900;text-align:center">Yolculuk Tamamlandı</div>
     <div class="stars" id="stars"></div>
     <textarea id="comment" placeholder="Yorum (isteğe bağlı)"></textarea>
-    <div class="submitBtn" onclick="submitRating()">PUANI GÖNDER</div>
+    <div class="cta" onclick="submitRating()">PUANI GÖNDER</div>
+  </div>
+</div>
+
+<!-- RECEIPT -->
+<div id="receiptModal" class="modal">
+  <div class="box">
+    <div style="font-weight:900;text-align:center">Ödeme Özeti</div>
+
+    <div class="row"><span>Mesafe</span><span id="rDist">—</span></div>
+    <div class="row"><span>Hizmet Bedeli</span><span id="rBase">—</span></div>
+    <div class="row"><span>Platform Komisyonu</span><span id="rComm">—</span></div>
+
+    <div class="sep"></div>
+    <div class="row total"><span>Toplam</span><span id="rTotal">—</span></div>
+
+    <div class="small" style="margin-top:6px">Ödeme: Nakit / Kart</div>
+
+    <div class="cta" onclick="location.href='index.html'">TEKRAR ÇAĞIR</div>
+    <div class="secondary" onclick="closeReceipt()">Kapat</div>
   </div>
 </div>
 
@@ -102,12 +129,14 @@ textarea{
 const BACKEND =
 "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
+const COMMISSION = 0.15;
+
 const qs=new URLSearchParams(location.search);
 const JOB_ID=qs.get("job_id");
 if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
 
 let map,pickupM,dropM,driverM,routeLine;
-let rated=false, rating=0;
+let rated=false, receiptShown=false, rating=0;
 
 /* MAP */
 function initMap(){
@@ -127,22 +156,13 @@ function hav(a,b,c,d){
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-/* ETA */
-function calcETA(a,b,c,d){
-  const km=hav(a,b,c,d);
-  return Math.max(1,Math.round((km/30)*60));
-}
-
 /* LOAD */
 async function loadJob(){
   const job=await fetch(
     `${BACKEND}?action=checkJob&job_id=${JOB_ID}`
   ).then(r=>r.json());
 
-  if(!job||job.error){
-    status.innerText="İş bulunamadı";
-    return;
-  }
+  if(!job||job.error){ status.innerText="İş bulunamadı"; return; }
 
   status.innerText=
     job.status==="completed"?"İş tamamlandı":
@@ -160,10 +180,6 @@ async function loadJob(){
     if(!driverM) driverM=L.marker([j.driver_lat,j.driver_lng]).addTo(map);
     else driverM.setLatLng([j.driver_lat,j.driver_lng]);
 
-    const m=calcETA(j.driver_lat,j.driver_lng,j.dropoff_lat,j.dropoff_lng);
-    eta.innerText="ETA: "+m+" dk";
-    etaNote.innerText="≈ "+m+" dk";
-
     drvId.innerText=j.driver_id||"—";
     drvStatus.innerText=job.status;
 
@@ -178,8 +194,9 @@ async function loadJob(){
 
   drawRoute(j);
 
-  if(job.status==="completed" && !rated){
-    openRating();
+  if(job.status==="completed"){
+    if(!rated) openRating();
+    else if(!receiptShown) showReceipt(j);
   }
 }
 
@@ -210,11 +227,9 @@ function openRating(){
 }
 function setStar(n){
   rating=n;
-  [...stars.children].forEach((s,i)=>{
-    s.classList.toggle("active",i<n);
-  });
+  [...stars.children].forEach((s,i)=>s.classList.toggle("active",i<n));
 }
-async function submitRating(){
+function submitRating(){
   if(rating===0){ alert("Puan seç"); return; }
   rated=true;
   ratingModal.style.display="none";
@@ -228,6 +243,24 @@ async function submitRating(){
       comment:comment.value||""
     })
   }).catch(()=>{});
+}
+
+/* RECEIPT */
+function showReceipt(j){
+  receiptShown=true;
+  const dist=hav(j.pickup_lat,j.pickup_lng,j.dropoff_lat,j.dropoff_lng);
+  const base=Number(j.final_price||0);
+  const comm=base*COMMISSION;
+
+  rDist.innerText=dist.toFixed(2)+" km";
+  rBase.innerText=base.toFixed(0)+" TL";
+  rComm.innerText=comm.toFixed(0)+" TL";
+  rTotal.innerText=base.toFixed(0)+" TL";
+
+  receiptModal.style.display="flex";
+}
+function closeReceipt(){
+  receiptModal.style.display="none";
 }
 
 initMap();
