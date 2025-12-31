@@ -17,13 +17,11 @@ header{
   font-weight:900;border-bottom:1px solid #222
 }
 header span{color:#f5c400}
-
 #map{height:calc(100vh - 56px)}
 
 .overlay{
   position:fixed;left:50%;transform:translateX(-50%);
-  z-index:1000;border-radius:999px;
-  padding:6px 14px;font-size:13px
+  z-index:1000;border-radius:999px;padding:6px 14px;font-size:13px
 }
 .status{top:70px;background:#111;border:1px solid #333}
 .eta{top:110px;background:#f5c400;color:#000;font-weight:900}
@@ -31,28 +29,43 @@ header span{color:#f5c400}
 .driver-card{
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
   background:#111;border:1px solid #333;
-  padding:14px 16px;border-radius:18px;
-  min-width:280px;z-index:1000
+  padding:14px 16px;border-radius:18px;min-width:280px;z-index:1000
 }
 .driver-card b{color:#f5c400}
-.badge{
-  display:inline-block;margin-top:6px;
-  padding:4px 10px;border-radius:999px;
-  background:#222;color:#aaa;font-size:12px
-}
+.badge{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
 .small{font-size:11px;color:#aaa;margin-top:4px}
 
-.actions{
-  display:flex;gap:8px;margin-top:10px
-}
+.actions{display:flex;gap:8px;margin-top:10px}
 .btn{
-  flex:1;text-align:center;padding:10px 0;
-  border-radius:999px;font-weight:900;
-  font-size:13px;cursor:pointer;text-decoration:none
+  flex:1;text-align:center;padding:10px 0;border-radius:999px;
+  font-weight:900;font-size:13px;cursor:pointer;text-decoration:none
 }
 .call{background:#f5c400;color:#000}
 .wa{background:#1ebe5d;color:#000}
 .hidden{display:none}
+
+/* RATING MODAL */
+#ratingModal{
+  position:fixed;inset:0;background:rgba(0,0,0,.9);
+  display:none;align-items:center;justify-content:center;z-index:2000
+}
+#ratingBox{
+  background:#111;border:1px solid #333;border-radius:16px;
+  padding:16px;width:90%;max-width:360px
+}
+.stars{display:flex;justify-content:center;gap:8px;margin:12px 0}
+.star{
+  font-size:30px;cursor:pointer;color:#333
+}
+.star.active{color:#f5c400}
+textarea{
+  width:100%;min-height:70px;border-radius:10px;
+  border:0;background:#222;color:#fff;padding:10px
+}
+.submitBtn{
+  margin-top:10px;background:#f5c400;color:#000;
+  border-radius:999px;padding:12px;text-align:center;font-weight:900;cursor:pointer
+}
 </style>
 </head>
 
@@ -67,7 +80,6 @@ header span{color:#f5c400}
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
   <div class="badge" id="drvStatus">—</div>
   <div class="small" id="etaNote">—</div>
-
   <div class="actions" id="contactBtns">
     <a id="callBtn" class="btn call" href="#">📞 Ara</a>
     <a id="waBtn" class="btn wa" href="#" target="_blank">💬 WhatsApp</a>
@@ -75,6 +87,16 @@ header span{color:#f5c400}
 </div>
 
 <div id="map"></div>
+
+<!-- RATING -->
+<div id="ratingModal">
+  <div id="ratingBox">
+    <div style="font-weight:900;text-align:center">Yolculuk Tamamlandı</div>
+    <div class="stars" id="stars"></div>
+    <textarea id="comment" placeholder="Yorum (isteğe bağlı)"></textarea>
+    <div class="submitBtn" onclick="submitRating()">PUANI GÖNDER</div>
+  </div>
+</div>
 
 <script>
 const BACKEND =
@@ -85,6 +107,7 @@ const JOB_ID=qs.get("job_id");
 if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
 
 let map,pickupM,dropM,driverM,routeLine;
+let rated=false, rating=0;
 
 /* MAP */
 function initMap(){
@@ -104,21 +127,10 @@ function hav(a,b,c,d){
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-/* AKILLI ETA */
-function calcSpeed(km,status){
-  const h=new Date().getHours();
-  const rush=(h>=7&&h<=10)||(h>=16&&h<=20);
-  if(km<2) return 18;
-  if(km>15) return 38;
-  if(rush) return 20;
-  if(status==="assigned") return 26;
-  return 30;
-}
-function calcETA(a,b,c,d,status){
+/* ETA */
+function calcETA(a,b,c,d){
   const km=hav(a,b,c,d);
-  const sp=calcSpeed(km,status);
-  const min=Math.max(1,Math.round((km/sp)*60));
-  return {min,sp,km};
+  return Math.max(1,Math.round((km/30)*60));
 }
 
 /* LOAD */
@@ -133,9 +145,9 @@ async function loadJob(){
   }
 
   status.innerText=
+    job.status==="completed"?"İş tamamlandı":
     job.status==="on_route"?"Sürücü yolda":
-    job.status==="assigned"?"Sürücü atandı":
-    job.status==="completed"?"İş tamamlandı":job.status;
+    job.status==="assigned"?"Sürücü atandı":job.status;
 
   const jobs=await fetch(`${BACKEND}?action=getJobs`).then(r=>r.json());
   const j=jobs.find(x=>x.job_id===JOB_ID);
@@ -144,34 +156,31 @@ async function loadJob(){
   if(!pickupM) pickupM=L.marker([j.pickup_lat,j.pickup_lng]).addTo(map);
   if(!dropM) dropM=L.marker([j.dropoff_lat,j.dropoff_lng]).addTo(map);
 
-  if(j.driver_lat && j.driver_lng){
+  if(j.driver_lat&&j.driver_lng){
     if(!driverM) driverM=L.marker([j.driver_lat,j.driver_lng]).addTo(map);
     else driverM.setLatLng([j.driver_lat,j.driver_lng]);
 
-    const e=calcETA(
-      j.driver_lat,j.driver_lng,
-      j.dropoff_lat,j.dropoff_lng,
-      job.status
-    );
-    eta.innerText="ETA: "+e.min+" dk";
-    etaNote.innerText=`≈ ${e.km.toFixed(1)} km · ${e.sp} km/h`;
+    const m=calcETA(j.driver_lat,j.driver_lng,j.dropoff_lat,j.dropoff_lng);
+    eta.innerText="ETA: "+m+" dk";
+    etaNote.innerText="≈ "+m+" dk";
 
     drvId.innerText=j.driver_id||"—";
     drvStatus.innerText=job.status;
 
-    // İLETİŞİM
     if(j.driver_phone){
       callBtn.href="tel:"+j.driver_phone;
       waBtn.href="https://wa.me/"+j.driver_phone.replace(/^0/,"90");
       contactBtns.classList.remove("hidden");
-    }else{
-      contactBtns.classList.add("hidden");
-    }
+    }else contactBtns.classList.add("hidden");
 
     driverCard.style.display="block";
   }
 
   drawRoute(j);
+
+  if(job.status==="completed" && !rated){
+    openRating();
+  }
 }
 
 /* ROUTE */
@@ -183,10 +192,42 @@ function drawRoute(j){
     [j.dropoff_lat,j.dropoff_lng]
   ];
   if(routeLine) routeLine.setLatLngs(pts);
-  else routeLine=L.polyline(pts,{
-    color:"#f5c400",weight:5,dashArray:"8,6"
-  }).addTo(map);
+  else routeLine=L.polyline(pts,{color:"#f5c400",weight:5,dashArray:"8,6"}).addTo(map);
   map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
+}
+
+/* RATING */
+function openRating(){
+  ratingModal.style.display="flex";
+  stars.innerHTML="";
+  for(let i=1;i<=5;i++){
+    const s=document.createElement("div");
+    s.className="star";
+    s.innerText="★";
+    s.onclick=()=>setStar(i);
+    stars.appendChild(s);
+  }
+}
+function setStar(n){
+  rating=n;
+  [...stars.children].forEach((s,i)=>{
+    s.classList.toggle("active",i<n);
+  });
+}
+async function submitRating(){
+  if(rating===0){ alert("Puan seç"); return; }
+  rated=true;
+  ratingModal.style.display="none";
+
+  fetch(BACKEND,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"submitRating",
+      job_id:JOB_ID,
+      rating,
+      comment:comment.value||""
+    })
+  }).catch(()=>{});
 }
 
 initMap();
