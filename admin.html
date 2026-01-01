@@ -33,9 +33,10 @@ th{color:#f5c400;font-weight:900}
 tr:hover{background:#151515}
 
 .badge{padding:4px 8px;border-radius:999px;font-size:11px;background:#222;color:#aaa}
-.ok{background:#1f6f3f;color:#9fffc7}
-.cancel{background:#6f1f1f;color:#ffb0b0}
 .pending{background:#444}
+.assigned{background:#1f6f3f;color:#9fffc7}
+.completed{background:#2d7dd2;color:#cfe5ff}
+.cancelled{background:#6f1f1f;color:#ffb0b0}
 
 .topbar{display:flex;justify-content:space-between;align-items:center}
 .logout{background:#222;color:#ccc;border:0;border-radius:14px;padding:8px 14px;cursor:pointer}
@@ -48,6 +49,7 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
 
 <body>
 
+<!-- LOGIN -->
 <div id="loginWrap">
   <div class="loginCard">
     <h1>Sepet<span>Taxi</span></h1>
@@ -58,15 +60,18 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
   </div>
 </div>
 
+<!-- ADMIN -->
 <div id="adminWrap" class="hidden">
 <header>Sepet<span>Taxi</span> – Admin</header>
 
 <div class="wrap">
+
   <div class="card topbar">
     <b>Yönetim Paneli</b>
     <button class="logout" onclick="logout()">Çıkış</button>
   </div>
 
+  <!-- KPI -->
   <div class="card">
     <div class="grid">
       <div class="kpi"><div class="lbl">Toplam İş</div><div id="kTotal" class="val">—</div></div>
@@ -80,8 +85,9 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
     </div>
   </div>
 
+  <!-- JOBS -->
   <div class="card">
-    <b>İş Detayları (Pending işlere manuel atama)</b>
+    <b>İş Detayları (Pending → Manuel Atama)</b>
     <div style="overflow:auto;margin-top:10px">
       <table>
         <thead>
@@ -100,52 +106,32 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
     </div>
   </div>
 
+  <!-- TIMELINE -->
   <div class="card">
     <b>Son Olaylar (Timeline)</b>
     <div id="tl" class="small" style="margin-top:10px"></div>
   </div>
+
 </div>
 </div>
 
-<!-- ================= LOG CORE ================= -->
 <script>
-(function(){
-  const L={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
-  function log(l,t,m,d){
-    const p=`[SepetTaxi][${l}][${t}]`;
-    if(l===L.ERROR) console.error(p,m,d||'');
-    else if(l===L.WARN) console.warn(p,m,d||'');
-    else console.log(p,m,d||'');
-  }
-  window.logInfo=(t,m,d)=>log(L.INFO,t,m,d);
-  window.logWarn=(t,m,d)=>log(L.WARN,t,m,d);
-  window.logError=(t,m,d)=>log(L.ERROR,t,m,d);
-  window.logFlow=(t,m,d)=>log(L.FLOW,t,m,d);
-})();
-</script>
-
-<script>
+/* ================= CONFIG ================= */
 const ADMIN_ID="admin";
 const ADMIN_PIN="1234";
 
-const BACKEND_URL =
-  (window.SEPT && window.SEPT.BACKEND_URL) ||
-  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-
+const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 const COMMISSION=0.15;
 
-logFlow("INIT","admin.html loaded",{BACKEND_URL});
+const $=id=>document.getElementById(id);
 
+/* ================= AUTH ================= */
 function login(){
-  const aid=aidInput.value.trim();
-  const pin=pinInput.value.trim();
-  if(aid===ADMIN_ID && pin===ADMIN_PIN){
+  if($("aid").value.trim()===ADMIN_ID && $("pin").value.trim()===ADMIN_PIN){
     sessionStorage.setItem("admin_auth","ok");
-    logInfo("ADMIN","login ok",{aid});
     showAdmin();
   }else{
-    err.style.display="block";
-    logWarn("ADMIN","login failed",{aid});
+    $("err").style.display="block";
   }
 }
 function logout(){
@@ -153,77 +139,74 @@ function logout(){
   location.reload();
 }
 function showAdmin(){
-  loginWrap.classList.add("hidden");
-  adminWrap.classList.remove("hidden");
+  $("loginWrap").classList.add("hidden");
+  $("adminWrap").classList.remove("hidden");
   loadAll();
   setInterval(loadAll,5000);
 }
 if(sessionStorage.getItem("admin_auth")==="ok") showAdmin();
 
-function toNum(v){
-  const n=Number(String(v||0).replace(/[^\d.]/g,""));
+/* ================= DATA ================= */
+function num(v){
+  const n=parseFloat(String(v||0).replace(/[^\d.]/g,""));
   return isFinite(n)?n:0;
 }
 
 async function loadAll(){
-  try{
-    const [jobs,drivers,sum,tline]=await Promise.all([
-      fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json()),
-      fetch(`${BACKEND_URL}?action=getDrivers`).then(r=>r.json()),
-      fetch(`${BACKEND_URL}?action=dailySummary`).then(r=>r.json()),
-      fetch(`${BACKEND_URL}?action=getTimeline&limit=30`).then(r=>r.json())
-    ]);
-    renderKpi(sum);
-    renderTable(jobs||[],drivers||[]);
-    renderTimeline(tline);
-    logFlow("API","admin loadAll ok");
-  }catch(e){
-    logError("API","admin loadAll failed",e);
-  }
+  const [jobs,drivers,sum,tline]=await Promise.all([
+    fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json()),
+    fetch(`${BACKEND_URL}?action=getDrivers`).then(r=>r.json()),
+    fetch(`${BACKEND_URL}?action=dailySummary`).then(r=>r.json()),
+    fetch(`${BACKEND_URL}?action=getTimeline&limit=30`).then(r=>r.json())
+  ]);
+  renderKpi(sum);
+  renderTable(Array.isArray(jobs)?jobs:[],Array.isArray(drivers)?drivers:[]);
+  renderTimeline(tline);
 }
 
-function renderKpi(sum){
-  if(!sum||!sum.ok) return;
-  kTotal.innerText=sum.total;
-  kActive.innerText=sum.active;
-  kCompleted.innerText=sum.completed;
-  kCancelled.innerText=sum.cancelled;
-  kRevenue.innerText=(sum.revenue||0).toFixed(0)+" TL";
-  kCommission.innerText=(sum.commission||0).toFixed(0)+" TL";
-  kTodayC.innerText=sum.todayCompleted;
-  kTodayR.innerText=(sum.todayRevenue||0).toFixed(0)+" TL";
+function renderKpi(s){
+  if(!s||!s.ok) return;
+  $("kTotal").innerText=s.total;
+  $("kActive").innerText=s.active;
+  $("kCompleted").innerText=s.completed;
+  $("kCancelled").innerText=s.cancelled;
+  $("kRevenue").innerText=(s.revenue||0).toFixed(0)+" TL";
+  $("kCommission").innerText=(s.commission||0).toFixed(0)+" TL";
+  $("kTodayC").innerText=s.todayCompleted;
+  $("kTodayR").innerText=(s.todayRevenue||0).toFixed(0)+" TL";
 }
 
-async function assign(job_id,driver_id){
-  if(!driver_id){ alert("Sürücü seç"); return; }
-  logInfo("ADMIN","assign",{job_id,driver_id});
+async function assign(jobId,driverId){
+  if(!driverId){ alert("Sürücü seç"); return; }
   await fetch(BACKEND_URL,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({action:"assignDriver",job_id,driver_id,actor:"admin"})
+    body:JSON.stringify({action:"assignDriver",job_id:jobId,driver_id:driverId,actor:"admin"})
   });
   loadAll();
 }
 
 function renderTable(jobs,drivers){
-  rows.innerHTML="";
+  $("rows").innerHTML="";
   const avail=drivers.filter(d=>d.status==="available");
   jobs.slice().reverse().forEach(j=>{
-    const price=toNum(j.final_price||j.price||0);
+    const price=num(j.final_price||j.price);
     const comm=price*COMMISSION;
-    const st=j.status||"";
     let drv=j.driver_id||"-";
-    if(st==="pending"){
-      const opts=avail.map(d=>`<option value="${d.driver_id}">${d.driver_id}</option>`).join("");
-      drv=`<select id="sel_${j.job_id}"><option value="">Seç</option>${opts}</select>
-           <button class="btnSmall" onclick="assign('${j.job_id}',document.getElementById('sel_${j.job_id}').value)">ATA</button>`;
+    if(j.status==="pending"){
+      drv=`
+        <select id="sel_${j.job_id}">
+          <option value="">Sürücü seç</option>
+          ${avail.map(d=>`<option value="${d.driver_id}">${d.driver_id}</option>`).join("")}
+        </select>
+        <button class="btnSmall" onclick="assign('${j.job_id}',document.getElementById('sel_${j.job_id}').value)">ATA</button>`;
     }
-    rows.innerHTML+=`
+    $("rows").innerHTML+=`
       <tr>
         <td>${j.job_id}</td>
-        <td><span class="badge ${st}">${st}</span></td>
+        <td><span class="badge ${j.status}">${j.status}</span></td>
         <td>${drv}</td>
-        <td>${toNum(j.distance_km||0).toFixed(2)} km</td>
+        <td>${num(j.distance_km).toFixed(2)} km</td>
         <td>${price.toFixed(0)} TL</td>
         <td>${comm.toFixed(0)} TL</td>
         <td>${(j.created_at||"").slice(0,16).replace("T"," ")}</td>
@@ -232,8 +215,8 @@ function renderTable(jobs,drivers){
 }
 
 function renderTimeline(t){
-  if(!t||!t.ok){ tl.innerText="Timeline yok."; return; }
-  tl.innerHTML=t.items.map(x=>`• <b>${x.job_id}</b> ${x.event} ${x.status}`).join("<br>");
+  if(!t||!t.ok){ $("tl").innerText="Timeline yok."; return; }
+  $("tl").innerHTML=t.items.map(x=>`• <b>${x.job_id}</b> ${x.event} (${x.status})`).join("<br>");
 }
 </script>
 </body>
