@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SepetTaxi – Sürücü Kayıt</title>
+
+<script src="config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{
+  background:#111;border:1px solid #222;border-radius:18px;
+  padding:18px;width:100%;max-width:360px
+}
+h1{text-align:center;margin:0 0 14px 0}
+h1 span{color:#f5c400}
+input,select{
+  width:100%;padding:14px;border-radius:14px;
+  border:0;background:#222;color:#fff;margin-bottom:10px
+}
+button{
+  width:100%;padding:14px;border-radius:18px;
+  border:0;font-weight:900;background:#f5c400;color:#000;
+  cursor:pointer
+}
+.small{font-size:12px;color:#aaa;text-align:center;margin-top:10px}
+.err{color:#ff6b6b;font-size:13px;text-align:center;display:none}
+.ok{color:#6bffb0;font-size:13px;text-align:center;display:none}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Sepet<span>Taxi</span></h1>
+
+    <input id="name" placeholder="Ad Soyad">
+    <input id="phone" placeholder="Telefon (05xxxxxxxxx)" inputmode="numeric">
+    
+    <select id="vehicle">
+      <option value="">Araç Tipi Seç</option>
+      <option value="taxi">Taksi</option>
+      <option value="courier_moto">Kurye (Moto)</option>
+      <option value="courier_car">Kurye (Araç)</option>
+    </select>
+
+    <button onclick="register()">KAYIT OL</button>
+
+    <div id="err" class="err"></div>
+    <div id="ok" class="ok"></div>
+
+    <div class="small">
+      Kayıt sonrası admin onayı gereklidir.
+    </div>
+  </div>
+</div>
+
+<script>
+const BACKEND = window.SEPT.BACKEND_URL;
+
+function cleanPhone(p){
+  return p.replace(/\D/g,"");
+}
+
+async function register(){
+  err.style.display="none";
+  ok.style.display="none";
+
+  const name = nameInput();
+  const phone = cleanPhone(phoneInput());
+  const vehicle = vehicleInput();
+
+  if(!name || phone.length !== 11 || !vehicle){
+    showErr("Lütfen tüm alanları doğru doldurun");
+    return;
+  }
+
+  const payload = {
+    action: "ensureDriver",
+    driver_id: phone,
+    name: name,
+    phone: phone,
+    vehicle_type: vehicle,
+    status: "pending"
+  };
+
+  try{
+    const res = await fetch(BACKEND,{
+      method:"POST",
+      body: JSON.stringify(payload)
+    }).then(r=>r.json());
+
+    if(!res || !res.ok){
+      showErr("Kayıt sırasında hata oluştu");
+      return;
+    }
+
+    ok.innerText = "Kayıt alındı. Admin onayı bekleniyor.";
+    ok.style.display="block";
+
+  }catch(e){
+    showErr("Bağlantı hatası");
+  }
+}
+
+function nameInput(){ return document.getElementById("name").value.trim(); }
+function phoneInput(){ return document.getElementById("phone").value.trim(); }
+function vehicleInput(){ return document.getElementById("vehicle").value; }
+
+function showErr(t){
+  err.innerText = t;
+  err.style.display="block";
+}
+</script>
+</body>
+</html>
