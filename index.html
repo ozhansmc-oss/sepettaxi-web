@@ -49,7 +49,7 @@ header span{color:var(--y)}
   border-radius:999px;
   padding:6px 10px;
   font-size:11px;
-  opacity:.8;
+  opacity:.82;
   display:flex;
   gap:6px;
   align-items:center;
@@ -61,16 +61,18 @@ header span{color:var(--y)}
 /* MAP & PANEL */
 #app{display:none;height:100%}
 
-/* Harita boş kalmasın: Leaflet init yoksa siyah boşluk olur; init’ten sonra görünür hale gelir */
-#map{height:40vh; border-bottom:1px solid var(--line)}
-@media(min-width:900px){
-  #map{height:45vh}
-}
+#map{height:40vh;border-bottom:1px solid var(--line)}
+@media(min-width:900px){ #map{height:45vh} }
 
-#panel{height:calc(60vh - 56px);padding:10px;display:flex;flex-direction:column;gap:8px;padding-bottom:220px}
-@media(min-width:900px){
-  #panel{height:calc(55vh - 56px)}
+#panel{
+  height:calc(60vh - 56px);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding-bottom:220px
 }
+@media(min-width:900px){ #panel{height:calc(55vh - 56px)} }
 
 .card{background:linear-gradient(180deg,var(--card1),var(--card2));border-radius:14px;padding:10px;border:1px solid rgba(255,255,255,.04)}
 .cardTitle{display:flex;justify-content:space-between;align-items:center}
@@ -85,22 +87,37 @@ header span{color:var(--y)}
 
 .input{width:100%;padding:11px;border-radius:12px;border:1px solid #1f1f1f;background:#000;color:#fff}
 .helper{font-size:11px;color:var(--muted)}
-#courierBox{display:none}
 
 .stats{display:flex;gap:8px}
 .stat{flex:1;background:#0b0b0b;border-radius:14px;padding:12px;text-align:center}
 .stat .lbl{font-size:11px;color:#aaa}
 .stat .val{font-size:18px;font-weight:900}
 
+#courierBox{display:none}
+
 #stickyBar{position:fixed;left:0;right:0;bottom:0;padding:10px;background:#000;border-top:1px solid var(--line)}
 #ctaBtn{border-radius:30px;padding:16px;text-align:center;font-weight:900;user-select:none}
 #ctaBtn.enabled{background:var(--y);color:#000;cursor:pointer}
 #ctaBtn.disabled{background:#2a2a2a;color:#999}
 
-#searching{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:600}
+#searching{
+  position:fixed;inset:0;background:rgba(0,0,0,.95);
+  display:none;align-items:center;justify-content:center;flex-direction:column;z-index:600
+}
 #searching .spin{margin-top:10px;opacity:.8;font-size:12px;color:#bbb}
+#searching .small{margin-top:10px;font-size:12px;color:#bbb;opacity:.85;max-width:420px;text-align:center;line-height:1.35}
+#searching .btns{display:flex;gap:8px;margin-top:14px}
+#searching button{
+  border:1px solid var(--line);background:#0f0f0f;color:#ddd;border-radius:999px;
+  padding:8px 12px;font-size:12px;cursor:pointer
+}
+#searching button:hover{opacity:.95}
 
-#toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:#111;padding:10px 12px;border-radius:999px;font-size:12px;display:none;border:1px solid var(--line);z-index:1200}
+#toast{
+  position:fixed;left:50%;top:12px;transform:translateX(-50%);
+  background:#111;padding:10px 12px;border-radius:999px;font-size:12px;display:none;
+  border:1px solid var(--line);z-index:1200
+}
 </style>
 </head>
 
@@ -164,7 +181,7 @@ header span{color:var(--y)}
     <div id="courierBox">
       <div class="card">
         <b>Kurye</b>
-        <div class="helper">Kurye akışı ayrı sayfada çalışır. Devam için aşağıdan seç.</div>
+        <div class="helper">Kurye akışı ayrı sayfada çalışır. Devam etmek için aşağıdan ilerle.</div>
       </div>
     </div>
   </div>
@@ -176,30 +193,46 @@ header span{color:var(--y)}
 
 <div id="searching">
   <div><b>Sürücü aranıyor…</b></div>
-  <div class="spin">Atama bekleniyor</div>
+  <div class="spin" id="searchSpin">Atama bekleniyor</div>
+  <div class="small" id="searchInfo">Otomatik atama modunda ilk müsait sürücüye yönlendiriyoruz.</div>
+  <div class="btns">
+    <button id="cancelBtn" type="button">İptal</button>
+    <button id="goTrackBtn" type="button" style="display:none">Takibe Git</button>
+  </div>
 </div>
 
 <!-- Global config -->
 <script src="config.js"></script>
 
 <script>
-/* ====== STATE ====== */
+/* =========================
+   CORE STATE
+========================= */
 let map, userMarker, destMarker, routeLine;
 let userLatLng = null;
 let destLatLng = null;
 let service = "taxi"; // taxi | courier
 
+let currentJobId = "";
+let currentTrackToken = "";
+let pollTimer = null;
+let pollStartedAt = 0;
+
 const $ = (id)=>document.getElementById(id);
 
-function toast(msg, ms=2200){
+/* =========================
+   UTIL UI
+========================= */
+function toast(msg, ms=2400){
   const t = $("toast");
   t.textContent = msg;
   t.style.display = "block";
   clearTimeout(toast._tm);
   toast._tm = setTimeout(()=>{ t.style.display="none"; }, ms);
 }
-
-/* ====== UI HELPERS ====== */
+function showSearching(on){
+  $("searching").style.display = on ? "flex" : "none";
+}
 function setCTAEnabled(on){
   const cta = $("ctaBtn");
   cta.className = on ? "enabled" : "disabled";
@@ -209,7 +242,6 @@ function setCTALabel(){
 }
 function setService(next){
   service = next;
-
   $("btnTaxi").classList.toggle("active", service==="taxi");
   $("btnCourier").classList.toggle("active", service==="courier");
 
@@ -222,7 +254,6 @@ function setService(next){
 
   setCTALabel();
 
-  // Taxi: hedef yoksa disable
   if(service==="taxi"){
     setCTAEnabled(!!(userLatLng && destLatLng));
   }else{
@@ -230,7 +261,41 @@ function setService(next){
   }
 }
 
-/* ====== MAP INIT ====== */
+/* =========================
+   BACKEND API (v2.4 router)
+========================= */
+function backendUrl(){
+  const u = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
+  if(!u) throw new Error("BACKEND_URL yok (config.js yüklenmemiş olabilir).");
+  return u;
+}
+async function apiPost(action, payload){
+  const url = backendUrl();
+  const body = Object.assign({ action }, payload || {});
+  const res = await fetch(url, {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body: JSON.stringify(body)
+  });
+  const txt = await res.text();
+  let data = {};
+  try{ data = JSON.parse(txt); }catch(e){ data = { ok:false, error:"JSON parse", raw:txt }; }
+  return data;
+}
+async function apiGet(action, params){
+  const url = new URL(backendUrl());
+  url.searchParams.set("action", action);
+  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), { method:"GET" });
+  const txt = await res.text();
+  let data = {};
+  try{ data = JSON.parse(txt); }catch(e){ data = { ok:false, error:"JSON parse", raw:txt }; }
+  return data;
+}
+
+/* =========================
+   MAP INIT
+========================= */
 function initMap(){
   if(map) return;
 
@@ -239,23 +304,20 @@ function initMap(){
     attribution: "&copy; OpenStreetMap"
   }).addTo(map);
 
-  // Default view (Bursa civarı fallback)
+  // Fallback (Bursa civarı)
   map.setView([40.195, 29.060], 12);
 
-  // Map click = destination select (Taxi)
   map.on("click", (e)=>{
     if(service!=="taxi") return;
     destLatLng = e.latlng;
-    if(!destMarker){
-      destMarker = L.marker(destLatLng).addTo(map);
-    }else{
-      destMarker.setLatLng(destLatLng);
-    }
+
+    if(!destMarker) destMarker = L.marker(destLatLng).addTo(map);
+    else destMarker.setLatLng(destLatLng);
+
     $("toInput").value = `${destLatLng.lat.toFixed(5)}, ${destLatLng.lng.toFixed(5)}`;
     computeDistanceAndPrice();
   });
 }
-
 function fitIfReady(){
   if(!map) return;
   if(userLatLng && destLatLng){
@@ -266,7 +328,9 @@ function fitIfReady(){
   }
 }
 
-/* ====== GEOLOCATION ====== */
+/* =========================
+   GEOLOCATION
+========================= */
 function getLocation(){
   if(!navigator.geolocation){
     toast("Tarayıcı konum desteği yok.");
@@ -279,27 +343,30 @@ function getLocation(){
       userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
       $("fromInput").value = `${userLatLng.lat.toFixed(5)}, ${userLatLng.lng.toFixed(5)}`;
 
-      if(!userMarker){
-        userMarker = L.marker(userLatLng).addTo(map);
-      }else{
-        userMarker.setLatLng(userLatLng);
-      }
+      if(!userMarker) userMarker = L.marker(userLatLng).addTo(map);
+      else userMarker.setLatLng(userLatLng);
+
       $("regBadge").textContent = "Kayıt: Hazır";
       toast("Konum alındı. Varış için haritaya dokun.");
-
       fitIfReady();
+
+      if(service==="taxi"){
+        setCTAEnabled(!!(userLatLng && destLatLng));
+      }
     },
     (err)=>{
       console.warn(err);
       $("regBadge").textContent = "Kayıt: Bekliyor";
       toast("Konum izni verilmedi veya alınamadı.");
-      // fallback view zaten ayarlı
     },
     { enableHighAccuracy:true, timeout:12000, maximumAge:8000 }
   );
 }
 
-/* ====== DISTANCE & PRICE (demo hesap) ====== */
+/* =========================
+   DISTANCE & PRICE
+   (UI için local; backend fiyatı da saklıyor)
+========================= */
 function haversineKm(a,b){
   const R = 6371;
   const dLat = (b.lat-a.lat) * Math.PI/180;
@@ -312,61 +379,187 @@ function haversineKm(a,b){
 function computeDistanceAndPrice(){
   if(!(userLatLng && destLatLng)) return;
 
-  // çizgi (demo route)
   if(routeLine) routeLine.remove();
   routeLine = L.polyline([userLatLng, destLatLng]).addTo(map);
 
-  const km = haversineKm(userLatLng, destLatLng);
-  const kmRounded = Math.max(0.1, km);
+  const km = Math.max(0.1, haversineKm(userLatLng, destLatLng));
+  $("distVal").textContent = `${km.toFixed(1)} km`;
 
-  $("distVal").textContent = `${kmRounded.toFixed(1)} km`;
-
-  // Kilitli algoritmayı backend dosyası gelince aynen geri koyacağız.
-  // Şimdilik sadece UI’nın çalıştığını göstermek için demo fiyat:
-  const base = 35;          // açılış
-  const perKm = 18;         // km başı
-  const price = Math.round(base + kmRounded * perKm);
+  // Kilitli fiyat mantığını ileride aynı şekilde koyacağız.
+  // Şimdilik stabil demo: açılış + km başı.
+  const base = 35;
+  const perKm = 18;
+  const price = Math.round(base + km * perKm);
 
   $("priceVal").textContent = `${price} ₺`;
+
   setCTAEnabled(true);
   fitIfReady();
+  return { km, price };
 }
 
-/* ====== CTA ACTIONS ====== */
-function onCTA(){
-  if(service==="courier"){
-    // Kurye akışı ayrı sayfadaysa doğrudan yönlendir
-    window.location.href = "courier.html";
+/* =========================
+   JOB FLOW (createJob -> poll checkJob -> redirect track)
+========================= */
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+}
+function gotoTrack(){
+  if(!currentJobId) return;
+  // track.html’in kendi tarafında job_id ile getLive/checkJob yapması için
+  const url = new URL(window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "/track.html"));
+  url.searchParams.set("job_id", currentJobId);
+  if(currentTrackToken) url.searchParams.set("track_token", currentTrackToken);
+  window.location.href = url.toString();
+}
+
+async function pollJob(){
+  if(!currentJobId) return;
+
+  const elapsed = Date.now() - pollStartedAt;
+  const TIMEOUT_MS = 60000; // 60s
+
+  if(elapsed > TIMEOUT_MS){
+    stopPolling();
+    $("searchSpin").textContent = "Atama gecikti";
+    $("searchInfo").textContent = "Henüz müsait sürücü bulunamadı. Lütfen biraz sonra tekrar deneyin.";
+    $("goTrackBtn").style.display = "inline-block"; // job oluştuğu için takibe gidebilir
     return;
   }
 
-  // Taxi: hedef yoksa uyar
+  const r = await apiGet("checkJob", { job_id: currentJobId });
+
+  if(r && r.ok){
+    const st = String(r.status||"");
+    if(st==="assigned" || st==="on_route"){
+      stopPolling();
+      $("searchSpin").textContent = "Sürücü atandı";
+      $("searchInfo").textContent = "Takip ekranına yönlendiriliyorsunuz…";
+      setTimeout(gotoTrack, 650);
+      return;
+    }
+    if(st==="cancelled"){
+      stopPolling();
+      $("searchSpin").textContent = "İptal edildi";
+      $("searchInfo").textContent = "İş iptal edildi.";
+      setTimeout(()=>showSearching(false), 900);
+      return;
+    }
+    if(st==="completed"){
+      stopPolling();
+      $("searchSpin").textContent = "Tamamlandı";
+      $("searchInfo").textContent = "İş tamamlandı.";
+      setTimeout(()=>showSearching(false), 900);
+      return;
+    }
+
+    // pending vb.
+    $("searchSpin").textContent = "Atama bekleniyor";
+    return;
+  }
+
+  // ok değilse yine de bekle (geçici network vs.)
+  console.warn("checkJob error", r);
+}
+
+async function createTaxiJob(){
   if(!(userLatLng && destLatLng)){
     toast("Lütfen varış noktası seçin.");
     return;
   }
 
-  // Backend createJob wiring: backend .gs gelince burada net endpoint’e bağlayacağız.
-  // Şimdilik “aranıyor” overlay’i UI testi için açılır.
-  $("searching").style.display = "flex";
-  setTimeout(()=>{ $("searching").style.display = "none"; toast("Backend bağlandıktan sonra burada atama başlayacak."); }, 1500);
+  const calc = computeDistanceAndPrice() || {};
+  const km = calc.km || 0;
+  const price = calc.price || 0;
+
+  // minimum adresler: coords string
+  const fromAddr = $("fromInput").value || `${userLatLng.lat},${userLatLng.lng}`;
+  const toAddr   = $("toInput").value   || `${destLatLng.lat},${destLatLng.lng}`;
+
+  showSearching(true);
+  $("searchSpin").textContent = "İş oluşturuluyor";
+  $("searchInfo").textContent = "Talebiniz sisteme iletiliyor…";
+  $("goTrackBtn").style.display = "none";
+
+  try{
+    const payload = {
+      service_type: "taxi",
+      customer_phone: "", // müşteri kayıt ekranı son kilitte ayrıydı; şimdilik boş geçiyoruz
+      from_address: fromAddr,
+      to_address: toAddr,
+      pickup_lat: userLatLng.lat,
+      pickup_lng: userLatLng.lng,
+      dropoff_lat: destLatLng.lat,
+      dropoff_lng: destLatLng.lng,
+      distance_km: km,
+      price: price,
+      final_price: price
+    };
+
+    const res = await apiPost("createJob", payload);
+
+    if(!(res && res.ok)){
+      console.warn("createJob fail", res);
+      $("searchSpin").textContent = "Hata";
+      $("searchInfo").textContent = (res && res.error) ? String(res.error) : "createJob başarısız";
+      setTimeout(()=>showSearching(false), 1400);
+      return;
+    }
+
+    currentJobId = String(res.job_id || "");
+    currentTrackToken = String(res.track_token || "");
+    sessionStorage.setItem("SEPT_job_id", currentJobId);
+    sessionStorage.setItem("SEPT_track_token", currentTrackToken);
+
+    $("searchSpin").textContent = "Sürücü aranıyor…";
+    $("searchInfo").textContent = "Otomatik atama modunda ilk müsait sürücüye yönlendiriyoruz.";
+
+    pollStartedAt = Date.now();
+    stopPolling();
+    const pollMs = (window.SEPT && window.SEPT.POLL_MS) ? parseInt(window.SEPT.POLL_MS,10) : 3000;
+    pollTimer = setInterval(pollJob, Math.max(1500, pollMs));
+    pollJob(); // immediate
+  }catch(e){
+    console.error(e);
+    $("searchSpin").textContent = "Bağlantı hatası";
+    $("searchInfo").textContent = "Backend’e ulaşılamadı. (config.js BACKEND_URL kontrol edin)";
+    setTimeout(()=>showSearching(false), 1600);
+  }
 }
 
-/* ====== START ====== */
+/* =========================
+   CTA CLICK
+========================= */
+function onCTA(){
+  if(service==="courier"){
+    window.location.href = "courier.html";
+    return;
+  }
+  if($("ctaBtn").classList.contains("disabled")) return;
+  createTaxiJob();
+}
+
+/* =========================
+   START
+========================= */
 function start(){
   $("landing").style.display = "none";
   $("app").style.display = "block";
 
   initMap();
 
-  // display:none -> block sonrası Leaflet size fix
-  setTimeout(()=>{ map.invalidateSize(); }, 50);
+  // Leaflet render fix (display:none -> block)
+  setTimeout(()=>{ map.invalidateSize(); }, 60);
 
-  // Konum al
   getLocation();
-
-  // default service
   setService("taxi");
+}
+
+function cancelFlow(){
+  stopPolling();
+  currentJobId = "";
+  currentTrackToken = "";
+  showSearching(false);
 }
 
 document.addEventListener("DOMContentLoaded", ()=>{
@@ -374,6 +567,9 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("btnTaxi").addEventListener("click", ()=>setService("taxi"));
   $("btnCourier").addEventListener("click", ()=>setService("courier"));
   $("ctaBtn").addEventListener("click", onCTA);
+
+  $("cancelBtn").addEventListener("click", cancelFlow);
+  $("goTrackBtn").addEventListener("click", gotoTrack);
 });
 </script>
 
