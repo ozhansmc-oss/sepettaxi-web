@@ -7,185 +7,198 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js"></script>
 
 <style>
-/* ==== AYNI CSS – DOKUNULMADI ==== */
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-:root{--y:#f5c400;--line:#222;--muted:#9a9a9a;--card1:#141414;--card2:#0f0f0f;--ok:#2ecc71;--bad:#e74c3c}
+:root{--y:#f5c400;--line:#222;--muted:#9a9a9a;--card:#141414}
 
-/* ==== HAMBURGER + SIDE MENU (EK) ==== */
-#hamburger{
-  position:fixed;
-  top:12px;left:12px;
-  z-index:4000;
-  background:#111;
-  padding:6px 10px;
-  border-radius:10px;
-  font-size:26px;
-  cursor:pointer;
-}
+.hidden{display:none}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
+header span{color:var(--y)}
 
-#sideMenu{
-  position:fixed;
-  top:0;left:0;
-  width:260px;height:100%;
-  background:#0b0b0b;
-  z-index:3999;
-  transform:translateX(-100%);
-  transition:.25s;
-  padding:16px;
-}
-#sideMenu.open{transform:translateX(0)}
+#map{height:50vh}
+.wrap{padding:12px}
 
-#sideMenu .menuHeader{
-  margin-bottom:20px;
-  font-size:14px;
-  color:#ddd;
-}
-#sideMenu button{
-  width:100%;
-  background:#141414;
-  color:#fff;
+.cardRow{display:flex;gap:10px;margin-bottom:10px}
+.card{
+  flex:1;
+  background:var(--card);
+  border-radius:16px;
+  padding:14px;
   border:1px solid #222;
+  cursor:pointer
+}
+.card.outline{background:#0f0f0f}
+.card b{display:block;margin-bottom:4px}
+.muted{font-size:12px;color:var(--muted)}
+
+button{
+  width:100%;
+  padding:14px;
+  border-radius:18px;
+  border:0;
+  font-weight:900;
+  background:var(--y);
+  color:#000;
+  margin-top:10px;
+  cursor:pointer
+}
+button.ghost{
+  background:#111;
+  color:#fff;
+  border:1px solid #222
+}
+
+input,select{
+  width:100%;
   padding:12px;
-  border-radius:10px;
-  margin-bottom:10px;
-  text-align:left;
+  border-radius:14px;
+  border:0;
+  background:#222;
+  color:#fff;
+  margin-top:8px
+}
+
+/* MODAL */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.7);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:5000
+}
+.modalCard{
+  background:#111;
+  border-radius:18px;
+  padding:20px;
+  width:100%;
+  max-width:340px;
+  border:1px solid #222
 }
 </style>
 </head>
 
 <body>
 
-<!-- ===== HAMBURGER ===== -->
-<div id="hamburger" onclick="toggleMenu()">☰</div>
+<header>Sepet<span>Taxi</span></header>
 
-<!-- ===== SIDE MENU ===== -->
-<div id="sideMenu">
-  <div class="menuHeader" id="menuUser"></div>
-  <button onclick="openProfile()">👤 Profilim</button>
-  <button onclick="logout()">🚪 Çıkış</button>
+<div id="map"></div>
+
+<div class="wrap">
+
+  <!-- MÜŞTERİ KARTLARI -->
+  <div class="cardRow">
+    <div class="card">
+      <b>🚕 Taksi Çağır</b>
+      <div class="muted">Hızlı ve güvenli yolculuk</div>
+    </div>
+    <div class="card">
+      <b>📦 Kurye Çağır</b>
+      <div class="muted">Gönderini hemen ulaştıralım</div>
+    </div>
+  </div>
+
+  <!-- SÜRÜCÜ KARTLARI -->
+  <div class="cardRow">
+    <div class="card" onclick="goDriverLogin()">
+      <b>🚕 Sürücü müsün?</b>
+      <div class="muted">Driver ID ile panele gir</div>
+    </div>
+    <div class="card outline" onclick="openDriverApply()">
+      <b>➕ Sürücü Ol</b>
+      <div class="muted">SepetTaxi sürücüsü olmak için başvur</div>
+    </div>
+  </div>
+
 </div>
 
-<!-- ===== APP HTML (SENİN MEVCUT HTML’İN) ===== -->
-<!-- Landing, modal, map, panels, courier, taxi vs. -->
-<!-- HİÇBİRİNE DOKUNULMADI -->
+<!-- ================= DRIVER APPLY MODAL ================= -->
+<div id="driverApplyModal" class="modal hidden">
+  <div class="modalCard">
+    <h3>Sürücü Başvurusu</h3>
 
-<script src="config.js"></script>
-<script src="log.js"></script>
+    <input id="drvName" placeholder="Ad Soyad">
+    <input id="drvPhone" placeholder="Telefon (0XXXXXXXXXX)" maxlength="11">
+    <select id="drvVehicle">
+      <option value="taxi">Taksi</option>
+      <option value="courier">Kurye</option>
+    </select>
+
+    <button onclick="submitDriverApply()">Başvuruyu Gönder</button>
+    <button class="ghost" onclick="closeDriverApply()">Vazgeç</button>
+
+    <div id="drvMsg" class="muted" style="margin-top:10px"></div>
+  </div>
+</div>
 
 <script>
-/* =====================================================
-   🔒 USER STATE (LOCKED)
-   ===================================================== */
-const USER_KEY = "SEPT_user";
+/* ================= MAP ================= */
+const map = L.map("map").setView([40.195,29.060],12);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-let user = {
-  isLoggedIn:false,
-  customer_id:"",
-  first:"",
-  last:"",
-  phone:""
-};
+/* ================= HELPERS ================= */
+const $ = id => document.getElementById(id);
 
-function loadUser(){
-  try{
-    const u = JSON.parse(localStorage.getItem(USER_KEY));
-    if(u && u.phone){
-      user = {...user,...u,isLoggedIn:true};
-    }
-  }catch(_){}
+/* ================= DRIVER FLOW ================= */
+function goDriverLogin(){
+  location.href = "driver.html";
 }
 
-function saveUser(){
-  localStorage.setItem(USER_KEY,JSON.stringify(user));
+function openDriverApply(){
+  $("driverApplyModal").classList.remove("hidden");
+  $("drvMsg").innerText = "";
 }
 
-function logout(){
-  localStorage.removeItem(USER_KEY);
-  location.reload();
+function closeDriverApply(){
+  $("driverApplyModal").classList.add("hidden");
 }
 
-/* =====================================================
-   HAMBURGER MENU
-   ===================================================== */
-function toggleMenu(){
-  $("sideMenu").classList.toggle("open");
-}
+async function submitDriverApply(){
+  const name = $("drvName").value.trim();
+  const phone = $("drvPhone").value.replace(/\D/g,"");
+  const vehicle = $("drvVehicle").value;
 
-function renderMenu(){
-  $("menuUser").innerHTML = user.isLoggedIn
-    ? `<b>${user.first} ${user.last}</b><br>${user.phone}`
-    : `<b>Misafir</b>`;
-}
+  if(name.length < 3){
+    $("drvMsg").innerText = "Ad soyad gerekli.";
+    return;
+  }
+  if(phone.length !== 11 || !phone.startsWith("0")){
+    $("drvMsg").innerText = "Telefon 0 ile başlayan 11 haneli olmalı.";
+    return;
+  }
 
-function openProfile(){
-  alert(
-    `Ad: ${user.first} ${user.last}\nTelefon: ${user.phone}`
-  );
-}
+  $("drvMsg").innerText = "Başvurun gönderiliyor…";
 
-/* =====================================================
-   REGISTRATION BRIDGE (LOCKED)
-   ===================================================== */
-function ensureRegistered(){
-  if(user.isLoggedIn) return true;
-
-  const first = prompt("Adınız");
-  const last  = prompt("Soyadınız");
-  const phone = prompt("Telefon (0XXXXXXXXXX)");
-
-  if(!first || !last || !phone) return false;
-
-  user = {
-    isLoggedIn:true,
-    customer_id:"CUST-"+Date.now(),
-    first, last, phone
-  };
-
-  saveUser();
-  renderMenu();
-  return true;
-}
-
-/* =====================================================
-   TRACK EMBED (SENİN KODUN – DOKUNULMADI)
-   ===================================================== */
-function gotoTrack(){
-  const jid = currentJobId || sessionStorage.getItem("SEPT_job_id");
-  const tok = currentTrackToken || sessionStorage.getItem("SEPT_track_token");
-  if(!jid){ alert("Takip bilgisi yok"); return; }
-
-  const base = location.pathname.replace(/\/[^\/]*$/, "/track.html");
-  const url = new URL(base, location.origin);
-  url.searchParams.set("job_id", jid);
-  if(tok) url.searchParams.set("track_token", tok);
-  location.href = url.toString();
-}
-
-/* =====================================================
-   API HELPER
-   ===================================================== */
-async function apiPost(action,payload){
-  payload.action = action;
-  const r = await fetch(SEPT.BACKEND_URL,{
+  const res = await fetch(SEPT.BACKEND_URL,{
     method:"POST",
-    body:JSON.stringify(payload)
-  });
-  const j = await r.json();
-  Log.api(action,payload,j);
-  return j;
+    body:JSON.stringify({
+      action:"registerDriver",
+      name,
+      phone,
+      vehicle_type:vehicle
+    })
+  }).then(r=>r.json());
+
+  if(!res.ok){
+    $("drvMsg").innerText = res.error || "Başvuru alınamadı.";
+    return;
+  }
+
+  if(res.status==="pending"){
+    $("drvMsg").innerText =
+      "Başvurun alındı. Onaylandığında SMS ile bilgilendirileceksin.";
+  }else if(res.status==="available"){
+    $("drvMsg").innerText =
+      "Zaten onaylı bir sürücüsün. Driver ID ile giriş yapabilirsin.";
+  }else if(res.status==="rejected"){
+    $("drvMsg").innerText =
+      "Daha önce reddedilmiş bir başvurun bulunuyor.";
+  }
 }
-
-/* =====================================================
-   BOOT
-   ===================================================== */
-function $(id){return document.getElementById(id);}
-loadUser();
-renderMenu();
-Log.info("Index loaded", user);
-
 </script>
+
 </body>
 </html>
