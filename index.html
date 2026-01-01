@@ -40,44 +40,57 @@ html,body{
 /* ===== APP ===== */
 #app{display:none;height:100%}
 
-/* ===== HEADER + HAMBURGER (YENİ) ===== */
+/* ===== HEADER ===== */
 header{
   height:56px;background:#000;
   display:flex;align-items:center;justify-content:center;
   font-size:20px;font-weight:900;
-  position:relative;
-  z-index:300
+  position:relative
 }
 header span{color:#f5c400}
 
+/* ===== HAMBURGER ===== */
 #hamburger{
-  position:absolute;left:14px;
-  background:none;border:0;
-  font-size:22px;color:#f5c400;
-  cursor:pointer
+  position:absolute;left:14px;top:14px;
+  font-size:22px;cursor:pointer;z-index:500
 }
-
-/* ===== HAMBURGER MENU ===== */
-#hamMenu{
-  position:fixed;top:56px;left:12px;
+#menu{
+  position:fixed;top:0;left:-260px;
+  width:240px;height:100%;
   background:#0f0f0f;
-  border:1px solid #222;
-  border-radius:14px;
-  padding:8px;
-  display:none;
-  z-index:400;
-  width:160px
+  border-right:1px solid #222;
+  padding:20px;
+  transition:.25s;
+  z-index:600
 }
-.hamCard{
+#menu.open{left:0}
+.menuItem{
+  padding:12px;
+  border-radius:12px;
   background:#141414;
-  border-radius:10px;
-  padding:10px;
-  font-size:13px;
-  margin-bottom:6px;
-  cursor:pointer
+  margin-bottom:10px;
+  cursor:pointer;
+  font-size:14px
 }
-.hamCard:last-child{margin-bottom:0}
-.hamCard b{color:#f5c400}
+.menuItem span{color:#f5c400}
+
+/* ===== HAMBURGER HINT (1 KEZ) ===== */
+#hamHint{
+  position:fixed;
+  top:64px;
+  left:14px;
+  font-size:11px;
+  color:#f5c400;
+  opacity:.9;
+  z-index:700;
+  animation:fadeHint 3s forwards;
+}
+@keyframes fadeHint{
+  0%{opacity:0}
+  20%{opacity:.9}
+  80%{opacity:.9}
+  100%{opacity:0}
+}
 
 /* ===== MAP ===== */
 #map{height:32vh}
@@ -97,21 +110,17 @@ header span{color:#f5c400}
   background:linear-gradient(180deg,#141414,#0f0f0f);
   border-radius:14px;
   padding:10px;
-  box-shadow:0 8px 20px rgba(0,0,0,.6)
 }
 
 /* ===== SERVICE ===== */
-.service-row{display:flex;gap:8px;margin-top:6px}
+.service-row{display:flex;gap:8px}
 .service{
   flex:1;padding:10px;border-radius:12px;
   text-align:center;font-size:13px;
   border:1px solid #222;color:#aaa;
-  transition:.2s
 }
 .service.active{
   border-color:#f5c400;color:#fff;
-  box-shadow:0 0 0 1px rgba(245,196,0,.25),
-             0 8px 18px rgba(245,196,0,.25)
 }
 
 /* ===== INPUT ===== */
@@ -121,14 +130,12 @@ header span{color:#f5c400}
   border:1px solid #1f1f1f;
   background:#000;color:#fff;font-size:13px
 }
-.input::placeholder{color:#666}
 
 /* ===== STATS ===== */
 .stats{display:flex;gap:8px}
 .stat{
   flex:1;background:#111;
-  border-radius:14px;
-  padding:12px;text-align:center
+  border-radius:14px;padding:12px;text-align:center
 }
 .stat .lbl{font-size:11px;color:#aaa}
 .stat .val{font-size:18px;font-weight:900}
@@ -137,18 +144,15 @@ header span{color:#f5c400}
 #stickyBar{
   position:fixed;
   bottom:0;left:0;right:0;
-  background:linear-gradient(180deg,rgba(0,0,0,.6),#000);
+  background:#000;
   padding:10px;
   z-index:200
 }
 #callBar{
   background:#f5c400;color:#000;
   border-radius:30px;
-  padding:16px;
-  text-align:center;
-  font-weight:900;
-  box-shadow:0 12px 30px rgba(245,196,0,.45);
-  transition:transform .12s
+  padding:16px;text-align:center;
+  font-weight:900
 }
 
 /* ===== REGISTER ===== */
@@ -157,19 +161,15 @@ header span{color:#f5c400}
   background:rgba(0,0,0,.9);
   display:none;
   align-items:center;justify-content:center;
-  z-index:500
+  z-index:800
 }
 #register .box{
   width:88%;max-width:340px;
   background:#0f0f0f;
   border-radius:16px;padding:14px
 }
-#register .err{color:#ff5c5c;font-size:12px;display:none}
-
-.app-locked{
-  filter:blur(4px) brightness(.6);
-  pointer-events:none
-}
+.err{color:#ff5c5c;font-size:12px;display:none}
+.app-locked{filter:blur(4px);pointer-events:none}
 </style>
 </head>
 
@@ -183,22 +183,22 @@ header span{color:#f5c400}
   </div>
 </div>
 
+<!-- MENU -->
+<div id="menu">
+  <div class="menuItem" onclick="openDriverRegister()">
+    🚗 <span>Sürücü Ol</span>
+  </div>
+  <div class="menuItem" onclick="goDriverLogin()">
+    🔑 Sürücü müsün?
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app">
   <header>
-    <button id="hamburger" onclick="toggleHam()">☰</button>
+    <div id="hamburger" onclick="toggleMenu()">☰</div>
     Sepet<span>Taxi</span>
   </header>
-
-  <!-- HAMBURGER MENU -->
-  <div id="hamMenu">
-    <div class="hamCard" onclick="openDriverApply()">
-      🚗 <b>Sürücü Ol</b>
-    </div>
-    <div class="hamCard" onclick="location.href='driver.html'">
-      🔑 <b>Sürücü müsün?</b>
-    </div>
-  </div>
 
   <div id="map"></div>
 
@@ -217,23 +217,17 @@ header span{color:#f5c400}
     <div id="courierBox" class="card" style="display:none">
       <input class="input" placeholder="Paket Türü">
       <input class="input" placeholder="Alıcı Adı">
-      <input class="input" placeholder="Alıcı Telefon" maxlength="11">
+      <input class="input" placeholder="Alıcı Telefon">
     </div>
 
     <div class="stats">
-      <div class="stat">
-        <div class="lbl">Mesafe</div>
-        <div id="dist" class="val">—</div>
-      </div>
-      <div class="stat">
-        <div class="lbl">Ücret</div>
-        <div id="price" class="val">—</div>
-      </div>
+      <div class="stat"><div class="lbl">Mesafe</div><div id="dist" class="val">—</div></div>
+      <div class="stat"><div class="lbl">Ücret</div><div id="price" class="val">—</div></div>
     </div>
   </div>
 </div>
 
-<!-- STICKY CTA -->
+<!-- CTA -->
 <div id="stickyBar">
   <div id="callBar" onclick="callDriver()">ÇAĞIR</div>
 </div>
@@ -243,8 +237,8 @@ header span{color:#f5c400}
   <div class="box">
     <input id="fn" class="input" placeholder="Ad">
     <input id="ln" class="input" placeholder="Soyad">
-    <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <label style="font-size:12px;color:#aaa">
+    <input id="ph" class="input" placeholder="05XXXXXXXXX">
+    <label style="font-size:12px">
       <input type="checkbox" id="kvkk"> KVKK kabul
     </label>
     <div id="regErr" class="err">Bilgiler hatalı</div>
@@ -253,23 +247,22 @@ header span{color:#f5c400}
 </div>
 
 <script>
-const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-
-let map,fromM,toM,service=null,registered=false,user=null;
+let map,fromM,toM,service=null,registered=false;
 
 function start(){
   landing.style.display="none";
   app.style.display="block";
   initMap();
+
+  if(!localStorage.getItem("SEPT_hint")){
+    document.body.insertAdjacentHTML("beforeend",'<div id="hamHint">Sürücü müsün?</div>');
+    setTimeout(()=>document.getElementById("hamHint")?.remove(),3000);
+    localStorage.setItem("SEPT_hint","1");
+  }
 }
 
-function toggleHam(){
-  hamMenu.style.display = hamMenu.style.display==="block"?"none":"block";
-}
-
-function openDriverApply(){
-  alert("Sürücü başvuru modalı (admin onaylı akış)");
-  toggleHam();
+function toggleMenu(){
+  menu.classList.toggle("open");
 }
 
 function initMap(){
@@ -305,7 +298,6 @@ function saveUser(){
   if(fn.value.length<2||ln.value.length<2||!/^05\d{9}$/.test(ph.value)||!kvkk.checked){
     regErr.style.display="block";return;
   }
-  user={name:fn.value+" "+ln.value,phone:ph.value};
   registered=true;
   register.style.display="none";
   app.classList.remove("app-locked");
@@ -320,8 +312,11 @@ function calc(){
 }
 
 function callDriver(){
-  alert("MVP: createJob → track akışı hazır");
+  alert("MVP createJob + track akışı hazır");
 }
+
+function goDriverLogin(){ location.href="driver.html"; }
+function openDriverRegister(){ location.href="driver-register.html"; }
 
 function h(a,b,c,d){
   const R=6371;
@@ -335,8 +330,7 @@ function h(a,b,c,d){
 
 function reverse(lat,lng,input){
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-  .then(r=>r.json())
-  .then(d=>{if(d.display_name)input.value=d.display_name});
+  .then(r=>r.json()).then(d=>{if(d.display_name)input.value=d.display_name});
 }
 </script>
 
