@@ -35,7 +35,7 @@ hr{border:0;border-top:1px solid #222;margin:10px 0}
   <div style="height:10px"></div>
   <input id="dname" placeholder="Ad Soyad (opsiyonel)">
   <div style="height:10px"></div>
-  <input id="dphone" placeholder="Telefon (05XXXXXXXXX, opsiyonel)" maxlength="11">
+  <input id="dphone" placeholder="Telefon (05XXXXXXXXX)" maxlength="11" inputmode="numeric">
   <div style="height:10px"></div>
   <button onclick="login()">Panele Gir</button>
 </div>
@@ -62,65 +62,31 @@ hr{border:0;border-top:1px solid #222;margin:10px 0}
 
 </div>
 
-<!-- =====================================================
-     LOG.JS (INLINE) – LOCKED
-===================================================== -->
-<script>
-(function(){
-  const LOG_LEVEL={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
-  const DEBUG_ENABLED=true;
-
-  function log(level,tag,msg,data){
-    if(!DEBUG_ENABLED) return;
-    const p=`[SepetTaxi][${level}][${tag}]`;
-    if(level===LOG_LEVEL.ERROR) console.error(p,msg,data||'');
-    else if(level===LOG_LEVEL.WARN) console.warn(p,msg,data||'');
-    else console.log(p,msg,data||'');
-  }
-  window.logInfo =(t,m,d)=>log(LOG_LEVEL.INFO,t,m,d);
-  window.logWarn =(t,m,d)=>log(LOG_LEVEL.WARN,t,m,d);
-  window.logError=(t,m,d)=>log(LOG_LEVEL.ERROR,t,m,d);
-  window.logFlow =(t,m,d)=>log(LOG_LEVEL.FLOW,t,m,d);
-
-  window.addEventListener("error",e=>{
-    logError("GLOBAL","window.onerror",{msg:e.message,line:e.lineno});
-  });
-  window.addEventListener("unhandledrejection",e=>{
-    logError("GLOBAL","unhandledrejection",{reason:String(e.reason)});
-  });
-})();
-</script>
+<script src="config.js"></script>
 
 <script>
 /* ================= CONFIG ================= */
+const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
+const COMMISSION = (window.SEPT && window.SEPT.COMMISSION) ? window.SEPT.COMMISSION : 0.15;
 
-const BACKEND_URL =
-  (window.SEPT && window.SEPT.BACKEND_URL) ||
-  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-
-const COMMISSION = 0.15;
-
-let DRIVER_ID=null;
-let LIVE_TIMER=null;
+let DRIVER_ID = sessionStorage.getItem("SEPT_driver_id");
+let LIVE_TIMER = null;
 
 const $ = id => document.getElementById(id);
 
-logFlow("INIT","driver.html loaded",{BACKEND_URL});
-
 /* ================= LOGIN ================= */
-
 async function login(){
-  DRIVER_ID=$("did").value.trim();
+  DRIVER_ID = $("did").value.trim();
   if(!DRIVER_ID){ alert("Driver ID gir"); return; }
 
-  $("dphone").value=$("dphone").value.replace(/\D/g,"").slice(0,11);
+  sessionStorage.setItem("SEPT_driver_id", DRIVER_ID);
 
-  logInfo("DRIVER","Login attempt",{DRIVER_ID});
+  $("dphone").value = $("dphone").value.replace(/\D/g,"").slice(0,11);
 
   try{
     await fetch(BACKEND_URL,{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
       body:JSON.stringify({
         action:"ensureDriver",
         driver_id:DRIVER_ID,
@@ -129,30 +95,33 @@ async function login(){
         status:"available"
       })
     });
-    logInfo("API","ensureDriver ok",{DRIVER_ID});
   }catch(e){
-    logError("API","ensureDriver failed",e);
+    console.error(e);
   }
 
+  onAuth();
+}
+
+/* ================= AUTH STATE ================= */
+function onAuth(){
   document.querySelectorAll(".auth-only").forEach(e=>e.style.display="block");
   $("loginCard").style.display="none";
-
   loadData();
   setInterval(loadData,5000);
 }
 
 /* ================= DATA ================= */
-
 async function loadData(){
+  if(!DRIVER_ID) return;
+
   try{
-    const jobs=await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
-    const mine=(Array.isArray(jobs)?jobs:[]).filter(j=>String(j.driver_id)===String(DRIVER_ID));
-    logFlow("API","Jobs fetched",{count:mine.length});
+    const jobs = await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
+    const mine = (Array.isArray(jobs)?jobs:[]).filter(j=>String(j.driver_id)===String(DRIVER_ID));
     renderSummary(mine);
     renderActive(mine);
     renderHistory(mine);
   }catch(e){
-    logWarn("API","loadData failed",e);
+    console.warn(e);
   }
 }
 
@@ -208,13 +177,11 @@ function renderHistory(jobs){
 }
 
 /* ================= ACTIONS ================= */
-
 async function setStatus(jobId,status){
-  logInfo("DRIVER","Status update",{jobId,status});
   try{
     await fetch(BACKEND_URL,{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
       body:JSON.stringify({
         action:"updateStatus",
         job_id:jobId,
@@ -225,18 +192,17 @@ async function setStatus(jobId,status){
     });
     loadData();
   }catch(e){
-    logError("API","updateStatus failed",e);
+    console.error(e);
   }
 }
 
 function startLive(jobId){
   if(LIVE_TIMER||!navigator.geolocation) return;
-  logFlow("GPS","Live tracking start",{jobId});
   LIVE_TIMER=setInterval(()=>{
     navigator.geolocation.getCurrentPosition(p=>{
       fetch(BACKEND_URL,{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{ "Content-Type":"text/plain;charset=utf-8" },
         body:JSON.stringify({
           action:"ping",
           job_id:jobId,
@@ -248,9 +214,16 @@ function startLive(jobId){
     });
   },5000);
 }
+
 function stopLive(){
-  if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; logFlow("GPS","Live tracking stop"); }
+  if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; }
+}
+
+/* ================= AUTO LOGIN ================= */
+if(DRIVER_ID){
+  onAuth();
 }
 </script>
+
 </body>
 </html>
