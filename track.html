@@ -22,6 +22,22 @@ header span{color:#f5c400}
 .status{top:70px;background:#111;border:1px solid #333}
 .eta{top:110px;background:#f5c400;color:#000;font-weight:900}
 
+/* === SÜRÜCÜ YAKLAŞIYOR ANİMASYONU === */
+.pulse{
+  position:fixed;top:150px;left:50%;transform:translateX(-50%);
+  padding:10px 18px;border-radius:999px;
+  background:rgba(245,196,0,.15);
+  border:1px solid #f5c400;color:#f5c400;
+  font-weight:900;display:none;
+  animation:pulse 1.4s infinite;
+}
+@keyframes pulse{
+  0%{transform:translateX(-50%) scale(1)}
+  50%{transform:translateX(-50%) scale(1.08)}
+  100%{transform:translateX(-50%) scale(1)}
+}
+
+/* === DRIVER CARD === */
 .driver-card{
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
   background:#111;border:1px solid #333;padding:14px 16px;
@@ -34,25 +50,6 @@ header span{color:#f5c400}
 .call{background:#f5c400;color:#000}
 .wa{background:#1ebe5d;color:#000}
 .cancel{background:#444;color:#fff}
-
-.modal{
-  position:fixed;inset:0;background:rgba(0,0,0,.92);
-  display:none;align-items:center;justify-content:center;z-index:2000
-}
-.box{
-  background:#111;border:1px solid #333;border-radius:16px;
-  padding:16px;width:90%;max-width:360px;text-align:center
-}
-.cta{
-  margin-top:10px;background:#f5c400;color:#000;
-  border-radius:999px;padding:12px;font-weight:900
-}
-.star{font-size:30px;cursor:pointer;color:#333}
-.star.active{color:#f5c400}
-textarea{
-  width:100%;min-height:60px;border-radius:10px;border:0;
-  background:#222;color:#fff;padding:10px
-}
 </style>
 </head>
 
@@ -61,6 +58,7 @@ textarea{
 
 <div id="status" class="overlay status">Yükleniyor…</div>
 <div id="eta" class="overlay eta">ETA: —</div>
+<div id="pulse" class="pulse">🚗 Sürücü Yaklaşıyor</div>
 
 <div id="driverCard" class="driver-card" style="display:none">
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
@@ -69,142 +67,135 @@ textarea{
     <a class="btn call" href="#">📞 Ara</a>
     <a class="btn wa" href="#" target="_blank">💬 WhatsApp</a>
   </div>
-  <div class="actions">
-    <div class="btn cancel" onclick="openCancel()">İPTAL ET</div>
-  </div>
 </div>
 
 <div id="map"></div>
 
-<div id="ratingModal" class="modal">
-  <div class="box">
-    <b>Yolculuk Tamamlandı</b>
-    <div id="stars"></div>
-    <textarea id="comment" placeholder="Yorum"></textarea>
-    <div class="cta" onclick="submitRating()">PUANI GÖNDER</div>
-  </div>
-</div>
-
-<div id="thanksModal" class="modal">
-  <div class="box">
-    <b>Teşekkürler</b>
-    <div id="coupon">SEPET10</div>
-    <div class="cta" onclick="location.href='index.html'">TEKRAR ÇAĞIR</div>
-  </div>
-</div>
-
 <script>
-/* ================= CONFIG (GÖMÜLÜ) ================= */
-window.SEPT = {
-  BACKEND_URL: "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec",
-  POLL_MS: 3000
-};
-const BACKEND_URL = window.SEPT.BACKEND_URL;
+/* ================= CONFIG ================= */
+const BACKEND_URL =
+  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-/* ================= INIT ================= */
 const JOB_ID = new URLSearchParams(location.search).get("job_id");
 if(!JOB_ID){ alert("job_id yok"); }
 
+/* ================= STATE ================= */
 let map, pickupM, dropM, driverM, routeLine;
-let CURRENT_STATUS="", pollTimer=null;
-let firstFitDone=false;
+let firstFit=false;
+let lastDriverPos=null;
 
 /* ================= MAP ================= */
 function initMap(){
-  map=L.map("map").setView([40.195,29.060],12);
+  map = L.map("map").setView([40.195,29.060],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 }
 
+/* ================= DRIVER ICON (ARABA + ROTATE) ================= */
+function carIcon(angle=0){
+  return L.divIcon({
+    html:`<div style="
+      width:32px;height:32px;
+      transform:rotate(${angle}deg);
+      font-size:26px;
+      color:#f5c400;
+      ">🚗</div>`,
+    className:"",
+    iconSize:[32,32],
+    iconAnchor:[16,16]
+  });
+}
+function bearing(a,b){
+  const y=Math.sin(b.lng-a.lng)*Math.cos(b.lat);
+  const x=Math.cos(a.lat)*Math.sin(b.lat)-
+          Math.sin(a.lat)*Math.cos(b.lat)*Math.cos(b.lng-a.lng);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+
 /* ================= OSRM ================= */
-async function fetchOSRMRoute(fromLat,fromLng,toLat,toLng){
+async function getRoute(aLat,aLng,bLat,bLng){
   const url =
-    `https://router.project-osrm.org/route/v1/driving/` +
-    `${fromLng},${fromLat};${toLng},${toLat}` +
-    `?overview=full&geometries=geojson`;
+    `https://router.project-osrm.org/route/v1/driving/`+
+    `${aLng},${aLat};${bLng},${bLat}?overview=full&geometries=geojson`;
 
   const r = await fetch(url).then(r=>r.json());
-  if(!r.routes || !r.routes.length) throw "OSRM rota yok";
-
   const g = r.routes[0];
   return {
-    coords: g.geometry.coordinates.map(c=>[c[1],c[0]]),
-    durationMin: Math.max(2, Math.round(g.duration/60))
+    pts: g.geometry.coordinates.map(c=>[c[1],c[0]]),
+    eta: Math.max(2, Math.round(g.duration/60))
   };
 }
 
-async function drawLiveRoute(fromLat,fromLng,toLat,toLng){
-  if(fromLat==null||fromLng==null||toLat==null||toLng==null) return;
-
-  try{
-    const r = await fetchOSRMRoute(fromLat,fromLng,toLat,toLng);
-
-    if(routeLine) routeLine.setLatLngs(r.coords);
-    else routeLine = L.polyline(r.coords,{color:"#f5c400",weight:5}).addTo(map);
-
-    if(!firstFitDone){
-      map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
-      firstFitDone=true;
-    }
-
-    eta.innerText = `ETA: ${r.durationMin} dk`;
-  }catch(e){
-    console.warn("OSRM hata", e);
-  }
-}
-
 /* ================= LOAD ================= */
-async function loadJob(){
-  const job = await fetch(`${BACKEND_URL}?action=checkJob&job_id=${JOB_ID}`).then(r=>r.json());
+async function load(){
+  const job = await fetch(
+    `${BACKEND_URL}?action=checkJob&job_id=${JOB_ID}`
+  ).then(r=>r.json());
   if(!job) return;
 
-  CURRENT_STATUS = job.status;
-  drvStatus.innerText = CURRENT_STATUS;
-
+  drvStatus.innerText = job.status;
   status.innerText =
-    CURRENT_STATUS==="assigned" ? "Sürücü geliyor" :
-    CURRENT_STATUS==="on_route" ? "Varışa gidiliyor" :
-    CURRENT_STATUS==="completed" ? "Tamamlandı" :
-    CURRENT_STATUS==="cancelled" ? "İptal edildi" :
+    job.status==="assigned" ? "Sürücü geliyor" :
+    job.status==="on_route" ? "Varışa gidiliyor" :
+    job.status==="completed" ? "Tamamlandı" :
+    job.status==="cancelled" ? "İptal edildi" :
     "Sürücü bekleniyor";
 
-  const pLat = +sessionStorage.getItem("SEPT_pickup_lat");
-  const pLng = +sessionStorage.getItem("SEPT_pickup_lng");
-  const dLat = +sessionStorage.getItem("SEPT_drop_lat");
-  const dLng = +sessionStorage.getItem("SEPT_drop_lng");
+  pulse.style.display = job.status==="assigned" ? "block" : "none";
 
-  if(!pickupM && pLat) pickupM = L.marker([pLat,pLng]).addTo(map);
-  if(!dropM && dLat) dropM = L.marker([dLat,dLng]).addTo(map);
+  const pLat=+sessionStorage.getItem("SEPT_pickup_lat");
+  const pLng=+sessionStorage.getItem("SEPT_pickup_lng");
+  const dLat=+sessionStorage.getItem("SEPT_drop_lat");
+  const dLng=+sessionStorage.getItem("SEPT_drop_lng");
+
+  if(!pickupM && pLat) pickupM=L.marker([pLat,pLng]).addTo(map);
+  if(!dropM && dLat) dropM=L.marker([dLat,dLng]).addTo(map);
 
   let drvLat=null, drvLng=null;
-  const live = await fetch(`${BACKEND_URL}?action=getLive&job_id=${JOB_ID}`).then(r=>r.json());
+  const live = await fetch(
+    `${BACKEND_URL}?action=getLive&job_id=${JOB_ID}`
+  ).then(r=>r.json());
+
   if(live?.has){
-    drvLat = +live.lat;
-    drvLng = +live.lng;
-    if(!driverM) driverM=L.marker([drvLat,drvLng]).addTo(map);
-    else driverM.setLatLng([drvLat,drvLng]);
+    drvLat=+live.lat; drvLng=+live.lng;
+    const pos={lat:drvLat*Math.PI/180,lng:drvLng*Math.PI/180};
+    let angle=0;
+    if(lastDriverPos){
+      angle=bearing(lastDriverPos,pos);
+    }
+    lastDriverPos=pos;
+
+    if(!driverM)
+      driverM=L.marker([drvLat,drvLng],{icon:carIcon(angle)}).addTo(map);
+    else{
+      driverM.setLatLng([drvLat,drvLng]);
+      driverM.setIcon(carIcon(angle));
+    }
+    driverCard.style.display="block";
   }
 
-  if(CURRENT_STATUS!=="pending") driverCard.style.display="block";
+  let fromLat=pLat, fromLng=pLng, toLat=dLat, toLng=dLng;
+  if(job.status==="assigned"){ fromLat=drvLat;fromLng=drvLng;toLat=pLat;toLng=pLng; }
+  if(job.status==="on_route"){ fromLat=drvLat;fromLng=drvLng;toLat=dLat;toLng=dLng; }
 
-  // ===== CANLI ROTA =====
-  if(CURRENT_STATUS==="assigned" && drvLat!=null){
-    drawLiveRoute(drvLat,drvLng,pLat,pLng);
-  }
-  if(CURRENT_STATUS==="on_route" && drvLat!=null){
-    drawLiveRoute(drvLat,drvLng,dLat,dLng);
-  }
-  if(CURRENT_STATUS==="pending"){
-    drawLiveRoute(pLat,pLng,dLat,dLng);
+  if(fromLat && toLat){
+    const r = await getRoute(fromLat,fromLng,toLat,toLng);
+    eta.innerText = `ETA: ${r.eta} dk`;
+
+    if(routeLine) routeLine.setLatLngs(r.pts);
+    else routeLine=L.polyline(r.pts,{color:"#f5c400",weight:5}).addTo(map);
+
+    if(!firstFit){
+      map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
+      firstFit=true;
+    }
   }
 }
 
-/* ================= FLOW ================= */
-function start(){
-  initMap();
-  loadJob();
-  pollTimer=setInterval(loadJob, Math.max(1500, window.SEPT.POLL_MS));
-}
-start();
+/* ================= START ================= */
+initMap();
+load();
+setInterval(load,3000);
 </script>
+
 </body>
 </html>
