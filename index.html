@@ -18,7 +18,7 @@ html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background
 #landing .overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center}
 #landing h1{font-size:40px;margin:0 0 18px 0}
 #landing span{color:var(--y)}
-#landing button{background:var(--y);color:#000;border:0;border-radius:28px;padding:14px 46px;font-size:17px;font-weight:900}
+#landing button{background:var(--y);color:#000;border:0;border-radius:28px;padding:14px 46px;font-size:17px;font-weight:900;cursor:pointer}
 
 /* HEADER */
 header{
@@ -34,37 +34,57 @@ header{
 }
 header span{color:var(--y)}
 
-#driverCta{
+#driverCtas{
   position:absolute;
   left:12px;
   top:50%;
   transform:translateY(-50%);
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.pill{
   background:#0f0f0f;
   border:1px solid var(--line);
   border-radius:999px;
-  padding:6px 12px;
+  padding:6px 10px;
   font-size:11px;
-  opacity:.75;
+  opacity:.8;
+  display:flex;
+  gap:6px;
+  align-items:center;
+  white-space:nowrap;
 }
-#driverCta a{color:#aaa;text-decoration:none}
-#driverCta:hover{opacity:1}
+.pill a{color:#aaa;text-decoration:none}
+.pill:hover{opacity:1}
 
 /* MAP & PANEL */
 #app{display:none;height:100%}
-#map{height:32vh}
-#panel{height:calc(68vh - 56px);padding:10px;display:flex;flex-direction:column;gap:8px;padding-bottom:220px}
+
+/* Harita boş kalmasın: Leaflet init yoksa siyah boşluk olur; init’ten sonra görünür hale gelir */
+#map{height:40vh; border-bottom:1px solid var(--line)}
+@media(min-width:900px){
+  #map{height:45vh}
+}
+
+#panel{height:calc(60vh - 56px);padding:10px;display:flex;flex-direction:column;gap:8px;padding-bottom:220px}
+@media(min-width:900px){
+  #panel{height:calc(55vh - 56px)}
+}
 
 .card{background:linear-gradient(180deg,var(--card1),var(--card2));border-radius:14px;padding:10px;border:1px solid rgba(255,255,255,.04)}
-.cardTitle{display:flex;justify-content:space-between}
+.cardTitle{display:flex;justify-content:space-between;align-items:center}
 .badge{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:4px 8px;border-radius:999px}
 
 .serviceRow{display:flex;gap:8px}
-.serviceBtn{flex:1;padding:11px;border-radius:12px;border:1px solid var(--line);background:#0b0b0b;color:#bdbdbd}
+.serviceBtn{
+  flex:1;padding:11px;border-radius:12px;border:1px solid var(--line);
+  background:#0b0b0b;color:#bdbdbd;cursor:pointer;user-select:none;
+}
 .serviceBtn.active{border-color:var(--y);color:#fff;background:rgba(245,196,0,.1)}
 
 .input{width:100%;padding:11px;border-radius:12px;border:1px solid #1f1f1f;background:#000;color:#fff}
 .helper{font-size:11px;color:var(--muted)}
-
 #courierBox{display:none}
 
 .stats{display:flex;gap:8px}
@@ -72,31 +92,34 @@ header span{color:var(--y)}
 .stat .lbl{font-size:11px;color:#aaa}
 .stat .val{font-size:18px;font-weight:900}
 
-#stickyBar{position:fixed;left:0;right:0;bottom:0;padding:10px;background:#000}
-#ctaBtn{border-radius:30px;padding:16px;text-align:center;font-weight:900}
-#ctaBtn.enabled{background:var(--y);color:#000}
+#stickyBar{position:fixed;left:0;right:0;bottom:0;padding:10px;background:#000;border-top:1px solid var(--line)}
+#ctaBtn{border-radius:30px;padding:16px;text-align:center;font-weight:900;user-select:none}
+#ctaBtn.enabled{background:var(--y);color:#000;cursor:pointer}
 #ctaBtn.disabled{background:#2a2a2a;color:#999}
 
 #searching{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:600}
+#searching .spin{margin-top:10px;opacity:.8;font-size:12px;color:#bbb}
 
-#toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:#111;padding:10px 12px;border-radius:999px;font-size:12px;display:none}
+#toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:#111;padding:10px 12px;border-radius:999px;font-size:12px;display:none;border:1px solid var(--line);z-index:1200}
 </style>
 </head>
 
 <body>
-
 <div id="toast"></div>
 
 <div id="landing">
   <div class="overlay">
     <h1>Sepet<span>Taxi</span></h1>
-    <button onclick="start()">BAŞLA</button>
+    <button id="startBtn" type="button">BAŞLA</button>
   </div>
 </div>
 
 <div id="app">
   <header>
-    <div id="driverCta">🚗 <a href="driver.html">Sürücü müsün?</a></div>
+    <div id="driverCtas">
+      <div class="pill">🚗 <a href="driver.html">Sürücü müsün?</a></div>
+      <div class="pill">📝 <a href="driver-register.html">Sürücü Ol</a></div>
+    </div>
     Sepet<span>Taxi</span>
   </header>
 
@@ -106,31 +129,42 @@ header span{color:var(--y)}
     <div class="card">
       <div class="cardTitle">
         <b>Hizmet Seç</b>
-        <div class="badge">Kayıt: Bekliyor</div>
+        <div id="regBadge" class="badge">Kayıt: Bekliyor</div>
       </div>
       <div class="serviceRow">
-        <div class="serviceBtn active">🚕 Taksi</div>
-        <div class="serviceBtn">📦 Kurye</div>
+        <div id="btnTaxi" class="serviceBtn active">🚕 Taksi</div>
+        <div id="btnCourier" class="serviceBtn">📦 Kurye</div>
       </div>
-      <div class="helper">Haritada varış noktasına dokun.</div>
+      <div id="helperText" class="helper">Haritada varış noktasına dokun.</div>
     </div>
 
-    <div class="card">
-      <input class="input" placeholder="Nereden">
-    </div>
-
-    <div class="card">
-      <input class="input" placeholder="Nereye">
-    </div>
-
-    <div class="stats">
-      <div class="stat">
-        <div class="lbl">Mesafe</div>
-        <div class="val">—</div>
+    <div id="taxiBox">
+      <div class="card">
+        <input id="fromInput" class="input" placeholder="Nereden (otomatik konum)" readonly>
+        <div class="helper">Başlangıç konumu otomatik alınır.</div>
       </div>
-      <div class="stat">
-        <div class="lbl">Ücret</div>
-        <div class="val">—</div>
+
+      <div class="card">
+        <input id="toInput" class="input" placeholder="Nereye (haritadan seç)" readonly>
+        <div class="helper">Varış için haritaya dokun.</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="lbl">Mesafe</div>
+          <div id="distVal" class="val">—</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Ücret</div>
+          <div id="priceVal" class="val">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="courierBox">
+      <div class="card">
+        <b>Kurye</b>
+        <div class="helper">Kurye akışı ayrı sayfada çalışır. Devam için aşağıdan seç.</div>
       </div>
     </div>
   </div>
@@ -141,14 +175,206 @@ header span{color:var(--y)}
 </div>
 
 <div id="searching">
-  <div>Sürücü aranıyor…</div>
+  <div><b>Sürücü aranıyor…</b></div>
+  <div class="spin">Atama bekleniyor</div>
 </div>
 
+<!-- Global config -->
+<script src="config.js"></script>
+
 <script>
-function start(){
-  document.getElementById("landing").style.display="none";
-  document.getElementById("app").style.display="block";
+/* ====== STATE ====== */
+let map, userMarker, destMarker, routeLine;
+let userLatLng = null;
+let destLatLng = null;
+let service = "taxi"; // taxi | courier
+
+const $ = (id)=>document.getElementById(id);
+
+function toast(msg, ms=2200){
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>{ t.style.display="none"; }, ms);
 }
+
+/* ====== UI HELPERS ====== */
+function setCTAEnabled(on){
+  const cta = $("ctaBtn");
+  cta.className = on ? "enabled" : "disabled";
+}
+function setCTALabel(){
+  $("ctaBtn").textContent = (service==="taxi") ? "TAKSİ ÇAĞIR" : "KURYE DEVAM";
+}
+function setService(next){
+  service = next;
+
+  $("btnTaxi").classList.toggle("active", service==="taxi");
+  $("btnCourier").classList.toggle("active", service==="courier");
+
+  $("taxiBox").style.display   = (service==="taxi") ? "block" : "none";
+  $("courierBox").style.display= (service==="courier") ? "block" : "none";
+
+  $("helperText").textContent = (service==="taxi")
+    ? "Haritada varış noktasına dokun."
+    : "Kurye akışı için devam et.";
+
+  setCTALabel();
+
+  // Taxi: hedef yoksa disable
+  if(service==="taxi"){
+    setCTAEnabled(!!(userLatLng && destLatLng));
+  }else{
+    setCTAEnabled(true);
+  }
+}
+
+/* ====== MAP INIT ====== */
+function initMap(){
+  if(map) return;
+
+  map = L.map("map", { zoomControl:true });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+
+  // Default view (Bursa civarı fallback)
+  map.setView([40.195, 29.060], 12);
+
+  // Map click = destination select (Taxi)
+  map.on("click", (e)=>{
+    if(service!=="taxi") return;
+    destLatLng = e.latlng;
+    if(!destMarker){
+      destMarker = L.marker(destLatLng).addTo(map);
+    }else{
+      destMarker.setLatLng(destLatLng);
+    }
+    $("toInput").value = `${destLatLng.lat.toFixed(5)}, ${destLatLng.lng.toFixed(5)}`;
+    computeDistanceAndPrice();
+  });
+}
+
+function fitIfReady(){
+  if(!map) return;
+  if(userLatLng && destLatLng){
+    const bounds = L.latLngBounds([userLatLng, destLatLng]);
+    map.fitBounds(bounds.pad(0.25));
+  }else if(userLatLng){
+    map.setView(userLatLng, 15);
+  }
+}
+
+/* ====== GEOLOCATION ====== */
+function getLocation(){
+  if(!navigator.geolocation){
+    toast("Tarayıcı konum desteği yok.");
+    return;
+  }
+  toast("Konum alınıyor…");
+
+  navigator.geolocation.getCurrentPosition(
+    (pos)=>{
+      userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+      $("fromInput").value = `${userLatLng.lat.toFixed(5)}, ${userLatLng.lng.toFixed(5)}`;
+
+      if(!userMarker){
+        userMarker = L.marker(userLatLng).addTo(map);
+      }else{
+        userMarker.setLatLng(userLatLng);
+      }
+      $("regBadge").textContent = "Kayıt: Hazır";
+      toast("Konum alındı. Varış için haritaya dokun.");
+
+      fitIfReady();
+    },
+    (err)=>{
+      console.warn(err);
+      $("regBadge").textContent = "Kayıt: Bekliyor";
+      toast("Konum izni verilmedi veya alınamadı.");
+      // fallback view zaten ayarlı
+    },
+    { enableHighAccuracy:true, timeout:12000, maximumAge:8000 }
+  );
+}
+
+/* ====== DISTANCE & PRICE (demo hesap) ====== */
+function haversineKm(a,b){
+  const R = 6371;
+  const dLat = (b.lat-a.lat) * Math.PI/180;
+  const dLon = (b.lng-a.lng) * Math.PI/180;
+  const lat1 = a.lat*Math.PI/180, lat2 = b.lat*Math.PI/180;
+  const x = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+
+function computeDistanceAndPrice(){
+  if(!(userLatLng && destLatLng)) return;
+
+  // çizgi (demo route)
+  if(routeLine) routeLine.remove();
+  routeLine = L.polyline([userLatLng, destLatLng]).addTo(map);
+
+  const km = haversineKm(userLatLng, destLatLng);
+  const kmRounded = Math.max(0.1, km);
+
+  $("distVal").textContent = `${kmRounded.toFixed(1)} km`;
+
+  // Kilitli algoritmayı backend dosyası gelince aynen geri koyacağız.
+  // Şimdilik sadece UI’nın çalıştığını göstermek için demo fiyat:
+  const base = 35;          // açılış
+  const perKm = 18;         // km başı
+  const price = Math.round(base + kmRounded * perKm);
+
+  $("priceVal").textContent = `${price} ₺`;
+  setCTAEnabled(true);
+  fitIfReady();
+}
+
+/* ====== CTA ACTIONS ====== */
+function onCTA(){
+  if(service==="courier"){
+    // Kurye akışı ayrı sayfadaysa doğrudan yönlendir
+    window.location.href = "courier.html";
+    return;
+  }
+
+  // Taxi: hedef yoksa uyar
+  if(!(userLatLng && destLatLng)){
+    toast("Lütfen varış noktası seçin.");
+    return;
+  }
+
+  // Backend createJob wiring: backend .gs gelince burada net endpoint’e bağlayacağız.
+  // Şimdilik “aranıyor” overlay’i UI testi için açılır.
+  $("searching").style.display = "flex";
+  setTimeout(()=>{ $("searching").style.display = "none"; toast("Backend bağlandıktan sonra burada atama başlayacak."); }, 1500);
+}
+
+/* ====== START ====== */
+function start(){
+  $("landing").style.display = "none";
+  $("app").style.display = "block";
+
+  initMap();
+
+  // display:none -> block sonrası Leaflet size fix
+  setTimeout(()=>{ map.invalidateSize(); }, 50);
+
+  // Konum al
+  getLocation();
+
+  // default service
+  setService("taxi");
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  $("startBtn").addEventListener("click", start);
+  $("btnTaxi").addEventListener("click", ()=>setService("taxi"));
+  $("btnCourier").addEventListener("click", ()=>setService("courier"));
+  $("ctaBtn").addEventListener("click", onCTA);
+});
 </script>
 
 </body>
