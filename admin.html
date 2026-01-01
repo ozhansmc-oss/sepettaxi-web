@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Admin</title>
 
+<script src="config.js"></script>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#0b0b0b;color:#fff}
@@ -34,6 +36,7 @@ tr:hover{background:#151515}
 
 .badge{padding:4px 8px;border-radius:999px;font-size:11px;background:#222;color:#aaa}
 .pending{background:#444}
+.available{background:#1f6f3f;color:#9fffc7}
 .assigned{background:#1f6f3f;color:#9fffc7}
 .completed{background:#2d7dd2;color:#cfe5ff}
 .cancelled{background:#6f1f1f;color:#ffb0b0}
@@ -43,6 +46,7 @@ tr:hover{background:#151515}
 
 select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:180px}
 .btnSmall{background:#f5c400;border:0;border-radius:12px;padding:8px 10px;font-weight:900;cursor:pointer;margin-top:6px}
+.btnRed{background:#6f1f1f;color:#fff}
 .small{font-size:12px;color:#aaa}
 </style>
 </head>
@@ -85,6 +89,12 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
     </div>
   </div>
 
+  <!-- DRIVER CANDIDATES -->
+  <div class="card">
+    <b>Sürücü Adayları (Onay Bekleyen)</b>
+    <div id="candidates" class="small" style="margin-top:10px">Yükleniyor…</div>
+  </div>
+
   <!-- JOBS -->
   <div class="card">
     <b>İş Detayları (Pending → Manuel Atama)</b>
@@ -117,11 +127,11 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
 
 <script>
 /* ================= CONFIG ================= */
+const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
+const COMMISSION = (window.SEPT && window.SEPT.COMMISSION) ? window.SEPT.COMMISSION : 0.15;
+
 const ADMIN_ID="admin";
 const ADMIN_PIN="1234";
-
-const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-const COMMISSION=0.15;
 
 const $=id=>document.getElementById(id);
 
@@ -146,6 +156,15 @@ function showAdmin(){
 }
 if(sessionStorage.getItem("admin_auth")==="ok") showAdmin();
 
+/* ================= API ================= */
+async function apiPost(action,payload){
+  return fetch(BACKEND_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body:JSON.stringify(Object.assign({action},payload||{}))
+  }).then(r=>r.json());
+}
+
 /* ================= DATA ================= */
 function num(v){
   const n=parseFloat(String(v||0).replace(/[^\d.]/g,""));
@@ -160,7 +179,8 @@ async function loadAll(){
     fetch(`${BACKEND_URL}?action=getTimeline&limit=30`).then(r=>r.json())
   ]);
   renderKpi(sum);
-  renderTable(Array.isArray(jobs)?jobs:[],Array.isArray(drivers)?drivers:[]);
+  renderCandidates(drivers||[]);
+  renderTable(jobs||[],drivers||[]);
   renderTimeline(tline);
 }
 
@@ -176,13 +196,34 @@ function renderKpi(s){
   $("kTodayR").innerText=(s.todayRevenue||0).toFixed(0)+" TL";
 }
 
+/* ===== DRIVER CANDIDATES ===== */
+function renderCandidates(drivers){
+  const pending = drivers.filter(d=>d.status==="pending");
+  if(!pending.length){
+    $("candidates").innerText="Onay bekleyen sürücü yok.";
+    return;
+  }
+  $("candidates").innerHTML = pending.map(d=>`
+    <div style="margin-bottom:8px">
+      <b>${d.name||"-"}</b> · ${d.phone||"-"} · ${d.vehicle_type||"-"}<br>
+      <button class="btnSmall" onclick="approve('${d.driver_id}')">ONAYLA</button>
+      <button class="btnSmall btnRed" onclick="reject('${d.driver_id}')">REDDET</button>
+    </div>
+  `).join("");
+}
+async function approve(id){
+  await apiPost("setDriverStatus",{driver_id:id,status:"available"});
+  loadAll();
+}
+async function reject(id){
+  await apiPost("setDriverStatus",{driver_id:id,status:"rejected"});
+  loadAll();
+}
+
+/* ===== JOB TABLE ===== */
 async function assign(jobId,driverId){
   if(!driverId){ alert("Sürücü seç"); return; }
-  await fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({action:"assignDriver",job_id:jobId,driver_id:driverId,actor:"admin"})
-  });
+  await apiPost("assignDriver",{job_id:jobId,driver_id:driverId,actor:"admin"});
   loadAll();
 }
 
@@ -214,6 +255,7 @@ function renderTable(jobs,drivers){
   });
 }
 
+/* ===== TIMELINE ===== */
 function renderTimeline(t){
   if(!t||!t.ok){ $("tl").innerText="Timeline yok."; return; }
   $("tl").innerHTML=t.items.map(x=>`• <b>${x.job_id}</b> ${x.event} (${x.status})`).join("<br>");
