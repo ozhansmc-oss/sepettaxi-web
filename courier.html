@@ -12,116 +12,59 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
 :root{--y:#f5c400;--line:#222;--muted:#9a9a9a}
-
-header{
-  height:56px;display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:900;border-bottom:1px solid var(--line)
-}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;border-bottom:1px solid var(--line)}
 header span{color:var(--y)}
-
 #map{height:30vh;border-bottom:1px solid var(--line)}
 #panel{padding:12px;display:flex;flex-direction:column;gap:10px;padding-bottom:140px}
-
-.card{
-  background:#0f0f0f;border-radius:16px;padding:12px;
-  border:1px solid rgba(255,255,255,.06)
-}
-
+.card{background:#0f0f0f;border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,.06)}
 .card b{font-size:14px}
-.input{
-  width:100%;padding:12px;border-radius:12px;border:1px solid #1f1f1f;
-  background:#000;color:#fff;font-size:13px
-}
+.input{width:100%;padding:12px;border-radius:12px;border:1px solid #1f1f1f;background:#000;color:#fff;font-size:13px}
 .input::placeholder{color:#666}
-
 .helper{font-size:11px;color:var(--muted);margin-top:6px}
-
 .statRow{display:flex;gap:10px}
-.stat{
-  flex:1;background:#0b0b0b;border-radius:14px;padding:12px;
-  text-align:center;border:1px solid rgba(255,255,255,.06)
-}
+.stat{flex:1;background:#0b0b0b;border-radius:14px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.06)}
 .stat .lbl{font-size:11px;color:#aaa}
 .stat .val{font-size:18px;font-weight:900;margin-top:4px}
-
-#ctaBar{
-  position:fixed;left:0;right:0;bottom:0;padding:12px;
-  background:linear-gradient(180deg,rgba(0,0,0,.6),#000);
-  border-top:1px solid var(--line)
-}
-#cta{
-  border-radius:30px;padding:16px;text-align:center;
-  font-weight:900;user-select:none
-}
+#ctaBar{position:fixed;left:0;right:0;bottom:0;padding:12px;background:linear-gradient(180deg,rgba(0,0,0,.6),#000);border-top:1px solid var(--line)}
+#cta{border-radius:30px;padding:16px;text-align:center;font-weight:900}
 #cta.disabled{background:#2a2a2a;color:#999}
 #cta.enabled{background:var(--y);color:#000;cursor:pointer}
-
-#searching{
-  position:fixed;inset:0;background:rgba(0,0,0,.95);
-  display:none;align-items:center;justify-content:center;
-  flex-direction:column;z-index:50
-}
-#searching .small{font-size:12px;color:#888;margin-top:6px;max-width:360px;text-align:center;line-height:1.35}
-#searching .btns{display:flex;gap:8px;margin-top:14px}
-#searching button{
-  border:1px solid var(--line);background:#0f0f0f;color:#ddd;border-radius:999px;
-  padding:8px 12px;font-size:12px;cursor:pointer
-}
-#toast{
-  position:fixed;left:50%;top:12px;transform:translateX(-50%);
-  background:#111;padding:10px 12px;border-radius:999px;font-size:12px;display:none;
-  border:1px solid var(--line);z-index:1200
-}
+#searching{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:50}
+#searching .small{font-size:12px;color:#888;margin-top:6px;text-align:center}
+#toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:#111;padding:10px 12px;border-radius:999px;font-size:12px;display:none;border:1px solid var(--line);z-index:1200}
 </style>
 </head>
 
 <body>
 
 <div id="toast"></div>
-
 <header>Sepet<span>Taxi</span> – Kurye</header>
-
 <div id="map"></div>
 
 <div id="panel">
-
-  <!-- PAKET -->
   <div class="card">
     <b>📦 Paket Bilgisi</b>
-    <input id="pkgType" class="input" placeholder="Paket Türü (Evrak, Yemek, Kutu…)">
-    <div class="helper">Zorunlu</div>
+    <input id="pkgType" class="input" placeholder="Paket Türü">
   </div>
 
-  <!-- ALICI -->
   <div class="card">
     <b>👤 Alıcı Bilgisi</b>
     <input id="rcvName" class="input" placeholder="Alıcı Adı">
     <div style="height:8px"></div>
-    <input id="rcvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11" inputmode="numeric">
-    <div class="helper">Telefon 11 haneli olmalı (05XXXXXXXXX)</div>
+    <input id="rcvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
   </div>
 
-  <!-- ADRES -->
   <div class="card">
     <b>📍 Adres</b>
-    <input id="fromAddr" class="input" readonly placeholder="Nereden (konum alınıyor)">
+    <input id="fromAddr" class="input" readonly placeholder="Nereden">
     <div style="height:8px"></div>
     <input id="toAddr" class="input" readonly placeholder="Nereye (haritaya dokun)">
-    <div class="helper">Varış için haritaya dokun.</div>
   </div>
 
-  <!-- FİYAT -->
   <div class="statRow">
-    <div class="stat">
-      <div class="lbl">Mesafe</div>
-      <div id="dist" class="val">—</div>
-    </div>
-    <div class="stat">
-      <div class="lbl">Ücret</div>
-      <div id="price" class="val">—</div>
-    </div>
+    <div class="stat"><div class="lbl">Mesafe</div><div id="dist" class="val">—</div></div>
+    <div class="stat"><div class="lbl">Ücret</div><div id="price" class="val">—</div></div>
   </div>
-
 </div>
 
 <div id="ctaBar">
@@ -130,295 +73,90 @@ header span{color:var(--y)}
 
 <div id="searching">
   <div style="font-size:18px;font-weight:900">Kurye aranıyor…</div>
-  <div class="small" id="searchInfo">Talebiniz oluşturuluyor.</div>
-  <div class="btns">
-    <button id="cancelBtn" type="button">İptal</button>
-    <button id="goTrackBtn" type="button" style="display:none">Takibe Git</button>
-  </div>
+  <div class="small" id="searchInfo">Talebiniz oluşturuluyor</div>
 </div>
 
-<!-- Global config -->
-<script src="config.js"></script>
-
 <script>
-/* ================= LOG ================= */
-(function(){
-  const L={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
-  function log(l,t,m,d){
-    const p=`[SepetTaxi][${l}][${t}]`;
-    if(l===L.ERROR)console.error(p,m,d||'');
-    else if(l===L.WARN)console.warn(p,m,d||'');
-    else console.log(p,m,d||'');
-  }
-  window.logInfo=(t,m,d)=>log(L.INFO,t,m,d);
-  window.logWarn=(t,m,d)=>log(L.WARN,t,m,d);
-  window.logError=(t,m,d)=>log(L.ERROR,t,m,d);
-  window.logFlow=(t,m,d)=>log(L.FLOW,t,m,d);
-})();
+/* ===== CONFIG (EMBED) ===== */
+window.SEPT={
+  BACKEND_URL:"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec",
+  POLL_MS:3000
+};
 
-/* ================= CONFIG ================= */
-const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
-if(!BACKEND_URL){ alert("BACKEND_URL yok (config.js)"); throw "BACKEND_URL yok"; }
+const BACKEND_URL=window.SEPT.BACKEND_URL;
+const $=i=>document.getElementById(i);
+let map,fromM,toM,routeLine;
+let lastKm=0,lastPrice=0;
 
-const $=id=>document.getElementById(id);
-let map, fromM, toM, routeLine;
-let lastKm=0, lastPrice=0;
+/* ===== MAP ===== */
+map=L.map("map").setView([40.195,29.060],13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-let currentJobId="", currentTrackToken="";
-let pollTimer=null, pollStartedAt=0;
-
-/* ================= UI ================= */
-function toast(msg, ms=2400){
-  const t=$("toast");
-  t.textContent=msg;
-  t.style.display="block";
-  clearTimeout(toast._tm);
-  toast._tm=setTimeout(()=>t.style.display="none", ms);
-}
-function setCTAEnabled(on){
-  $("cta").className = on ? "enabled" : "disabled";
-}
-function showSearching(on){
-  $("searching").style.display = on ? "flex" : "none";
-}
-function stopPolling(){
-  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
-}
-function gotoTrack(){
-  if(!currentJobId) return;
-  // track.html?job_id=...&track_token=...
-  const base = window.location.pathname.replace(/\/[^\/]*$/, "/track.html");
-  const url = new URL(window.location.origin + base);
-  url.searchParams.set("job_id", currentJobId);
-  if(currentTrackToken) url.searchParams.set("track_token", currentTrackToken);
-  window.location.href = url.toString();
-}
-
-/* ================= API ================= */
-async function apiGet(action, params){
-  const url = new URL(BACKEND_URL);
-  url.searchParams.set("action", action);
-  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
-  const res = await fetch(url.toString(), { method:"GET" });
-  return res.json();
-}
-async function apiPost(action, payload){
-  const res = await fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body:JSON.stringify(Object.assign({action}, payload||{}))
-  });
-  return res.json();
-}
-
-/* ================= MAP ================= */
-function initMap(){
-  map = L.map("map").setView([40.195,29.060],13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  setTimeout(()=>map.invalidateSize(),200);
-
-  map.on("click", async (e)=>{
-    toM ? toM.setLatLng(e.latlng) : (toM = L.marker(e.latlng).addTo(map));
-    await reverse(e.latlng.lat, e.latlng.lng, $("toAddr"));
-    calcAndUpdate();
-  });
-}
-
-function getLocation(){
-  if(!navigator.geolocation){
-    toast("Tarayıcı konum desteği yok.");
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    async (p)=>{
-      const lat=p.coords.latitude, lng=p.coords.longitude;
-      fromM ? fromM.setLatLng([lat,lng]) : (fromM = L.marker([lat,lng]).addTo(map));
-      map.setView([lat,lng],15);
-      await reverse(lat,lng,$("fromAddr"));
-      calcAndUpdate();
-    },
-    (err)=>{
-      logWarn("GEO","geolocation failed",err);
-      toast("Konum izni verilmedi veya alınamadı.");
-    },
-    { enableHighAccuracy:true, timeout:12000, maximumAge:8000 }
-  );
-}
-
-/* ================= VALIDATION ================= */
-function valid(){
-  return (
-    $("pkgType").value.trim().length>1 &&
-    $("rcvName").value.trim().length>1 &&
-    /^05\d{9}$/.test($("rcvPhone").value) &&
-    fromM && toM
-  );
-}
-
-/* ================= PRICING (demo, stabil) ================= */
-function hav(a,b,c,d){
-  const R=6371;
-  const dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
-
-function drawRoute(a,b){
-  const pts = [[a.lat,a.lng],[b.lat,b.lng]];
-  if(routeLine) routeLine.setLatLngs(pts);
-  else routeLine = L.polyline(pts,{color:"#f5c400",weight:5,dashArray:"8,6"}).addTo(map);
-}
-
-function calcAndUpdate(){
-  if(!fromM||!toM) { setCTAEnabled(false); return; }
-
-  const a=fromM.getLatLng(), b=toM.getLatLng();
-  const km = Math.max(0.1, hav(a.lat,a.lng,b.lat,b.lng));
-  lastKm = km;
-
-  // Kurye demo fiyat: min 80, açılış 40 + km*15
-  lastPrice = (Math.max(80, 40 + km*15)) | 0;
-
-  $("dist").innerText = km.toFixed(2)+" km";
-  $("price").innerText = lastPrice+" TL";
-
-  drawRoute(a,b);
-  setCTAEnabled(valid());
-}
-
-/* ================= FLOW ================= */
-async function pollJob(){
-  if(!currentJobId) return;
-
-  const elapsed = Date.now() - pollStartedAt;
-  const TIMEOUT_MS = 60000;
-
-  if(elapsed > TIMEOUT_MS){
-    stopPolling();
-    $("searchInfo").textContent = "Henüz müsait kurye bulunamadı. Lütfen biraz sonra tekrar deneyin.";
-    $("goTrackBtn").style.display = "inline-block";
-    return;
-  }
-
-  const r = await apiGet("checkJob", { job_id: currentJobId });
-  if(r && r.ok){
-    const st = String(r.status||"");
-    if(st==="assigned" || st==="on_route"){
-      stopPolling();
-      $("searchInfo").textContent = "Kurye atandı. Takip ekranına yönlendiriliyorsunuz…";
-      setTimeout(gotoTrack, 650);
-      return;
-    }
-    if(st==="cancelled"){
-      stopPolling();
-      $("searchInfo").textContent = "İş iptal edildi.";
-      setTimeout(()=>showSearching(false), 900);
-      return;
-    }
-    if(st==="completed"){
-      stopPolling();
-      $("searchInfo").textContent = "İş tamamlandı.";
-      setTimeout(()=>showSearching(false), 900);
-      return;
-    }
-    $("searchInfo").textContent = "Kurye aranıyor…";
-  }else{
-    logWarn("API","checkJob error",r);
-  }
-}
-
-async function callCourier(){
-  if(!valid()) return;
-  if($("cta").classList.contains("disabled")) return;
-
-  showSearching(true);
-  $("searchInfo").textContent = "Talebiniz oluşturuluyor…";
-  $("goTrackBtn").style.display = "none";
-
-  try{
-    const a=fromM.getLatLng(), b=toM.getLatLng();
-
-    // Track ekranı için koordinatları da sakla (track.html kullanıyor)
-    sessionStorage.setItem("SEPT_pickup_lat", String(a.lat));
-    sessionStorage.setItem("SEPT_pickup_lng", String(a.lng));
-    sessionStorage.setItem("SEPT_drop_lat", String(b.lat));
-    sessionStorage.setItem("SEPT_drop_lng", String(b.lng));
-
-    const res = await apiPost("createJob",{
-      service_type: "courier", // backend normalize ediyor
-      package_type: $("pkgType").value.trim(),
-      receiver_name: $("rcvName").value.trim(),
-      receiver_phone: $("rcvPhone").value.trim(),
-      from_address: $("fromAddr").value,
-      to_address: $("toAddr").value,
-      pickup_lat: a.lat,
-      pickup_lng: a.lng,
-      dropoff_lat: b.lat,
-      dropoff_lng: b.lng,
-      distance_km: lastKm,
-      price: lastPrice,
-      final_price: lastPrice
-    });
-
-    if(!(res && res.ok)){
-      $("searchInfo").textContent = (res && res.error) ? String(res.error) : "createJob başarısız";
-      setTimeout(()=>showSearching(false), 1400);
-      return;
-    }
-
-    currentJobId = String(res.job_id||"");
-    currentTrackToken = String(res.track_token||"");
-    sessionStorage.setItem("SEPT_job_id", currentJobId);
-    sessionStorage.setItem("SEPT_track_token", currentTrackToken);
-
-    $("searchInfo").textContent = "Kurye aranıyor…";
-
-    pollStartedAt = Date.now();
-    stopPolling();
-    const pollMs = (window.SEPT && window.SEPT.POLL_MS) ? parseInt(window.SEPT.POLL_MS,10) : 3000;
-    pollTimer = setInterval(pollJob, Math.max(1500, pollMs));
-    pollJob();
-  }catch(e){
-    logError("API","createJob failed",e);
-    $("searchInfo").textContent = "Backend’e ulaşılamadı. (config.js BACKEND_URL kontrol edin)";
-    setTimeout(()=>showSearching(false), 1600);
-  }
-}
-
-function cancelFlow(){
-  stopPolling();
-  currentJobId="";
-  currentTrackToken="";
-  showSearching(false);
-}
-
-/* ================= HELPERS ================= */
-async function reverse(lat,lng,input){
-  try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-    const d=await r.json();
-    if(d && d.display_name) input.value=d.display_name;
-  }catch(e){
-    // sessiz geç
-  }
-}
-
-/* ================= START ================= */
-initMap();
-getLocation();
-
-// input değişince CTA güncellensin
-["pkgType","rcvName","rcvPhone"].forEach(id=>{
-  $(id).addEventListener("input", ()=>setCTAEnabled(valid() && fromM && toM));
+navigator.geolocation.getCurrentPosition(p=>{
+  fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
+  map.setView([p.coords.latitude,p.coords.longitude],15);
+  reverse(p.coords.latitude,p.coords.longitude,$("fromAddr"));
 });
 
-// CTA click
-$("cta").addEventListener("click", callCourier);
+map.on("click",async e=>{
+  toM?toM.setLatLng(e.latlng):(toM=L.marker(e.latlng).addTo(map));
+  await reverse(e.latlng.lat,e.latlng.lng,$("toAddr"));
+  calcRoute();
+});
 
-// overlay btns
-$("cancelBtn").addEventListener("click", cancelFlow);
-$("goTrackBtn").addEventListener("click", gotoTrack);
+/* ===== OSRM ===== */
+async function calcRoute(){
+  if(!fromM||!toM) return;
+  const a=fromM.getLatLng(),b=toM.getLatLng();
+  const url=`https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
+  const r=await fetch(url).then(r=>r.json());
+  const rt=r.routes[0];
+
+  lastKm=rt.distance/1000;
+  lastPrice=Math.max(80,40+lastKm*15)|0;
+
+  $("dist").innerText=lastKm.toFixed(2)+" km";
+  $("price").innerText=lastPrice+" TL";
+
+  const pts=rt.geometry.coordinates.map(c=>[c[1],c[0]]);
+  if(routeLine) routeLine.setLatLngs(pts);
+  else routeLine=L.polyline(pts,{color:"#f5c400",weight:5}).addTo(map);
+
+  $("cta").className=valid()?"enabled":"disabled";
+}
+
+/* ===== FLOW ===== */
+function valid(){
+  return $("pkgType").value&&$("rcvName").value&&/^05\d{9}$/.test($("rcvPhone").value)&&fromM&&toM;
+}
+
+$("cta").onclick=async()=>{
+  if(!valid())return;
+  $("searching").style.display="flex";
+
+  const a=fromM.getLatLng(),b=toM.getLatLng();
+  await fetch(BACKEND_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"createJob",
+      service_type:"courier",
+      package_type:$("pkgType").value,
+      receiver_name:$("rcvName").value,
+      receiver_phone:$("rcvPhone").value,
+      from_address:$("fromAddr").value,
+      to_address:$("toAddr").value,
+      pickup_lat:a.lat,pickup_lng:a.lng,
+      dropoff_lat:b.lat,dropoff_lng:b.lng,
+      distance_km:lastKm,price:lastPrice,final_price:lastPrice
+    })
+  });
+};
+
+async function reverse(lat,lng,input){
+  const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+  const d=await r.json();
+  if(d?.display_name)input.value=d.display_name;
+}
 </script>
-
 </body>
 </html>
