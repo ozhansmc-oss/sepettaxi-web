@@ -2,148 +2,220 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Kurye</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#000;color:#fff}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
-header span{color:#f5c400}
-.wrap{padding:14px;max-width:720px;margin:auto}
-.card{background:#111;border-radius:16px;padding:14px;margin-bottom:12px}
-label{font-size:12px;color:#aaa}
-input,select,textarea{width:100%;padding:12px;border-radius:12px;border:0;background:#222;color:#fff;margin-top:6px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-button{width:100%;padding:14px;border-radius:22px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
-.small{font-size:12px;color:#aaa}
-.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
-.hidden{display:none}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
+:root{--y:#f5c400;--line:#222;--muted:#9a9a9a}
+
+header{
+  height:56px;display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;border-bottom:1px solid var(--line)
+}
+header span{color:var(--y)}
+
+#map{height:30vh}
+#panel{padding:12px;display:flex;flex-direction:column;gap:10px}
+
+.card{
+  background:#0f0f0f;border-radius:16px;padding:12px;
+  border:1px solid rgba(255,255,255,.06)
+}
+
+.card b{font-size:14px}
+.input{
+  width:100%;padding:12px;border-radius:12px;border:1px solid #1f1f1f;
+  background:#000;color:#fff;font-size:13px
+}
+.input::placeholder{color:#666}
+
+.helper{font-size:11px;color:var(--muted);margin-top:6px}
+
+.statRow{display:flex;gap:10px}
+.stat{
+  flex:1;background:#0b0b0b;border-radius:14px;padding:12px;
+  text-align:center;border:1px solid rgba(255,255,255,.06)
+}
+.stat .lbl{font-size:11px;color:#aaa}
+.stat .val{font-size:18px;font-weight:900;margin-top:4px}
+
+#ctaBar{
+  position:fixed;left:0;right:0;bottom:0;padding:12px;
+  background:linear-gradient(180deg,rgba(0,0,0,.6),#000)
+}
+#cta{
+  border-radius:30px;padding:16px;text-align:center;
+  font-weight:900
+}
+#cta.disabled{background:#2a2a2a;color:#999}
+#cta.enabled{background:var(--y);color:#000}
+
+#searching{
+  position:fixed;inset:0;background:rgba(0,0,0,.95);
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;z-index:50
+}
 </style>
 </head>
 
 <body>
+
 <header>Sepet<span>Taxi</span> – Kurye</header>
 
-<div class="wrap">
+<div id="map"></div>
 
-  <!-- Müşteri -->
+<div id="panel">
+
+  <!-- PAKET -->
   <div class="card">
-    <b>Müşteri Bilgileri</b>
-    <label>Ad Soyad</label>
-    <input id="cname" placeholder="Ad Soyad">
-    <label>Telefon</label>
-    <input id="cphone" placeholder="05XXXXXXXXX" maxlength="11">
+    <b>📦 Paket Bilgisi</b>
+    <input id="pkgType" class="input" placeholder="Paket Türü (Evrak, Yemek, Kutu…)">
+    <div class="helper">Zorunlu</div>
   </div>
 
-  <!-- Adres -->
+  <!-- ALICI -->
   <div class="card">
-    <b>Adresler</b>
-    <label>Alım Adresi</label>
-    <input id="fromAddr" placeholder="Alım adresi">
-    <label>Teslim Adresi</label>
-    <input id="toAddr" placeholder="Teslim adresi">
+    <b>👤 Alıcı Bilgisi</b>
+    <input id="rcvName" class="input" placeholder="Alıcı Adı">
+    <div style="height:8px"></div>
+    <input id="rcvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
+    <div class="helper">Telefon 11 haneli olmalı</div>
   </div>
 
-  <!-- Paket -->
+  <!-- ADRES -->
   <div class="card">
-    <b>Paket Bilgileri</b>
-    <label>Paket Tipi</label>
-    <select id="pkgType">
-      <option value="">Seçiniz</option>
-      <option value="zarf">Zarf / Evrak</option>
-      <option value="kucuk">Küçük Paket (0–3 kg)</option>
-      <option value="orta">Orta Paket (3–10 kg)</option>
-      <option value="buyuk">Büyük Paket (10–20 kg)</option>
-      <option value="hassas">Hassas / Kırılabilir</option>
-      <option value="yemek">Yemek</option>
-    </select>
-
-    <label>Not (opsiyonel)</label>
-    <textarea id="pkgNote" placeholder="Paketle ilgili not"></textarea>
+    <b>📍 Adres</b>
+    <input id="fromAddr" class="input" readonly placeholder="Nereden (konum alınıyor)">
+    <div style="height:8px"></div>
+    <input id="toAddr" class="input" readonly placeholder="Nereye (haritaya dokun)">
   </div>
 
-  <!-- Alıcı -->
-  <div class="card">
-    <b>Alıcı Bilgileri</b>
-    <label>Alıcı Ad Soyad</label>
-    <input id="rname" placeholder="Alıcı adı">
-    <label>Alıcı Telefon</label>
-    <input id="rphone" placeholder="05XXXXXXXXX" maxlength="11">
-  </div>
-
-  <!-- Özet -->
-  <div class="card">
-    <b>Özet</b>
-    <div class="small">
-      Hizmet: <span class="badge">Kurye</span><br>
-      Şehir: <span class="badge">Bursa</span>
+  <!-- FİYAT -->
+  <div class="statRow">
+    <div class="stat">
+      <div class="lbl">Mesafe</div>
+      <div id="dist" class="val">—</div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Ücret</div>
+      <div id="price" class="val">—</div>
     </div>
   </div>
 
-  <button onclick="createCourier()">KURYECİ ÇAĞIR</button>
-
 </div>
+
+<div id="ctaBar">
+  <div id="cta" class="disabled" onclick="callCourier()">KURYECİ ÇAĞIR</div>
+</div>
+
+<div id="searching">
+  <div style="font-size:18px;font-weight:900">Kurye aranıyor…</div>
+  <div style="font-size:12px;color:#888;margin-top:6px">Lütfen bekleyin</div>
+</div>
+
+<!-- ================= LOG ================= -->
+<script>
+(function(){
+  const L={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
+  function log(l,t,m,d){
+    const p=`[SepetTaxi][${l}][${t}]`;
+    if(l===L.ERROR)console.error(p,m,d||'');
+    else if(l===L.WARN)console.warn(p,m,d||'');
+    else console.log(p,m,d||'');
+  }
+  window.logInfo=(t,m,d)=>log(L.INFO,t,m,d);
+  window.logWarn=(t,m,d)=>log(L.WARN,t,m,d);
+  window.logError=(t,m,d)=>log(L.ERROR,t,m,d);
+  window.logFlow=(t,m,d)=>log(L.FLOW,t,m,d);
+})();
+</script>
 
 <script>
 /* ================= CONFIG ================= */
 const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+const COMMISSION=0.15;
+
+let map,fromM,toM,lastKm=0,lastPrice=0;
+
+const $=id=>document.getElementById(id);
+
+/* ================= MAP ================= */
+map=L.map("map").setView([40.195,29.060],13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+navigator.geolocation.getCurrentPosition(p=>{
+  fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
+  map.setView([p.coords.latitude,p.coords.longitude],15);
+  reverse(p.coords.latitude,p.coords.longitude,$("fromAddr"));
+});
+
+map.on("click",e=>{
+  toM?toM.setLatLng(e.latlng):(toM=L.marker(e.latlng).addTo(map));
+  reverse(e.latlng.lat,e.latlng.lng,$("toAddr"));
+  calc();
+});
+
+/* ================= LOGIC ================= */
+function valid(){
+  return (
+    $("pkgType").value.trim().length>1 &&
+    $("rcvName").value.trim().length>1 &&
+    /^05\d{9}$/.test($("rcvPhone").value) &&
+    fromM && toM
+  );
+}
+
+function calc(){
+  if(!fromM||!toM) return;
+  const a=fromM.getLatLng(),b=toM.getLatLng();
+  const km=hav(a.lat,a.lng,b.lat,b.lng);
+  lastKm=km;
+  lastPrice=Math.max(80,40+km*15)|0;
+  $("dist").innerText=km.toFixed(2)+" km";
+  $("price").innerText=lastPrice+" TL";
+  $("cta").className=valid()?"enabled":"disabled";
+}
+
+function callCourier(){
+  if(!valid()) return;
+  $("searching").style.display="flex";
+
+  fetch(BACKEND_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      action:"createJob",
+      service:"courier",
+      package_type:$("pkgType").value,
+      receiver_name:$("rcvName").value,
+      receiver_phone:$("rcvPhone").value,
+      pickup_address:$("fromAddr").value,
+      pickup_lat:fromM.getLatLng().lat,
+      pickup_lng:fromM.getLatLng().lng,
+      dropoff_address:$("toAddr").value,
+      dropoff_lat:toM.getLatLng().lat,
+      dropoff_lng:toM.getLatLng().lng,
+      distance_km:lastKm,
+      price:lastPrice
+    })
+  });
+}
 
 /* ================= HELPERS ================= */
-const $=id=>document.getElementById(id);
-const cleanPhone=v=>String(v||"").replace(/\D/g,"").slice(0,11);
-
-/* ================= ACTION ================= */
-async function createCourier(){
-  const payload={
-    action:"createJob",
-    service_type:"courier",
-
-    customer_name: $("cname").value.trim(),
-    customer_phone: cleanPhone($("cphone").value),
-
-    from_address: $("fromAddr").value.trim(),
-    to_address: $("toAddr").value.trim(),
-
-    package_type: $("pkgType").value,
-    package_note: $("pkgNote").value.trim(),
-
-    receiver_name: $("rname").value.trim(),
-    receiver_phone: cleanPhone($("rphone").value),
-
-    city:"Bursa"
-  };
-
-  // Zorunlu kontroller
-  if(!payload.customer_name || !payload.customer_phone){
-    alert("Müşteri bilgileri eksik"); return;
-  }
-  if(!payload.from_address || !payload.to_address){
-    alert("Adresler eksik"); return;
-  }
-  if(!payload.package_type){
-    alert("Paket tipi seçiniz"); return;
-  }
-  if(!payload.receiver_name || !payload.receiver_phone){
-    alert("Alıcı bilgileri eksik"); return;
-  }
-
-  try{
-    const res=await fetch(BACKEND_URL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload)
-    });
-    const d=await res.json();
-    if(d && d.ok){
-      // track sayfasına yönlendir
-      location.href=`track.html?job_id=${d.job_id}`;
-    }else{
-      alert("Oluşturulamadı");
-    }
-  }catch(e){
-    alert("Bağlantı hatası");
-  }
+function hav(a,b,c,d){
+  const R=6371;
+  const dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function reverse(lat,lng,input){
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    .then(r=>r.json()).then(d=>{if(d?.display_name)input.value=d.display_name});
 }
 </script>
 </body>
