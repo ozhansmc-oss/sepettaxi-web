@@ -3,57 +3,45 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SepetTaxi – Takip</title>
+<title>SepetTaxi – Canlı Takip</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 *{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
+html,body{margin:0;height:100%;background:#000;color:#fff;font-family:Arial}
+header{
+  height:56px;display:flex;align-items:center;justify-content:center;
+  font-weight:900;border-bottom:1px solid #222
+}
 header span{color:#f5c400}
+
 #map{height:calc(100vh - 56px)}
 
 .overlay{
   position:fixed;left:50%;transform:translateX(-50%);
-  z-index:1000;border-radius:999px;padding:7px 14px;font-size:13px;
-  border:1px solid #333;background:#111;backdrop-filter: blur(6px);
-  max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  background:#111;border:1px solid #333;
+  border-radius:999px;padding:8px 16px;
+  font-size:13px;z-index:1000
 }
-.status{top:70px}
-.eta{top:110px;background:#f5c400;color:#000;font-weight:900;border-color:#f5c400}
+#status{top:70px}
+#eta{top:110px;background:#f5c400;color:#000;font-weight:900}
 
-.pulse{
+#pulse{
   position:fixed;top:150px;left:50%;transform:translateX(-50%);
   padding:10px 18px;border-radius:999px;
   background:rgba(245,196,0,.12);
   border:1px solid #f5c400;color:#f5c400;
   font-weight:900;display:none;
   animation:pulse 1.4s infinite;
-  z-index:1000;
-  max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  z-index:1000
 }
 @keyframes pulse{
   0%{transform:translateX(-50%) scale(1)}
   50%{transform:translateX(-50%) scale(1.06)}
   100%{transform:translateX(-50%) scale(1)}
 }
-
-.driver-card{
-  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
-  background:#111;border:1px solid #333;padding:14px 16px;
-  border-radius:18px;min-width:280px;z-index:1000;
-  max-width:92vw;
-}
-.driver-card b{color:#f5c400}
-.badge{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
-.actions{display:flex;gap:8px;margin-top:10px}
-.btn{flex:1;text-align:center;padding:10px 0;border-radius:999px;font-weight:900;font-size:13px;text-decoration:none}
-.call{background:#f5c400;color:#000}
-.wa{background:#1ebe5d;color:#000}
-.hidden{display:none!important}
 </style>
 </head>
 
@@ -61,154 +49,130 @@ header span{color:#f5c400}
 
 <header>Sepet<span>Taxi</span> – Takip</header>
 
-<div id="status" class="overlay status">Yükleniyor…</div>
-<div id="eta" class="overlay eta">ETA: —</div>
-<div id="pulse" class="pulse">🚗 Sürücü Yaklaşıyor</div>
-
-<div id="driverCard" class="driver-card hidden">
-  <div><b>Sürücü</b>: <span id="drvId">—</span></div>
-  <div class="badge" id="drvStatus">—</div>
-</div>
-
+<div id="status" class="overlay">Yükleniyor…</div>
+<div id="eta" class="overlay">ETA: —</div>
+<div id="pulse">🚗 Sürücü Yaklaşıyor</div>
 <div id="map"></div>
 
-<script src="config.js"></script>
-<script src="log.js"></script>
-
 <script>
-/* =========================
-   PARAMS & STATE
-========================= */
-const qs = new URLSearchParams(location.search);
-const JOB_ID = qs.get("job_id") || sessionStorage.getItem("SEPT_job_id") || "";
-const TRACK_TOKEN = qs.get("track_token") || sessionStorage.getItem("SEPT_track_token") || "";
+/* ================= CONFIG ================= */
+const BACKEND_URL =
+"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
+const qs = new URLSearchParams(location.search);
+const JOB_ID = qs.get("job_id") || sessionStorage.getItem("SEPT_job_id");
+const TRACK_TOKEN = qs.get("track_token") || sessionStorage.getItem("SEPT_track_token");
+
+/* ================= STATE ================= */
 let map, pickupM, dropM, driverM, routeLine;
-let firstFit=false;
 let lastDriverPos=null;
 let lastRouteKey="";
+let firstFit=false;
 
-/* =========================
-   DOM
-========================= */
-const $ = id => document.getElementById(id);
-const statusEl = $("status");
-const etaEl = $("eta");
-const pulseEl = $("pulse");
-const driverCard = $("driverCard");
-const drvIdEl = $("drvId");
-const drvStatusEl = $("drvStatus");
-
-/* =========================
-   MAP
-========================= */
-function initMap(){
-  map = L.map("map").setView([40.195,29.060],12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-}
-
-/* =========================
-   HELPERS
-========================= */
+/* ================= HELPERS ================= */
+const $=id=>document.getElementById(id);
 function num(v){ const n=parseFloat(v); return isFinite(n)?n:null; }
 function toRad(d){return d*Math.PI/180;}
 function bearing(a,b){
   const y=Math.sin(toRad(b.lng-a.lng))*Math.cos(toRad(b.lat));
-  const x=Math.cos(toRad(a.lat))*Math.sin(toRad(b.lat)) -
+  const x=Math.cos(toRad(a.lat))*Math.sin(toRad(b.lat))-
           Math.sin(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.cos(toRad(b.lng-a.lng));
   return (Math.atan2(y,x)*180/Math.PI+360)%360;
 }
 function carIcon(angle){
   return L.divIcon({
-    html:`<div style="transform:rotate(${angle}deg);font-size:26px;color:#f5c400">🚗</div>`,
-    className:"",iconSize:[32,32],iconAnchor:[16,16]
+    html:`<div style="font-size:26px;transform:rotate(${angle}deg)">🚗</div>`,
+    className:"",
+    iconSize:[32,32],
+    iconAnchor:[16,16]
   });
 }
 
-/* =========================
-   STATUS LABELS (LOCKED)
-========================= */
-function statusLabel(st){
-  switch(st){
-    case "pending": return "Sürücü aranıyor";
-    case "assigned": return "Sürücü geliyor";
-    case "active": return "Yoldayız";
-    case "done": return "Tamamlandı";
-    case "cancelled": return "İptal edildi";
-    default: return "Durum alınıyor";
-  }
-}
+/* ================= MAP ================= */
+map=L.map("map").setView([40.195,29.060],13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-/* =========================
-   API
-========================= */
-async function apiGet(action, params){
-  const url = new URL(SEPT.BACKEND_URL);
-  url.searchParams.set("action", action);
+/* ================= MARKERS ================= */
+const pLat=num(sessionStorage.getItem("SEPT_pickup_lat"));
+const pLng=num(sessionStorage.getItem("SEPT_pickup_lng"));
+const dLat=num(sessionStorage.getItem("SEPT_drop_lat"));
+const dLng=num(sessionStorage.getItem("SEPT_drop_lng"));
+
+if(pLat&&pLng) pickupM=L.marker([pLat,pLng]).addTo(map);
+if(dLat&&dLng) dropM=L.marker([dLat,dLng]).addTo(map);
+
+/* ================= API ================= */
+async function api(action,params){
+  const u=new URL(BACKEND_URL);
+  u.searchParams.set("action",action);
   Object.entries(params||{}).forEach(([k,v])=>{
-    if(v) url.searchParams.set(k,v);
+    if(v!=null) u.searchParams.set(k,v);
   });
-  const r = await fetch(url.toString());
-  const j = await r.json();
-  Log.api(action,params,j);
-  return j;
+  return fetch(u).then(r=>r.json());
 }
 
-/* =========================
-   MAIN LOOP
-========================= */
+/* ================= ROUTE ================= */
+async function drawRoute(a,b){
+  const key=`${a.lat},${a.lng}->${b.lat},${b.lng}`;
+  if(key===lastRouteKey) return;
+  lastRouteKey=key;
+
+  const url=`https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
+  const r=await fetch(url).then(r=>r.json());
+  if(!r.routes||!r.routes[0])return;
+
+  const pts=r.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+  const eta=Math.max(2,Math.round(r.routes[0].duration/60));
+  $("eta").textContent="ETA: "+eta+" dk";
+
+  if(routeLine) routeLine.setLatLngs(pts);
+  else routeLine=L.polyline(pts,{color:"#f5c400",weight:5}).addTo(map);
+
+  if(!firstFit){
+    map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
+    firstFit=true;
+  }
+}
+
+/* ================= MAIN LOOP ================= */
 async function tick(){
-  if(!JOB_ID){
-    statusEl.textContent="Takip bilgisi yok";
+  if(!JOB_ID) return;
+
+  const job=await api("checkJob",{job_id:JOB_ID,track_token:TRACK_TOKEN});
+  if(!job||!job.ok){
+    $("status").textContent="Bağlantı hatası";
     return;
   }
 
-  const job = await apiGet(SEPT.ACTIONS.CHECK_JOB,{
-    job_id:JOB_ID, track_token:TRACK_TOKEN
-  });
+  $("status").textContent=job.status;
+  $("pulse").style.display=job.status==="assigned"?"block":"none";
 
-  if(!job || !job.ok){
-    statusEl.textContent="Bağlantı hatası";
-    return;
-  }
-
-  const st = job.status;
-  statusEl.textContent = statusLabel(st);
-  pulseEl.style.display = (st==="assigned")?"block":"none";
-
-  if(job.driver_id){
-    driverCard.classList.remove("hidden");
-    drvIdEl.textContent = job.driver_id;
-    drvStatusEl.textContent = st;
-  }
-
-  const live = await apiGet(SEPT.ACTIONS.GET_LIVE,{
-    job_id:JOB_ID, track_token:TRACK_TOKEN
-  });
-
-  if(live && live.ok && live.has){
-    const lat=num(live.lat), lng=num(live.lng);
-    if(lat && lng){
-      const now={lat,lng};
+  const live=await api("getLive",{job_id:JOB_ID,track_token:TRACK_TOKEN});
+  if(live&&live.ok&&live.has){
+    const pos={lat:num(live.lat),lng:num(live.lng)};
+    if(pos.lat&&pos.lng){
       let angle=0;
-      if(lastDriverPos) angle=bearing(lastDriverPos,now);
-      lastDriverPos=now;
+      if(lastDriverPos) angle=bearing(lastDriverPos,pos);
+      lastDriverPos=pos;
 
-      if(!driverM) driverM=L.marker([lat,lng],{icon:carIcon(angle)}).addTo(map);
+      if(!driverM) driverM=L.marker([pos.lat,pos.lng],{icon:carIcon(angle)}).addTo(map);
       else{
-        driverM.setLatLng([lat,lng]);
+        driverM.setLatLng([pos.lat,pos.lng]);
         driverM.setIcon(carIcon(angle));
+      }
+
+      if(job.status==="assigned" && pickupM){
+        drawRoute(pos,pickupM.getLatLng());
+      }
+      if(job.status==="on_route" && dropM){
+        drawRoute(pos,dropM.getLatLng());
       }
     }
   }
 }
 
-/* =========================
-   START
-========================= */
-initMap();
 tick();
-setInterval(tick, SEPT.POLL_MS);
+setInterval(tick,3000);
 </script>
 
 </body>
