@@ -20,18 +20,14 @@ header span{color:#f5c400}
 .driver-card{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #333;padding:14px 16px;border-radius:18px;min-width:280px;z-index:1000}
 .driver-card b{color:#f5c400}
 .badge{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
-.small{font-size:11px;color:#aaa;margin-top:4px}
 .actions{display:flex;gap:8px;margin-top:10px}
-.btn{flex:1;text-align:center;padding:10px 0;border-radius:999px;font-weight:900;font-size:13px;cursor:pointer;text-decoration:none}
+.btn{flex:1;text-align:center;padding:10px 0;border-radius:999px;font-weight:900;font-size:13px}
 .call{background:#f5c400;color:#000}
 .wa{background:#1ebe5d;color:#000}
 .cancel{background:#444;color:#fff}
-.hidden{display:none}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:2000}
 .box{background:#111;border:1px solid #333;border-radius:16px;padding:16px;width:90%;max-width:360px;text-align:center}
-.cta{margin-top:10px;background:#f5c400;color:#000;border-radius:999px;padding:12px;text-align:center;font-weight:900;cursor:pointer}
-.secondary{margin-top:6px;background:#222;color:#ddd;border-radius:999px;padding:10px;text-align:center;cursor:pointer}
-.stars{display:flex;justify-content:center;gap:8px;margin:12px 0}
+.cta{margin-top:10px;background:#f5c400;color:#000;border-radius:999px;padding:12px;font-weight:900}
 .star{font-size:30px;cursor:pointer;color:#333}
 .star.active{color:#f5c400}
 textarea{width:100%;min-height:60px;border-radius:10px;border:0;background:#222;color:#fff;padding:10px}
@@ -47,267 +43,108 @@ textarea{width:100%;min-height:60px;border-radius:10px;border:0;background:#222;
 <div id="driverCard" class="driver-card" style="display:none">
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
   <div class="badge" id="drvStatus">—</div>
-  <div class="actions" id="contactBtns">
-    <a id="callBtn" class="btn call" href="#">📞 Ara</a>
-    <a id="waBtn" class="btn wa" href="#" target="_blank">💬 WhatsApp</a>
+  <div class="actions">
+    <a class="btn call" href="#">📞 Ara</a>
+    <a class="btn wa" href="#" target="_blank">💬 WhatsApp</a>
   </div>
   <div class="actions">
     <div class="btn cancel" onclick="openCancel()">İPTAL ET</div>
   </div>
-  <div class="small" id="drvMeta"></div>
 </div>
 
 <div id="map"></div>
 
 <div id="ratingModal" class="modal">
   <div class="box">
-    <div style="font-weight:900">Yolculuk Tamamlandı</div>
-    <div class="stars" id="stars"></div>
-    <textarea id="comment" placeholder="Yorum (isteğe bağlı)"></textarea>
+    <b>Yolculuk Tamamlandı</b>
+    <div id="stars"></div>
+    <textarea id="comment" placeholder="Yorum"></textarea>
     <div class="cta" onclick="submitRating()">PUANI GÖNDER</div>
   </div>
 </div>
 
 <div id="thanksModal" class="modal">
   <div class="box">
-    <div style="font-size:22px;font-weight:900">Teşekkürler!</div>
-    <div class="small" style="margin-top:8px">SepetTaxi’yi tercih ettiğiniz için teşekkür ederiz.</div>
-    <div style="margin-top:12px">
-      <div class="small">Bir sonraki yolculuğunuz için</div>
-      <div style="font-size:18px;font-weight:900;color:#f5c400" id="coupon">—</div>
-      <div class="small">indirim kuponu kazandınız</div>
-    </div>
+    <b>Teşekkürler</b>
+    <div id="coupon">SEPET10</div>
     <div class="cta" onclick="location.href='index.html'">TEKRAR ÇAĞIR</div>
-    <div class="secondary" onclick="closeThanks()">Kapat</div>
   </div>
 </div>
 
-<!-- Global config (TEK KAYNAK) -->
 <script src="config.js"></script>
 
 <script>
-/* ===== LOG ===== */
-(function(){
-  const L={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
-  function log(l,t,m,d){
-    const p=`[SepetTaxi][${l}][${t}]`;
-    if(l===L.ERROR) console.error(p,m,d||'');
-    else if(l===L.WARN) console.warn(p,m,d||'');
-    else console.log(p,m,d||'');
-  }
-  window.logInfo=(t,m,d)=>log(L.INFO,t,m,d);
-  window.logWarn=(t,m,d)=>log(L.WARN,t,m,d);
-  window.logError=(t,m,d)=>log(L.ERROR,t,m,d);
-  window.logFlow=(t,m,d)=>log(L.FLOW,t,m,d);
-})();
+const BACKEND_URL = window.SEPT.BACKEND_URL;
+const JOB_ID = new URLSearchParams(location.search).get("job_id");
+if(!JOB_ID) alert("job_id yok");
 
-/* ===== CONFIG ===== */
-const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
-if(!BACKEND_URL){ alert("BACKEND_URL yok (config.js)"); throw "BACKEND_URL yok"; }
+let map, pickupM, dropM, driverM, routeLine;
+let CURRENT_STATUS="", pollTimer=null;
 
-const qs=new URLSearchParams(location.search);
-const JOB_ID=qs.get("job_id");
-if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
-
-logFlow("INIT","track.html loaded",{JOB_ID,BACKEND_URL});
-
-let map,pickupM,dropM,driverM,routeLine;
-let rated=false, thanked=false, rating=0;
-let CURRENT_STATUS="";
-let firstFitDone=false;
-let pollTimer=null;
-
-/* ===== MAP ===== */
 function initMap(){
   map=L.map("map").setView([40.195,29.060],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  setTimeout(()=>map.invalidateSize(),200);
-}
-function n(v){ const x=Number(v); return isFinite(x)?x:null; }
-function hav(a,b,c,d){
-  const R=6371;
-  const dLat=(c-a)*Math.PI/180;
-  const dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
-function calcETA(fromLat,fromLng,toLat,toLng,status){
-  const km=hav(fromLat,fromLng,toLat,toLng);
-  const sp=(status==="on_route")?28:24;
-  const min=Math.max(2,Math.round((km/sp)*60));
-  return {km,min};
 }
 
-/* ===== API ===== */
-async function apiGet(action, params){
-  const url = new URL(BACKEND_URL);
-  url.searchParams.set("action", action);
-  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), { method:"GET" });
-  return res.json();
-}
-async function apiPost(action, payload){
-  const res = await fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{"Content-Type":"text/plain;charset=utf-8"},
-    body:JSON.stringify(Object.assign({action},payload||{}))
-  });
-  return res.json();
+async function fetchOSRMRoute(fromLat,fromLng,toLat,toLng){
+  const url=`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+  const r=await fetch(url).then(r=>r.json());
+  const g=r.routes[0];
+  return {
+    coords:g.geometry.coordinates.map(c=>[c[1],c[0]]),
+    duration:g.duration
+  };
 }
 
-/* ===== LOAD / POLL ===== */
+async function drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,status){
+  let fromLat=pLat,fromLng=pLng,toLat=dLat,toLng=dLng;
+  if(status==="assigned"){ fromLat=drvLat;fromLng=drvLng;toLat=pLat;toLng=pLng; }
+  if(status==="on_route"){ fromLat=drvLat;fromLng=drvLng;toLat=dLat;toLng=dLng; }
+
+  const r=await fetchOSRMRoute(fromLat,fromLng,toLat,toLng);
+
+  if(routeLine) routeLine.remove();
+  routeLine=L.polyline(r.coords,{color:"#f5c400",weight:5}).addTo(map);
+  map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
+
+  eta.innerText=`ETA: ${Math.max(2,Math.round(r.duration/60))} dk`;
+}
+
 async function loadJob(){
-  try{
-    const jobInfo = await apiGet("checkJob",{job_id:JOB_ID});
-    if(!jobInfo || jobInfo.error){
-      status.innerText="İş bulunamadı";
-      return;
-    }
+  const job=await fetch(`${BACKEND_URL}?action=checkJob&job_id=${JOB_ID}`).then(r=>r.json());
+  if(!job) return;
 
-    CURRENT_STATUS = String(jobInfo.status||"");
-    drvStatus.innerText = CURRENT_STATUS;
-    status.innerText =
-      CURRENT_STATUS==="completed"?"İş tamamlandı":
-      CURRENT_STATUS==="on_route"?"Varışa gidiliyor":
-      CURRENT_STATUS==="assigned"?"Sürücü geliyor":
-      CURRENT_STATUS==="cancelled"?"İptal edildi":
-      "Sürücü bekleniyor";
+  CURRENT_STATUS=job.status;
+  drvStatus.innerText=CURRENT_STATUS;
 
-    // İlk createJob sırasında kaydedilen koordinatlar (index.html)
-    const pLat=n(sessionStorage.getItem("SEPT_pickup_lat"));
-    const pLng=n(sessionStorage.getItem("SEPT_pickup_lng"));
-    const dLat=n(sessionStorage.getItem("SEPT_drop_lat"));
-    const dLng=n(sessionStorage.getItem("SEPT_drop_lng"));
+  const pLat=+sessionStorage.getItem("SEPT_pickup_lat");
+  const pLng=+sessionStorage.getItem("SEPT_pickup_lng");
+  const dLat=+sessionStorage.getItem("SEPT_drop_lat");
+  const dLng=+sessionStorage.getItem("SEPT_drop_lng");
 
-    if(pLat!=null&&pLng!=null){
-      if(!pickupM) pickupM=L.marker([pLat,pLng]).addTo(map);
-    }
-    if(dLat!=null&&dLng!=null){
-      if(!dropM) dropM=L.marker([dLat,dLng]).addTo(map);
-    }
+  if(!pickupM) pickupM=L.marker([pLat,pLng]).addTo(map);
+  if(!dropM) dropM=L.marker([dLat,dLng]).addTo(map);
 
-    let live=null;
-    try{ live = await apiGet("getLive",{job_id:JOB_ID}); }catch(_){}
-
-    let drvLat=null, drvLng=null;
-    let drvIdVal = jobInfo.driver_id || "";
-
-    if(live && live.ok && live.has){
-      drvLat=n(live.lat); drvLng=n(live.lng);
-      drvIdVal = drvIdVal || live.driver_id || "";
-    }
-
-    if(CURRENT_STATUS!=="pending"){
-      driverCard.style.display="block";
-      drvId.innerText = drvIdVal || "—";
-    }else{
-      driverCard.style.display="none";
-    }
-
-    if(drvLat!=null&&drvLng!=null){
-      if(!driverM) driverM=L.marker([drvLat,drvLng]).addTo(map);
-      else driverM.setLatLng([drvLat,drvLng]);
-    }
-
-    if(CURRENT_STATUS==="completed"){
-      eta.innerText="Tamamlandı";
-      stopPolling();
-      if(!rated) openRating();
-      else if(!thanked) openThanks();
-    }else if(CURRENT_STATUS==="cancelled"){
-      eta.innerText="İptal edildi";
-      stopPolling();
-    }else if(CURRENT_STATUS==="pending"){
-      eta.innerText="Sürücü bekleniyor";
-    }else{
-      if(drvLat!=null && pLat!=null && dLat!=null){
-        let fromLat=pLat, fromLng=pLng, toLat=dLat, toLng=dLng;
-        if(CURRENT_STATUS==="assigned"){ fromLat=drvLat;fromLng=drvLng;toLat=pLat;toLng=pLng; }
-        if(CURRENT_STATUS==="on_route"){ fromLat=drvLat;fromLng=drvLng;toLat=dLat;toLng=dLng; }
-        const e=calcETA(fromLat,fromLng,toLat,toLng,CURRENT_STATUS);
-        eta.innerText=`ETA: ${e.min} dk`;
-      }
-    }
-
-    drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,CURRENT_STATUS);
-  }catch(e){
-    console.error(e);
+  let drvLat=null,drvLng=null;
+  const live=await fetch(`${BACKEND_URL}?action=getLive&job_id=${JOB_ID}`).then(r=>r.json());
+  if(live?.has){
+    drvLat=+live.lat; drvLng=+live.lng;
+    if(!driverM) driverM=L.marker([drvLat,drvLng]).addTo(map);
+    else driverM.setLatLng([drvLat,drvLng]);
   }
+
+  if(CURRENT_STATUS!=="pending") driverCard.style.display="block";
+
+  await drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,CURRENT_STATUS);
 }
 
-function drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,status){
-  if(pLat==null||pLng==null||dLat==null||dLng==null) return;
-  let pts;
-  if(drvLat!=null&&drvLng!=null){
-    pts=(status==="assigned")?[[drvLat,drvLng],[pLat,pLng],[dLat,dLng]]:[[pLat,pLng],[drvLat,drvLng],[dLat,dLng]];
-  }else pts=[[pLat,pLng],[dLat,dLng]];
-
-  if(routeLine) routeLine.setLatLngs(pts);
-  else routeLine=L.polyline(pts,{color:"#f5c400",weight:5,dashArray:"8,6"}).addTo(map);
-
-  if(!firstFitDone){
-    map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
-    firstFitDone=true;
-  }
-}
-
-function startPolling(){
-  stopPolling();
+function start(){
+  initMap();
+  loadJob();
   pollTimer=setInterval(loadJob,4000);
 }
-function stopPolling(){
-  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
-}
 
-/* ===== RATING / CANCEL ===== */
-function openRating(){
-  ratingModal.style.display="flex";
-  stars.innerHTML="";
-  for(let i=1;i<=5;i++){
-    const s=document.createElement("div");
-    s.className="star";
-    s.innerText="★";
-    s.onclick=()=>setStar(i);
-    stars.appendChild(s);
-  }
-}
-function setStar(nv){
-  rating=nv;
-  [...stars.children].forEach((s,i)=>s.classList.toggle("active",i<nv));
-}
-async function submitRating(){
-  if(rating===0){ alert("Puan seç"); return; }
-  rated=true;
-  ratingModal.style.display="none";
-  try{
-    const d=await apiPost("rateJob",{job_id:JOB_ID,rating,comment:comment.value||""});
-    coupon.innerText=(d&&d.ok&&d.coupon)?d.coupon:"SEPET10";
-  }catch(_){
-    coupon.innerText="SEPET10";
-  }
-  openThanks();
-}
-function openThanks(){ thanked=true; thanksModal.style.display="flex"; }
-function closeThanks(){ thanksModal.style.display="none"; }
-
-async function openCancel(){
-  if(CURRENT_STATUS==="completed"){ alert("Tamamlanan iş iptal edilemez"); return; }
-  if(confirm("Bu yolculuğu iptal etmek istiyor musunuz?")){
-    try{
-      await apiPost("updateStatus",{job_id:JOB_ID,status:"cancelled"});
-      stopPolling();
-      alert("İş iptal edildi");
-      loadJob();
-    }catch(e){
-      alert("İptal edilemedi");
-    }
-  }
-}
-
-/* ===== START ===== */
-initMap();
-loadJob();
-startPolling();
+start();
 </script>
 </body>
 </html>
