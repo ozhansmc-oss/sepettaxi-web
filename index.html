@@ -26,14 +26,6 @@ header{height:56px;background:#000;display:flex;align-items:center;justify-conte
 header span{color:var(--y)}
 #hamburger{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:10px;background:#0f0f0f;border:1px solid #222;display:flex;align-items:center;justify-content:center;cursor:pointer}
 
-/* MENU */
-#menuBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:900}
-#sideMenu{position:fixed;top:0;left:-260px;height:100%;width:240px;background:#0c0c0c;border-right:1px solid #222;z-index:1000;padding:14px;transition:.2s}
-#sideMenu.open{left:0}
-#menuBackdrop.open{display:block}
-.menuItem{background:#111;border:1px solid #222;border-radius:14px;padding:12px;margin-bottom:10px;cursor:pointer}
-.menuItem small{color:#aaa;font-size:12px}
-
 /* MAP + PANEL */
 #map{height:32vh}
 #panel{height:calc(68vh - 56px);padding:10px;display:flex;flex-direction:column;gap:8px;padding-bottom:160px;overflow:auto}
@@ -46,7 +38,7 @@ header span{color:var(--y)}
 
 /* INPUT */
 .input,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid #1f1f1f;background:#000;color:#fff;font-size:13px}
-.input::placeholder,textarea::placeholder{color:#666}
+textarea{resize:none}
 
 /* STATS */
 .stats{display:flex;gap:8px}
@@ -56,7 +48,7 @@ header span{color:var(--y)}
 
 /* CTA */
 #stickyBar{position:fixed;bottom:0;left:0;right:0;background:#000;padding:10px;border-top:1px solid #111;z-index:200}
-#callBar{background:var(--y);color:#000;border-radius:30px;padding:16px;text-align:center;font-weight:900}
+#ctaBtn{background:var(--y);color:#000;border-radius:30px;padding:16px;text-align:center;font-weight:900}
 
 /* REGISTER */
 #register{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:500}
@@ -65,11 +57,15 @@ header span{color:var(--y)}
 
 /* TRACK */
 #trackOverlay{position:fixed;inset:0;background:#000;z-index:600;display:none}
-#trackMap{height:60vh}
-#driverActions{display:none}
+#trackMap{height:52vh}
+#trackPanel{padding:10px}
+.pill{background:#0f0f0f;border:1px solid #222;border-radius:12px;padding:10px;margin-bottom:8px}
+.pill .t{font-size:11px;color:#aaa}
+.pill .v{font-size:15px;font-weight:900}
 
-/* LOCK */
-.app-locked{filter:blur(4px) brightness(.6);pointer-events:none}
+/* DRIVER COURIER DETAILS */
+#courierDetails{display:none}
+.phone{color:#4da6ff;text-decoration:none;font-weight:900}
 </style>
 </head>
 
@@ -82,15 +78,9 @@ header span{color:var(--y)}
   </div>
 </div>
 
-<div id="menuBackdrop" onclick="closeMenu()"></div>
-<div id="sideMenu">
-  <div class="menuItem" onclick="setDriverMode(false)">👤 Müşteri Modu</div>
-  <div class="menuItem" onclick="setDriverMode(true)">🚗 Sürücü Modu</div>
-</div>
-
 <div id="app">
   <header>
-    <div id="hamburger" onclick="toggleMenu()">☰</div>
+    <div id="hamburger">☰</div>
     Sepet<span>Taxi</span>
   </header>
 
@@ -127,72 +117,64 @@ header span{color:var(--y)}
 </div>
 
 <div id="stickyBar">
-  <div id="callBar" onclick="callDriver()">ÇAĞIR</div>
-</div>
-
-<div id="register">
-  <div class="box">
-    <input id="fn" class="input" placeholder="Ad">
-    <input id="ln" class="input" placeholder="Soyad">
-    <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <label style="font-size:12px;color:#aaa"><input type="checkbox" id="kvkk"> KVKK kabul</label>
-    <div id="regErr" class="err">Bilgiler hatalı</div>
-    <div id="callBar" style="margin-top:10px" onclick="saveUser()">KAYDI TAMAMLA</div>
-  </div>
+  <div id="ctaBtn" onclick="callCustomer()">ÇAĞIR</div>
 </div>
 
 <div id="trackOverlay">
-  <header><span>Canlı Takip</span></header>
   <div id="trackMap"></div>
-  <div class="card">
-    <div id="trackStatus">Durum: aranıyor</div>
-    <div id="driverActions">
-      <div id="callBar" onclick="setStatus('arrived')">GELDİM</div>
-      <div id="callBar" style="margin-top:6px" onclick="setStatus('picked')">ALDIM</div>
-      <div id="callBar" style="margin-top:6px;background:#333;color:#fff" onclick="setStatus('completed')">TAMAMLANDI</div>
+  <div id="trackPanel">
+
+    <div class="pill">
+      <div class="t">Durum</div>
+      <div class="v" id="trackStatus">—</div>
     </div>
+
+    <!-- SADECE SÜRÜCÜ + COURIER -->
+    <div id="courierDetails">
+      <div class="pill">
+        <div class="t">Paket Türü</div>
+        <div class="v" id="dPkg">—</div>
+      </div>
+      <div class="pill">
+        <div class="t">Gönderi Notu</div>
+        <div class="v" id="dNote">—</div>
+      </div>
+      <div class="pill">
+        <div class="t">Alıcı</div>
+        <div class="v" id="dRecv">—</div>
+      </div>
+      <div class="pill">
+        <div class="t">Alıcı Telefon</div>
+        <div class="v"><a id="dPhone" class="phone" href="#">—</a></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
 const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-let map,fromM,toM,service=null,registered=false,user={},currentJobId=null;
-let tMap,selfMarker,driverMode=false;
-
-const $=id=>document.getElementById(id);
-function logEvent(tag,msg){
-  fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({action:"log",tag,msg,job_id:currentJobId||""})}).catch(()=>{});
-}
-
-/* MENU */
-let menuOpen=false;
-function toggleMenu(){menuOpen?closeMenu():openMenu()}
-function openMenu(){sideMenu.classList.add("open");menuBackdrop.classList.add("open");menuOpen=true}
-function closeMenu(){sideMenu.classList.remove("open");menuBackdrop.classList.remove("open");menuOpen=false}
-function setDriverMode(v){driverMode=v;closeMenu();}
-
-/* START */
-function start(){landing.style.display="none";app.style.display="block";initMap()}
+let map,fromM,toM,service=null,registered=true;
+let currentJob=null;
 
 /* MAP */
-function initMap(){
+function start(){
+  landing.style.display="none";
+  app.style.display="block";
   map=L.map("map").setView([41,29],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   navigator.geolocation.getCurrentPosition(p=>{
     fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
     map.setView([p.coords.latitude,p.coords.longitude],15);
-    reverse(p.coords.latitude,p.coords.longitude,fromAddr);
   });
   map.on("click",e=>{
     toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
-    reverse(e.latlng.lat,e.latlng.lng,toAddr);
     calc();
   });
 }
 
 /* SERVICE */
 function pickService(t){
-  if(!registered){openRegister();return}
   service=t;
   svcTaxi.classList.toggle("active",t==="taxi");
   svcCourier.classList.toggle("active",t==="courier");
@@ -200,21 +182,9 @@ function pickService(t){
   calc();
 }
 
-/* REGISTER */
-function openRegister(){app.classList.add("app-locked");register.style.display="flex"}
-function saveUser(){
-  if(fn.value.length<2||ln.value.length<2||!/^05\d{9}$/.test(ph.value)||!kvkk.checked){
-    regErr.style.display="block";return
-  }
-  user={first:fn.value,last:ln.value,phone:ph.value};
-  registered=true;
-  register.style.display="none";
-  app.classList.remove("app-locked");
-}
-
 /* CALC */
 function hav(a,b,c,d){const R=6371;const dLat=(c-a)*Math.PI/180;const dLon=(d-b)*Math.PI/180;const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))}
-function priceCalc(km,t){return t==="taxi"?Math.max(120,60+km*22):Math.max(80,40+km*15)}
+function priceCalc(km,t){return t==="courier"?Math.max(80,40+km*15):Math.max(120,60+km*22)}
 function calc(){
   if(!service||!fromM||!toM)return;
   const a=fromM.getLatLng(),b=toM.getLatLng();
@@ -223,56 +193,37 @@ function calc(){
   price.textContent=Math.round(priceCalc(km,service))+" TL";
 }
 
-/* CALL */
-async function callDriver(){
-  if(driverMode)return;
-  if(!registered||!service||!fromM||!toM)return;
-  if(service==="courier"){
-    if(!pkgType.value||!contentNote.value||!recvName.value||!/^05\d{9}$/.test(recvPhone.value)||!contentAgree.checked){
-      courierErr.style.display="block";return
+/* CREATE JOB */
+async function callCustomer(){
+  if(service!=="courier")return alert("Bu sürümde demo: kurye");
+  const payload={
+    action:"createJob",
+    service_type:"courier",
+    courier:{
+      pkg_type:pkgType.value,
+      content_note:contentNote.value,
+      recv_name:recvName.value,
+      recv_phone:recvPhone.value
     }
-  }
-  const a=fromM.getLatLng(),b=toM.getLatLng();
-  const km=hav(a.lat,a.lng,b.lat,b.lng);
-  const priceBrut=Math.round(priceCalc(km,service));
-
-  const payload={action:"createJob",service_type:service,from:a,to:b,distance_km:km,price_brut:priceBrut,user};
-  logEvent("createJob","gönderildi");
-
+  };
   const r=await fetch(BACKEND_URL,{method:"POST",body:JSON.stringify(payload)});
   const j=await r.json();
-  currentJobId=j.job_id;
-  openTrack();
+  currentJob=j;
+  openTrackAsDriver();
 }
 
-/* TRACK */
-function openTrack(){
+/* DRIVER VIEW */
+function openTrackAsDriver(){
   trackOverlay.style.display="block";
-  tMap=L.map("trackMap").setView(fromM.getLatLng(),15);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(tMap);
-  selfMarker=L.marker(fromM.getLatLng()).addTo(tMap);
+  courierDetails.style.display="block";
 
-  if(driverMode){driverActions.style.display="block"}
-  else{driverActions.style.display="none"}
+  dPkg.textContent=currentJob.courier.pkg_type;
+  dNote.textContent=currentJob.courier.content_note;
+  dRecv.textContent=currentJob.courier.recv_name;
+  dPhone.textContent=currentJob.courier.recv_phone;
+  dPhone.href="tel:"+currentJob.courier.recv_phone;
 
-  navigator.geolocation.watchPosition(p=>{
-    const lat=p.coords.latitude,lng=p.coords.longitude;
-    selfMarker.setLatLng([lat,lng]);
-    tMap.setView([lat,lng],16);
-    fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({action:"updateLocation",job_id:currentJobId,lat,lng})});
-  });
-}
-
-function setStatus(st){
-  trackStatus.textContent="Durum: "+st;
-  fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({action:"updateStatus",job_id:currentJobId,status:st})});
-  if(st==="completed"){setTimeout(()=>location.reload(),800)}
-}
-
-/* REVERSE */
-function reverse(lat,lng,input){
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-  .then(r=>r.json()).then(d=>{if(d.display_name)input.value=d.display_name})
+  trackStatus.textContent="Kurye teslimata gidiyor";
 }
 </script>
 
