@@ -26,6 +26,7 @@ button{
   border:0;font-weight:900;background:#f5c400;color:#000;
   cursor:pointer
 }
+button:disabled{opacity:.6;cursor:not-allowed}
 .small{font-size:12px;color:#aaa;text-align:center;margin-top:10px}
 .err{color:#ff6b6b;font-size:13px;text-align:center;display:none}
 .ok{color:#6bffb0;font-size:13px;text-align:center;display:none}
@@ -38,8 +39,8 @@ button{
     <h1>Sepet<span>Taxi</span></h1>
 
     <input id="name" placeholder="Ad Soyad">
-    <input id="phone" placeholder="Telefon (05xxxxxxxxx)" inputmode="numeric">
-    
+    <input id="phone" placeholder="Telefon (05xxxxxxxxx)" inputmode="numeric" maxlength="11">
+
     <select id="vehicle">
       <option value="">Araç Tipi Seç</option>
       <option value="taxi">Taksi</option>
@@ -47,7 +48,7 @@ button{
       <option value="courier_car">Kurye (Araç)</option>
     </select>
 
-    <button onclick="register()">KAYIT OL</button>
+    <button id="btn" onclick="register()">KAYIT OL</button>
 
     <div id="err" class="err"></div>
     <div id="ok" class="ok"></div>
@@ -59,24 +60,36 @@ button{
 </div>
 
 <script>
-const BACKEND = window.SEPT.BACKEND_URL;
-
-function cleanPhone(p){
-  return p.replace(/\D/g,"");
+/* ================= CONFIG ================= */
+const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
+if(!BACKEND_URL){
+  alert("BACKEND_URL bulunamadı (config.js)");
+  throw "BACKEND_URL yok";
 }
 
+const $ = id => document.getElementById(id);
+
+function cleanPhone(p){ return p.replace(/\D/g,""); }
+
+/* ================= REGISTER ================= */
 async function register(){
-  err.style.display="none";
-  ok.style.display="none";
+  hideMsgs();
 
-  const name = nameInput();
-  const phone = cleanPhone(phoneInput());
-  const vehicle = vehicleInput();
+  const name = $("name").value.trim();
+  const phone = cleanPhone($("phone").value.trim());
+  const vehicle = $("vehicle").value;
 
-  if(!name || phone.length !== 11 || !vehicle){
-    showErr("Lütfen tüm alanları doğru doldurun");
-    return;
+  if(name.length < 3){
+    return showErr("Ad soyad en az 3 karakter olmalı");
   }
+  if(!/^05\d{9}$/.test(phone)){
+    return showErr("Telefon 05XXXXXXXXX formatında olmalı");
+  }
+  if(!vehicle){
+    return showErr("Araç tipi seçiniz");
+  }
+
+  $("btn").disabled = true;
 
   const payload = {
     action: "ensureDriver",
@@ -88,31 +101,33 @@ async function register(){
   };
 
   try{
-    const res = await fetch(BACKEND,{
+    const res = await fetch(BACKEND_URL,{
       method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
     }).then(r=>r.json());
 
     if(!res || !res.ok){
-      showErr("Kayıt sırasında hata oluştu");
-      return;
+      $("btn").disabled = false;
+      return showErr("Kayıt sırasında hata oluştu");
     }
 
-    ok.innerText = "Kayıt alındı. Admin onayı bekleniyor.";
-    ok.style.display="block";
+    $("ok").innerText = "Kayıt alındı. Admin onayı bekleniyor.";
+    $("ok").style.display = "block";
 
   }catch(e){
-    showErr("Bağlantı hatası");
+    $("btn").disabled = false;
+    showErr("Sunucuya bağlanılamadı");
   }
 }
 
-function nameInput(){ return document.getElementById("name").value.trim(); }
-function phoneInput(){ return document.getElementById("phone").value.trim(); }
-function vehicleInput(){ return document.getElementById("vehicle").value; }
-
 function showErr(t){
-  err.innerText = t;
-  err.style.display="block";
+  $("err").innerText = t;
+  $("err").style.display = "block";
+}
+function hideMsgs(){
+  $("err").style.display = "none";
+  $("ok").style.display = "none";
 }
 </script>
 </body>
