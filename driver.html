@@ -31,6 +31,8 @@ button{
   background:#222;font-size:12px;margin-top:6px
 }
 .hidden{display:none}
+.small{font-size:12px;color:#aaa}
+hr{border:0;border-top:1px solid #222;margin:10px 0}
 </style>
 </head>
 
@@ -47,8 +49,13 @@ button{
 </div>
 
 <div id="jobCard" class="card hidden">
-  <b>Aktif İş</b><br><br>
-  <div id="jobInfo">—</div>
+  <b id="jobTitle">Aktif İş</b><br><br>
+
+  <div id="jobRoute"></div>
+  <div id="jobExtra" class="small"></div>
+
+  <hr>
+
   <div id="jobStatus" class="badge">—</div><br><br>
 
   <button id="btnStart" onclick="startJob()" class="hidden">🚗 YOLA ÇIKTIM</button>
@@ -80,7 +87,8 @@ async function loadJob(){
   const jobs = await fetch(BACKEND_URL+"?action=getJobs").then(r=>r.json());
   const j = jobs.find(x=>x.driver_id===DRIVER_ID && x.status!=="completed");
   if(!j){
-    $("jobInfo").innerText="Aktif iş yok";
+    $("jobRoute").innerText="Aktif iş yok";
+    $("jobExtra").innerText="";
     $("jobStatus").innerText="—";
     $("btnStart").classList.add("hidden");
     $("btnFinish").classList.add("hidden");
@@ -88,8 +96,25 @@ async function loadJob(){
   }
 
   ACTIVE_JOB=j;
-  $("jobInfo").innerText = j.from_address+" → "+j.to_address;
+
+  // Ortak
+  $("jobRoute").innerText = j.from_address+" → "+j.to_address;
   $("jobStatus").innerText = j.status;
+
+  // 🚕 TAKSİ
+  if(j.service_type==="taxi"){
+    $("jobTitle").innerText="🚕 Taksi İşi";
+    $("jobExtra").innerText="";
+  }
+
+  // 📦 KURYE
+  if(j.service_type==="courier"){
+    $("jobTitle").innerText="📦 Kurye Teslimatı";
+    $("jobExtra").innerHTML=
+      "Paket: <b>"+(j.package_type||"-")+"</b><br>"+
+      "Alıcı: <b>"+(j.receiver_name||"-")+"</b><br>"+
+      "Telefon: <b>"+(j.receiver_phone||"-")+"</b>";
+  }
 
   $("btnStart").classList.toggle("hidden",j.status!=="assigned");
   $("btnFinish").classList.toggle("hidden",j.status!=="on_route");
