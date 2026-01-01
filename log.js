@@ -1,15 +1,59 @@
-(function (w) {
-  function log(tag, data) {
-    console.log("[SepetTaxi]", tag, data ?? "");
+/**
+ * SepetTaxi – log.js (LOCKED)
+ * Minimal, production-safe logger
+ */
+
+(function () {
+  if (!window.SEPT) {
+    console.warn("[SepetTaxi] SEPT config bulunamadı");
+    return;
   }
 
-  function warn(tag, data) {
-    console.warn("[SepetTaxi]", tag, data ?? "");
+  const DEBUG = !!SEPT.DEBUG;
+  const PREFIX = "[SepetTaxi]";
+
+  function now() {
+    return new Date().toISOString();
   }
 
-  function error(tag, err) {
-    console.error("[SepetTaxi]", tag, err);
+  function fmt(level, msg, data) {
+    return {
+      time: now(),
+      level,
+      msg,
+      data: data !== undefined ? data : null
+    };
   }
 
-  w.STLog = { log, warn, error };
-})(window);
+  function out(method, payload) {
+    if (!DEBUG) return;
+    try {
+      console[method](PREFIX, payload);
+    } catch (_) {}
+  }
+
+  window.Log = {
+    info(msg, data) {
+      out("log", fmt("INFO", msg, data));
+    },
+
+    warn(msg, data) {
+      out("warn", fmt("WARN", msg, data));
+    },
+
+    error(msg, err) {
+      out("error", fmt("ERROR", msg, err));
+    },
+
+    // Backend çağrıları için özel helper
+    api(action, payload, response) {
+      out("log", {
+        time: now(),
+        type: "API",
+        action,
+        payload,
+        response
+      });
+    }
+  };
+})();
