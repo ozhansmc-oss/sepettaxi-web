@@ -19,33 +19,12 @@ header span{color:#f5c400}
 .loginCard h1{text-align:center;margin:0 0 14px 0}
 .loginCard h1 span{color:#f5c400}
 .loginCard input{width:100%;padding:14px;border-radius:14px;border:0;background:#222;color:#fff;margin-bottom:10px}
-.loginCard button{width:100%;padding:14px;border-radius:18px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
+.loginCard button{width:100%;padding:14px;border-radius:18px;border:0;font-weight:900;background:#f5c400;color:#000}
 .err{color:#ff6b6b;font-size:13px;text-align:center;display:none}
 
 .wrap{padding:14px;max-width:1200px;margin:auto}
 .card{background:#111;border-radius:16px;padding:14px;margin-bottom:14px;border:1px solid #222}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-.kpi{background:#0f0f0f;border-radius:14px;padding:12px;text-align:center;border:1px solid #1f1f1f}
-.kpi .lbl{font-size:12px;color:#aaa}
-.kpi .val{font-size:22px;font-weight:900;margin-top:6px}
-
-table{width:100%;border-collapse:collapse;font-size:12px}
-th,td{padding:8px;border-bottom:1px solid #222;text-align:left;vertical-align:top}
-th{color:#f5c400;font-weight:900}
-tr:hover{background:#151515}
-
-.badge{padding:4px 8px;border-radius:999px;font-size:11px;background:#222;color:#aaa}
-.pending{background:#444}
-.available{background:#1f6f3f;color:#9fffc7}
-.assigned{background:#1f6f3f;color:#9fffc7}
-.completed{background:#2d7dd2;color:#cfe5ff}
-.cancelled{background:#6f1f1f;color:#ffb0b0}
-
-.topbar{display:flex;justify-content:space-between;align-items:center}
-.logout{background:#222;color:#ccc;border:0;border-radius:14px;padding:8px 14px;cursor:pointer}
-
-select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:180px}
-.btnSmall{background:#f5c400;border:0;border-radius:12px;padding:8px 10px;font-weight:900;cursor:pointer;margin-top:6px}
+.btnSmall{background:#f5c400;border:0;border-radius:12px;padding:8px 10px;font-weight:900;cursor:pointer}
 .btnRed{background:#6f1f1f;color:#fff}
 .small{font-size:12px;color:#aaa}
 </style>
@@ -70,72 +49,21 @@ select{background:#222;color:#fff;border:0;border-radius:10px;padding:8px;width:
 
 <div class="wrap">
 
-  <div class="card topbar">
-    <b>Yönetim Paneli</b>
-    <button class="logout" onclick="logout()">Çıkış</button>
-  </div>
-
-  <!-- KPI -->
-  <div class="card">
-    <div class="grid">
-      <div class="kpi"><div class="lbl">Toplam İş</div><div id="kTotal" class="val">—</div></div>
-      <div class="kpi"><div class="lbl">Aktif</div><div id="kActive" class="val">—</div></div>
-      <div class="kpi"><div class="lbl">Tamamlanan</div><div id="kCompleted" class="val">—</div></div>
-      <div class="kpi"><div class="lbl">İptal</div><div id="kCancelled" class="val">—</div></div>
-      <div class="kpi"><div class="lbl">Toplam Ciro</div><div id="kRevenue" class="val">—</div></div>
-      <div class="kpi"><div class="lbl">Platform Geliri</div><div id="kCommission" class="val">—</div></div>
-      <div class="kpi"><div class="lbl">Bugün Tamamlanan</div><div id="kTodayC" class="val">—</div></div>
-      <div class="kpi"><div class="lbl">Bugün Ciro</div><div id="kTodayR" class="val">—</div></div>
-    </div>
-  </div>
-
-  <!-- DRIVER CANDIDATES -->
   <div class="card">
     <b>Sürücü Adayları (Onay Bekleyen)</b>
     <div id="candidates" class="small" style="margin-top:10px">Yükleniyor…</div>
-  </div>
-
-  <!-- JOBS -->
-  <div class="card">
-    <b>İş Detayları (Pending → Manuel Atama)</b>
-    <div style="overflow:auto;margin-top:10px">
-      <table>
-        <thead>
-          <tr>
-            <th>Job</th>
-            <th>Durum</th>
-            <th>Sürücü / Atama</th>
-            <th>Mesafe</th>
-            <th>Ücret</th>
-            <th>Komisyon</th>
-            <th>Tarih</th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- TIMELINE -->
-  <div class="card">
-    <b>Son Olaylar (Timeline)</b>
-    <div id="tl" class="small" style="margin-top:10px"></div>
   </div>
 
 </div>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
-const COMMISSION = (window.SEPT && window.SEPT.COMMISSION) ? window.SEPT.COMMISSION : 0.15;
-
+const BACKEND_URL = SEPT.BACKEND_URL;
 const ADMIN_ID="admin";
 const ADMIN_PIN="1234";
-
 const $=id=>document.getElementById(id);
 
-/* ================= AUTH ================= */
+/* ===== AUTH ===== */
 function login(){
   if($("aid").value.trim()===ADMIN_ID && $("pin").value.trim()===ADMIN_PIN){
     sessionStorage.setItem("admin_auth","ok");
@@ -144,19 +72,15 @@ function login(){
     $("err").style.display="block";
   }
 }
-function logout(){
-  sessionStorage.removeItem("admin_auth");
-  location.reload();
-}
 function showAdmin(){
   $("loginWrap").classList.add("hidden");
   $("adminWrap").classList.remove("hidden");
-  loadAll();
-  setInterval(loadAll,5000);
+  loadDrivers();
+  setInterval(loadDrivers,5000);
 }
 if(sessionStorage.getItem("admin_auth")==="ok") showAdmin();
 
-/* ================= API ================= */
+/* ===== API ===== */
 async function apiPost(action,payload){
   return fetch(BACKEND_URL,{
     method:"POST",
@@ -165,38 +89,13 @@ async function apiPost(action,payload){
   }).then(r=>r.json());
 }
 
-/* ================= DATA ================= */
-function num(v){
-  const n=parseFloat(String(v||0).replace(/[^\d.]/g,""));
-  return isFinite(n)?n:0;
+/* ===== DRIVERS ===== */
+async function loadDrivers(){
+  const res = await apiPost("adminListDrivers",{});
+  if(!res.ok) return;
+  renderCandidates(res.drivers||[]);
 }
 
-async function loadAll(){
-  const [jobs,drivers,sum,tline]=await Promise.all([
-    fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json()),
-    fetch(`${BACKEND_URL}?action=getDrivers`).then(r=>r.json()),
-    fetch(`${BACKEND_URL}?action=dailySummary`).then(r=>r.json()),
-    fetch(`${BACKEND_URL}?action=getTimeline&limit=30`).then(r=>r.json())
-  ]);
-  renderKpi(sum);
-  renderCandidates(drivers||[]);
-  renderTable(jobs||[],drivers||[]);
-  renderTimeline(tline);
-}
-
-function renderKpi(s){
-  if(!s||!s.ok) return;
-  $("kTotal").innerText=s.total;
-  $("kActive").innerText=s.active;
-  $("kCompleted").innerText=s.completed;
-  $("kCancelled").innerText=s.cancelled;
-  $("kRevenue").innerText=(s.revenue||0).toFixed(0)+" TL";
-  $("kCommission").innerText=(s.commission||0).toFixed(0)+" TL";
-  $("kTodayC").innerText=s.todayCompleted;
-  $("kTodayR").innerText=(s.todayRevenue||0).toFixed(0)+" TL";
-}
-
-/* ===== DRIVER CANDIDATES ===== */
 function renderCandidates(drivers){
   const pending = drivers.filter(d=>d.status==="pending");
   if(!pending.length){
@@ -204,62 +103,27 @@ function renderCandidates(drivers){
     return;
   }
   $("candidates").innerHTML = pending.map(d=>`
-    <div style="margin-bottom:8px">
-      <b>${d.name||"-"}</b> · ${d.phone||"-"} · ${d.vehicle_type||"-"}<br>
+    <div style="margin-bottom:12px">
+      <b>${d.name}</b><br>
+      📞 ${d.phone}<br>
+      🚗 ${d.vehicle_type}<br>
+      🆔 ${d.driver_id}<br>
       <button class="btnSmall" onclick="approve('${d.driver_id}')">ONAYLA</button>
       <button class="btnSmall btnRed" onclick="reject('${d.driver_id}')">REDDET</button>
     </div>
   `).join("");
 }
+
 async function approve(id){
-  await apiPost("setDriverStatus",{driver_id:id,status:"available"});
-  loadAll();
+  await apiPost("adminApproveDriver",{driver_id:id});
+  loadDrivers();
 }
 async function reject(id){
-  await apiPost("setDriverStatus",{driver_id:id,status:"rejected"});
-  loadAll();
-}
-
-/* ===== JOB TABLE ===== */
-async function assign(jobId,driverId){
-  if(!driverId){ alert("Sürücü seç"); return; }
-  await apiPost("assignDriver",{job_id:jobId,driver_id:driverId,actor:"admin"});
-  loadAll();
-}
-
-function renderTable(jobs,drivers){
-  $("rows").innerHTML="";
-  const avail=drivers.filter(d=>d.status==="available");
-  jobs.slice().reverse().forEach(j=>{
-    const price=num(j.final_price||j.price);
-    const comm=price*COMMISSION;
-    let drv=j.driver_id||"-";
-    if(j.status==="pending"){
-      drv=`
-        <select id="sel_${j.job_id}">
-          <option value="">Sürücü seç</option>
-          ${avail.map(d=>`<option value="${d.driver_id}">${d.driver_id}</option>`).join("")}
-        </select>
-        <button class="btnSmall" onclick="assign('${j.job_id}',document.getElementById('sel_${j.job_id}').value)">ATA</button>`;
-    }
-    $("rows").innerHTML+=`
-      <tr>
-        <td>${j.job_id}</td>
-        <td><span class="badge ${j.status}">${j.status}</span></td>
-        <td>${drv}</td>
-        <td>${num(j.distance_km).toFixed(2)} km</td>
-        <td>${price.toFixed(0)} TL</td>
-        <td>${comm.toFixed(0)} TL</td>
-        <td>${(j.created_at||"").slice(0,16).replace("T"," ")}</td>
-      </tr>`;
-  });
-}
-
-/* ===== TIMELINE ===== */
-function renderTimeline(t){
-  if(!t||!t.ok){ $("tl").innerText="Timeline yok."; return; }
-  $("tl").innerHTML=t.items.map(x=>`• <b>${x.job_id}</b> ${x.event} (${x.status})`).join("<br>");
+  await apiPost("adminRejectDriver",{driver_id:id});
+  loadDrivers();
 }
 </script>
+
 </body>
 </html>
+
