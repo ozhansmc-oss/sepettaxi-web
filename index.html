@@ -11,192 +11,187 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-:root{--y:#f5c400;--line:#222;--muted:#9a9a9a;--card:#141414}
-
+html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff}
 .hidden{display:none}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
-header span{color:var(--y)}
 
-#map{height:50vh}
-.wrap{padding:12px}
+/* LANDING */
+#landing{
+  position:fixed;inset:0;
+  background:#000 url("assets/landing.png") center/cover no-repeat;
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:40px;z-index:50
+}
+#startBtn{
+  width:100%;max-width:360px;
+  padding:18px;border-radius:30px;
+  border:0;font-size:18px;font-weight:900;
+  background:#f5c400;color:#000;cursor:pointer
+}
 
-.cardRow{display:flex;gap:10px;margin-bottom:10px}
+/* APP */
+#app{display:none;height:100%}
+#map{height:55vh}
+
+/* CARDS */
+.cards{padding:12px;display:grid;gap:10px}
 .card{
-  flex:1;
-  background:var(--card);
-  border-radius:16px;
-  padding:14px;
-  border:1px solid #222;
-  cursor:pointer
+  background:#111;border-radius:16px;padding:16px;
+  border:1px solid #222;cursor:pointer
 }
-.card.outline{background:#0f0f0f}
-.card b{display:block;margin-bottom:4px}
-.muted{font-size:12px;color:var(--muted)}
-
-button{
-  width:100%;
-  padding:14px;
-  border-radius:18px;
-  border:0;
-  font-weight:900;
-  background:var(--y);
-  color:#000;
-  margin-top:10px;
-  cursor:pointer
-}
-button.ghost{
-  background:#111;
-  color:#fff;
-  border:1px solid #222
-}
-
-input,select{
-  width:100%;
-  padding:12px;
-  border-radius:14px;
-  border:0;
-  background:#222;
-  color:#fff;
-  margin-top:8px
-}
+.card h3{margin:0 0 6px 0;color:#f5c400}
 
 /* MODAL */
 .modal{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.7);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:5000
+  position:fixed;inset:0;background:rgba(0,0,0,.6);
+  display:none;align-items:center;justify-content:center;z-index:100
 }
-.modalCard{
-  background:#111;
-  border-radius:18px;
-  padding:20px;
-  width:100%;
-  max-width:340px;
-  border:1px solid #222
+.modal.active{display:flex}
+.modalBox{
+  background:#111;border-radius:18px;
+  padding:20px;width:90%;max-width:360px
 }
+.modalBox h2{margin-top:0}
+.modalBox input, .modalBox select{
+  width:100%;padding:12px;margin-bottom:10px;
+  border-radius:12px;border:0;background:#222;color:#fff
+}
+.modalBox button{
+  width:100%;padding:14px;border-radius:22px;
+  border:0;font-weight:900;cursor:pointer
+}
+.primary{background:#f5c400;color:#000}
+.secondary{background:#222;color:#fff;margin-top:8px}
 </style>
 </head>
 
 <body>
 
-<header>Sepet<span>Taxi</span></header>
-
-<div id="map"></div>
-
-<div class="wrap">
-
-  <!-- MÜŞTERİ KARTLARI -->
-  <div class="cardRow">
-    <div class="card">
-      <b>🚕 Taksi Çağır</b>
-      <div class="muted">Hızlı ve güvenli yolculuk</div>
-    </div>
-    <div class="card">
-      <b>📦 Kurye Çağır</b>
-      <div class="muted">Gönderini hemen ulaştıralım</div>
-    </div>
-  </div>
-
-  <!-- SÜRÜCÜ KARTLARI -->
-  <div class="cardRow">
-    <div class="card" onclick="goDriverLogin()">
-      <b>🚕 Sürücü müsün?</b>
-      <div class="muted">Driver ID ile panele gir</div>
-    </div>
-    <div class="card outline" onclick="openDriverApply()">
-      <b>➕ Sürücü Ol</b>
-      <div class="muted">SepetTaxi sürücüsü olmak için başvur</div>
-    </div>
-  </div>
-
+<!-- LANDING -->
+<div id="landing">
+  <button id="startBtn">BAŞLA</button>
 </div>
 
-<!-- ================= DRIVER APPLY MODAL ================= -->
-<div id="driverApplyModal" class="modal hidden">
-  <div class="modalCard">
-    <h3>Sürücü Başvurusu</h3>
+<!-- APP -->
+<div id="app">
+  <div id="map"></div>
 
-    <input id="drvName" placeholder="Ad Soyad">
-    <input id="drvPhone" placeholder="Telefon (0XXXXXXXXXX)" maxlength="11">
-    <select id="drvVehicle">
+  <div class="cards">
+    <div class="card" onclick="selectService('taxi')">
+      <h3>🚕 Taksi Çağır</h3>
+      <div>Hızlı ve güvenli yolculuk</div>
+    </div>
+
+    <div class="card" onclick="selectService('courier')">
+      <h3>📦 Kurye</h3>
+      <div>Paket ve evrak teslimi</div>
+    </div>
+
+    <div class="card" onclick="openDriverModal()">
+      <h3>🚗 Sürücü müsün?</h3>
+      <div>SepetTaxi sürücüsü ol</div>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div id="registerModal" class="modal">
+  <div class="modalBox">
+    <h2>Kayıt Ol</h2>
+    <input id="rFirst" placeholder="Ad">
+    <input id="rLast" placeholder="Soyad">
+    <input id="rPhone" placeholder="05XXXXXXXXX" maxlength="11">
+    <button class="primary" onclick="completeRegister()">Devam Et</button>
+    <button class="secondary" onclick="closeRegister()">Vazgeç</button>
+  </div>
+</div>
+
+<!-- DRIVER APPLY MODAL -->
+<div id="driverModal" class="modal">
+  <div class="modalBox">
+    <h2>Sürücü Başvurusu</h2>
+    <input id="dName" placeholder="Ad Soyad">
+    <input id="dPhone" placeholder="05XXXXXXXXX" maxlength="11">
+    <select id="dVehicle">
       <option value="taxi">Taksi</option>
       <option value="courier">Kurye</option>
     </select>
-
-    <button onclick="submitDriverApply()">Başvuruyu Gönder</button>
-    <button class="ghost" onclick="closeDriverApply()">Vazgeç</button>
-
-    <div id="drvMsg" class="muted" style="margin-top:10px"></div>
+    <button class="primary" onclick="sendDriverApply()">Başvuruyu Gönder</button>
+    <button class="secondary" onclick="closeDriverModal()">Vazgeç</button>
   </div>
 </div>
 
 <script>
-/* ================= MAP ================= */
-const map = L.map("map").setView([40.195,29.060],12);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+/* ===== GLOBAL STATE ===== */
+let map,userRegistered=false,selectedService=null;
+let userLatLng=null;
 
-/* ================= HELPERS ================= */
-const $ = id => document.getElementById(id);
+/* ===== LANDING ===== */
+document.getElementById("startBtn").onclick=()=>{
+  document.getElementById("landing").style.display="none";
+  document.getElementById("app").style.display="block";
+  initMap();
+};
 
-/* ================= DRIVER FLOW ================= */
-function goDriverLogin(){
-  location.href = "driver.html";
+/* ===== MAP ===== */
+function initMap(){
+  map=L.map("map").setView([40.195,29.060],12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  navigator.geolocation.getCurrentPosition(p=>{
+    userLatLng={lat:p.coords.latitude,lng:p.coords.longitude};
+    map.setView([userLatLng.lat,userLatLng.lng],15);
+    L.marker([userLatLng.lat,userLatLng.lng]).addTo(map);
+  });
 }
 
-function openDriverApply(){
-  $("driverApplyModal").classList.remove("hidden");
-  $("drvMsg").innerText = "";
-}
-
-function closeDriverApply(){
-  $("driverApplyModal").classList.add("hidden");
-}
-
-async function submitDriverApply(){
-  const name = $("drvName").value.trim();
-  const phone = $("drvPhone").value.replace(/\D/g,"");
-  const vehicle = $("drvVehicle").value;
-
-  if(name.length < 3){
-    $("drvMsg").innerText = "Ad soyad gerekli.";
+/* ===== SERVICE SELECT ===== */
+function selectService(type){
+  selectedService=type;
+  if(!userRegistered){
+    openRegister();
     return;
   }
-  if(phone.length !== 11 || !phone.startsWith("0")){
-    $("drvMsg").innerText = "Telefon 0 ile başlayan 11 haneli olmalı.";
-    return;
+  if(type==="taxi"){
+    alert("Taksi akışı başlatılır (adres → fiyat → çağır)");
+  }else{
+    alert("Kurye akışı başlatılır (gönderici/alıcı → fiyat → çağır)");
   }
+}
 
-  $("drvMsg").innerText = "Başvurun gönderiliyor…";
+/* ===== REGISTER ===== */
+function openRegister(){ document.getElementById("registerModal").classList.add("active"); }
+function closeRegister(){ document.getElementById("registerModal").classList.remove("active"); }
 
-  const res = await fetch(SEPT.BACKEND_URL,{
+function completeRegister(){
+  const f=document.getElementById("rFirst").value.trim();
+  const l=document.getElementById("rLast").value.trim();
+  const p=document.getElementById("rPhone").value.trim();
+  if(!f||!l||p.length!==11){ alert("Bilgiler eksik"); return; }
+  userRegistered=true;
+  closeRegister();
+  selectService(selectedService);
+}
+
+/* ===== DRIVER APPLY ===== */
+function openDriverModal(){ document.getElementById("driverModal").classList.add("active"); }
+function closeDriverModal(){ document.getElementById("driverModal").classList.remove("active"); }
+
+async function sendDriverApply(){
+  const name=dName.value.trim();
+  const phone=dPhone.value.trim();
+  const vehicle=dVehicle.value;
+  if(!name||phone.length!==11){ alert("Bilgiler eksik"); return; }
+
+  await fetch(window.SEPT.BACKEND_URL,{
     method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
     body:JSON.stringify({
-      action:"registerDriver",
-      name,
-      phone,
-      vehicle_type:vehicle
+      action:"ensureDriver",
+      name,phone,vehicle_type:vehicle,status:"pending"
     })
-  }).then(r=>r.json());
+  });
 
-  if(!res.ok){
-    $("drvMsg").innerText = res.error || "Başvuru alınamadı.";
-    return;
-  }
-
-  if(res.status==="pending"){
-    $("drvMsg").innerText =
-      "Başvurun alındı. Onaylandığında SMS ile bilgilendirileceksin.";
-  }else if(res.status==="available"){
-    $("drvMsg").innerText =
-      "Zaten onaylı bir sürücüsün. Driver ID ile giriş yapabilirsin.";
-  }else if(res.status==="rejected"){
-    $("drvMsg").innerText =
-      "Daha önce reddedilmiş bir başvurun bulunuyor.";
-  }
+  alert("Başvurun alındı. Admin onayı bekleniyor.");
+  closeDriverModal();
 }
 </script>
 
