@@ -3,215 +3,121 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Driver</title>
-
-<script src="config.js"></script>
+<title>SepetTaxi – Sürücü</title>
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#000;color:#fff}
-header{height:56px;display:flex;align-items:center;justify-content:center;
-  font-weight:900;border-bottom:1px solid #222}
+body{margin:0;background:#000;color:#fff;font-family:Arial}
+header{
+  height:56px;display:flex;align-items:center;justify-content:center;
+  font-weight:900;border-bottom:1px solid #222
+}
 header span{color:#f5c400}
-
-.wrap{padding:14px;max-width:720px;margin:auto}
-.card{background:#111;border-radius:18px;padding:16px;margin-bottom:14px;
-  border:1px solid #222}
-.hidden{display:none}
-
-input{
-  width:100%;padding:14px;border-radius:14px;border:0;
-  background:#222;color:#fff;margin-top:8px
+.wrap{padding:14px;max-width:520px;margin:auto}
+.card{
+  background:#111;border-radius:16px;padding:14px;margin-bottom:12px;
+  border:1px solid #222
 }
+input,button{
+  width:100%;padding:14px;border-radius:14px;
+  border:0;font-size:14px
+}
+input{background:#222;color:#fff}
 button{
-  width:100%;padding:14px;border-radius:18px;border:0;
-  font-weight:900;background:#f5c400;color:#000;
-  margin-top:10px;cursor:pointer
+  background:#f5c400;color:#000;font-weight:900;cursor:pointer
 }
-button.ghost{
-  background:#111;color:#fff;border:1px solid #222
-}
-
 .badge{
   display:inline-block;padding:4px 10px;border-radius:999px;
-  font-size:12px;margin-top:6px
+  background:#222;font-size:12px;margin-top:6px
 }
-.pending{background:#444}
-.available{background:#1f6f3f;color:#9fffc7}
-.busy{background:#f39c12;color:#000}
-.rejected{background:#6f1f1f;color:#ffb0b0}
-
-.small{font-size:12px;color:#aaa}
-.big{font-size:22px;font-weight:900}
+.hidden{display:none}
 </style>
 </head>
 
 <body>
 
-<header>Sepet<span>Taxi</span> – Driver</header>
+<header>Sepet<span>Taxi</span> – Sürücü</header>
 
 <div class="wrap">
 
-<!-- LOGIN -->
-<div class="card" id="loginCard">
-  <b>Driver Girişi</b>
-  <div class="small">Admin tarafından verilen Driver ID ile giriş yap</div>
-  <input id="driverIdInput" placeholder="Driver ID (örn: DRV-123456)">
-  <button onclick="login()">Giriş Yap</button>
-  <div id="loginMsg" class="small" style="margin-top:8px"></div>
+<div id="loginCard" class="card">
+  <b>Sürücü Girişi</b><br><br>
+  <input id="did" placeholder="Driver ID (DRV-001)">
+  <button onclick="login()">GİRİŞ</button>
 </div>
 
-<!-- STATUS -->
-<div class="card hidden" id="statusCard">
-  <b>Sürücü Durumu</b>
-  <div id="drvName" class="big">—</div>
-  <div id="drvPhone" class="small">—</div>
-  <div id="drvStatus" class="badge">—</div>
+<div id="jobCard" class="card hidden">
+  <b>Aktif İş</b><br><br>
+  <div id="jobInfo">—</div>
+  <div id="jobStatus" class="badge">—</div><br><br>
 
-  <div id="statusMsg" class="small" style="margin-top:10px"></div>
-
-  <button id="goOnlineBtn" class="hidden" onclick="goOnline()">MÜSAİTİM</button>
-  <button id="logoutBtn" class="ghost" onclick="logout()">Çıkış</button>
-</div>
-
-<!-- ACTIVE JOB -->
-<div class="card hidden" id="jobCard">
-  <b>Aktif İş</b>
-  <div id="jobRoute" class="small">—</div>
-  <div id="jobStatus" class="badge busy">Aktif</div>
-
-  <button id="startBtn" onclick="startJob()">YOLA ÇIKTIM</button>
-  <button id="finishBtn" class="hidden" onclick="finishJob()">İŞİ BİTİR</button>
+  <button id="btnStart" onclick="startJob()" class="hidden">🚗 YOLA ÇIKTIM</button>
+  <button id="btnFinish" onclick="finishJob()" class="hidden">✅ İŞİ BİTİR</button>
 </div>
 
 </div>
 
 <script>
-const DRIVER_KEY = "SEPT_driver";
-let driver = null;
-let activeJobId = null;
-let liveTimer = null;
+const BACKEND_URL =
+"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
 
-const $ = id => document.getElementById(id);
+let DRIVER_ID = sessionStorage.getItem("SEPT_driver_id") || "";
+let ACTIVE_JOB = null;
 
-/* ================= LOGIN ================= */
-async function login(){
-  const id = $("driverIdInput").value.trim();
-  if(!id){
-    $("loginMsg").innerText="Driver ID gerekli.";
-    return;
-  }
+const $=id=>document.getElementById(id);
 
-  $("loginMsg").innerText="Kontrol ediliyor…";
-
-  const res = await apiPost("adminListDrivers",{});
-  if(!res.ok){
-    $("loginMsg").innerText="Bağlantı hatası.";
-    return;
-  }
-
-  const d = (res.drivers||[]).find(x=>x.driver_id===id);
-  if(!d){
-    $("loginMsg").innerText="Driver ID bulunamadı.";
-    return;
-  }
-
-  driver = d;
-  localStorage.setItem(DRIVER_KEY,JSON.stringify(driver));
-  showDriver();
-}
-
-/* ================= UI ================= */
-function showDriver(){
+function login(){
+  DRIVER_ID=$("did").value.trim();
+  if(!DRIVER_ID) return alert("Driver ID gir");
+  sessionStorage.setItem("SEPT_driver_id",DRIVER_ID);
   $("loginCard").classList.add("hidden");
-  $("statusCard").classList.remove("hidden");
-
-  $("drvName").innerText = driver.name || "—";
-  $("drvPhone").innerText = driver.phone || "—";
-
-  renderStatus();
-}
-
-function renderStatus(){
-  $("drvStatus").className = "badge " + driver.status;
-  $("drvStatus").innerText = driver.status.toUpperCase();
-
-  $("statusMsg").innerText = "";
-  $("goOnlineBtn").classList.add("hidden");
-  $("jobCard").classList.add("hidden");
-
-  if(driver.status==="pending"){
-    $("statusMsg").innerText =
-      "Başvurun admin onayı bekliyor. Onaylandığında SMS alacaksın.";
-  }
-
-  if(driver.status==="rejected"){
-    $("statusMsg").innerText =
-      "Başvurun reddedildi. Detaylı bilgi için destekle iletişime geç.";
-  }
-
-  if(driver.status==="available"){
-    $("statusMsg").innerText =
-      "Müsait durumdasın. İş atandığında otomatik bildirileceksin.";
-  }
-
-  if(driver.status==="busy"){
-    $("statusMsg").innerText =
-      "Aktif işin var.";
-    loadActiveJob();
-  }
-}
-
-/* ================= STATUS ================= */
-async function goOnline(){
-  await apiPost("setDriverStatus",{
-    driver_id:driver.driver_id,
-    status:"available"
-  });
-  driver.status="available";
-  renderStatus();
-}
-
-/* ================= JOB ================= */
-async function loadActiveJob(){
-  // MVP: aktif job bilgisi backend’den henüz gelmiyor
-  // Bu alan, bir sonraki fazda bağlanacak
   $("jobCard").classList.remove("hidden");
-  $("jobRoute").innerText="Aktif iş bilgisi yükleniyor…";
+  loadJob();
+  setInterval(loadJob,4000);
 }
 
-/* ================= ACTIONS ================= */
-async function startJob(){
-  $("startBtn").classList.add("hidden");
-  $("finishBtn").classList.remove("hidden");
+async function loadJob(){
+  const jobs = await fetch(BACKEND_URL+"?action=getJobs").then(r=>r.json());
+  const j = jobs.find(x=>x.driver_id===DRIVER_ID && x.status!=="completed");
+  if(!j){
+    $("jobInfo").innerText="Aktif iş yok";
+    $("jobStatus").innerText="—";
+    $("btnStart").classList.add("hidden");
+    $("btnFinish").classList.add("hidden");
+    return;
+  }
+
+  ACTIVE_JOB=j;
+  $("jobInfo").innerText = j.from_address+" → "+j.to_address;
+  $("jobStatus").innerText = j.status;
+
+  $("btnStart").classList.toggle("hidden",j.status!=="assigned");
+  $("btnFinish").classList.toggle("hidden",j.status!=="on_route");
 }
 
-async function finishJob(){
-  $("jobStatus").innerText="Tamamlandı";
-  $("finishBtn").classList.add("hidden");
-}
-
-/* ================= API ================= */
-async function apiPost(action,payload){
-  payload.action = action;
-  const r = await fetch(SEPT.BACKEND_URL,{
+async function updateStatus(status){
+  if(!ACTIVE_JOB) return;
+  await fetch(BACKEND_URL,{
     method:"POST",
-    body:JSON.stringify(payload)
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body:JSON.stringify({
+      action:"updateStatus",
+      job_id:ACTIVE_JOB.job_id,
+      status,
+      driver_id:DRIVER_ID
+    })
   });
-  return r.json();
+  loadJob();
 }
 
-/* ================= LOGOUT ================= */
-function logout(){
-  localStorage.removeItem(DRIVER_KEY);
-  location.reload();
-}
+function startJob(){ updateStatus("on_route"); }
+function finishJob(){ updateStatus("completed"); }
 
-/* ================= AUTO ================= */
-const saved = localStorage.getItem(DRIVER_KEY);
-if(saved){
-  driver = JSON.parse(saved);
-  showDriver();
+if(DRIVER_ID){
+  $("loginCard").classList.add("hidden");
+  $("jobCard").classList.remove("hidden");
+  loadJob();
+  setInterval(loadJob,4000);
 }
 </script>
 
