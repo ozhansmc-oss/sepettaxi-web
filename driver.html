@@ -15,11 +15,10 @@ header span{color:#f5c400}
 input{width:100%;padding:12px;border-radius:12px;border:0;background:#222;color:#fff}
 button{width:100%;padding:14px;border-radius:22px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
 .small{font-size:12px;color:#aaa}
-.big{font-size:26px;font-weight:900}
+.big{font-size:22px;font-weight:900}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
 .auth-only{display:none}
-hr{border:0;border-top:1px solid #222;margin:10px 0}
 .navBtn{background:#0f0f0f;color:#fff;border:1px solid #333;margin-bottom:8px}
 </style>
 </head>
@@ -29,68 +28,53 @@ hr{border:0;border-top:1px solid #222;margin:10px 0}
 
 <div class="wrap">
 
+<!-- LOGIN -->
 <div class="card" id="loginCard">
   <b>Sürücü Girişi</b>
   <div style="height:8px"></div>
-  <input id="did" placeholder="Driver ID (örn: DRV-001)">
+  <input id="dname" placeholder="Ad Soyad">
   <div style="height:10px"></div>
-  <input id="dname" placeholder="Ad Soyad (opsiyonel)">
-  <div style="height:10px"></div>
-  <input id="dphone" placeholder="Telefon (05XXXXXXXXX)" maxlength="11">
+  <input id="dphone" placeholder="Telefon (0XXXXXXXXXX)" maxlength="11">
   <div style="height:10px"></div>
   <button onclick="login()">Panele Gir</button>
 </div>
 
-<div class="card auth-only">
-  <b>Sürücü Özeti</b>
-  <div class="grid" style="margin-top:10px">
-    <div><div class="small">Bugünkü Kazanç</div><div class="big" id="todayEarn">—</div></div>
-    <div><div class="small">Toplam Kazanç</div><div class="big" id="totalEarn">—</div></div>
-    <div><div class="small">Toplam Komisyon</div><div class="big" id="totalComm">—</div></div>
-    <div><div class="small">Net Kazanç</div><div class="big" id="netEarn">—</div></div>
-  </div>
-</div>
-
+<!-- ACTIVE JOB -->
 <div class="card auth-only">
   <b>Aktif İş</b>
   <div id="activeJob" class="small">Aktif iş yok.</div>
 </div>
 
-<div class="card auth-only">
-  <b>Geçmiş İşler</b>
-  <div id="history"></div>
-</div>
-
 </div>
 
 <script src="config.js"></script>
+<script src="log.js"></script>
 
 <script>
-const BACKEND_URL = window.SEPT.BACKEND_URL;
-const COMMISSION = window.SEPT.COMMISSION || 0.15;
+const DRIVER_KEY = "SEPT_driver";
+let driver = JSON.parse(localStorage.getItem(DRIVER_KEY) || "null");
+let liveTimer = null;
 
-let DRIVER_ID = sessionStorage.getItem("SEPT_driver_id");
-let LIVE_TIMER=null;
-
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 /* ================= LOGIN ================= */
 async function login(){
-  DRIVER_ID=$("did").value.trim();
-  if(!DRIVER_ID) return alert("Driver ID gir");
+  const name = $("dname").value.trim();
+  const phone = $("dphone").value.trim();
+  if(!name || !phone) return alert("Ad ve telefon gerekli");
 
-  sessionStorage.setItem("SEPT_driver_id",DRIVER_ID);
+  const res = await apiPost(SEPT.ACTIONS.REGISTER_DRIVER,{
+    name, phone, vehicle_type:"taxi"
+  });
 
-  await fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body:JSON.stringify({
-      action:"ensureDriver",
-      driver_id:DRIVER_ID,
-      name:$("dname").value,
-      phone:$("dphone").value,
-      status:"available"
-    })
+  if(!res.ok) return alert(res.error || "Kayıt başarısız");
+
+  driver = { driver_id: res.driver_id, name, phone };
+  localStorage.setItem(DRIVER_KEY, JSON.stringify(driver));
+
+  await apiPost(SEPT.ACTIONS.SET_DRIVER_STATUS,{
+    driver_id: driver.driver_id,
+    status: "available"
   });
 
   onAuth();
@@ -98,140 +82,117 @@ async function login(){
 
 /* ================= AUTH ================= */
 function onAuth(){
-  document.querySelectorAll(".auth-only").forEach(e=>e.style.display="block");
   $("loginCard").style.display="none";
-  loadData();
-  setInterval(loadData,5000);
+  document.querySelectorAll(".auth-only").forEach(e=>e.style.display="block");
+  poll();
+  setInterval(poll, 5000);
 }
 
-/* ================= DATA ================= */
-async function loadData(){
-  const jobs=await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
-  const mine=jobs.filter(j=>String(j.driver_id)===String(DRIVER_ID));
-  renderSummary(mine);
-  renderActive(mine);
-  renderHistory(mine);
-}
-
-function priceOf(j){
-  const p=Number(String(j.final_price||j.price||0).replace(/[^\d.]/g,""));
-  return isFinite(p)?p:0;
-}
-
-function renderSummary(jobs){
-  let total=0,comm=0;
-  jobs.forEach(j=>{
-    if(j.status==="completed"){
-      const p=priceOf(j);
-      total+=p; comm+=p*COMMISSION;
-    }
+/* ================= API ================= */
+async function apiPost(action,payload){
+  payload.action = action;
+  const r = await fetch(SEPT.BACKEND_URL,{
+    method:"POST",
+    body:JSON.stringify(payload)
   });
-  $("totalEarn").innerText=total.toFixed(0)+" TL";
-  $("totalComm").innerText=comm.toFixed(0)+" TL";
-  $("netEarn").innerText=(total-comm).toFixed(0)+" TL";
+  const j = await r.json();
+  Log.api(action,payload,j);
+  return j;
 }
 
-/* ================= NAV ================= */
-function openNav(fromLat,fromLng,toLat,toLng){
-  const url=
-    `https://www.google.com/maps/dir/?api=1`+
-    `&origin=${fromLat},${fromLng}`+
-    `&destination=${toLat},${toLng}`+
-    `&travelmode=driving`;
-  window.open(url,"_blank");
-}
+/* ================= POLL ================= */
+async function poll(){
+  if(!driver) return;
 
-async function navTo(jobId,type){
-  const jobs=await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
-  const j=jobs.find(x=>x.job_id===jobId);
-  if(!j) return;
-
-  navigator.geolocation.getCurrentPosition(p=>{
-    if(type==="pickup"){
-      openNav(p.coords.latitude,p.coords.longitude,j.pickup_lat,j.pickup_lng);
-    }else{
-      openNav(p.coords.latitude,p.coords.longitude,j.dropoff_lat,j.dropoff_lng);
-    }
+  const res = await apiPost(SEPT.ACTIONS.DRIVER_GET_JOB,{
+    driver_id: driver.driver_id
   });
+
+  if(!res.ok) return;
+
+  renderActive(res.job);
 }
 
 /* ================= ACTIVE ================= */
-function renderActive(jobs){
-  const box=$("activeJob");
-  const j=jobs.find(x=>x.status==="assigned"||x.status==="on_route");
-  if(!j){ box.innerText="Aktif iş yok."; stopLive(); return; }
+function renderActive(j){
+  const box = $("activeJob");
+  if(!j){
+    box.textContent="Aktif iş yok.";
+    stopLive();
+    return;
+  }
 
-  let btns="";
+  let btns = "";
+
   if(j.status==="assigned"){
-    btns=`
-      <button class="navBtn" onclick="navTo('${j.job_id}','pickup')">🧭 Pickup’a Git</button>
-      <button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>
-    `;
-  }
-  if(j.status==="on_route"){
-    btns=`
-      <button class="navBtn" onclick="navTo('${j.job_id}','dropoff')">🧭 Teslimata Git</button>
-      <button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>
+    btns = `
+      <button class="navBtn" onclick="navTo(${j.pickup_lat},${j.pickup_lng})">🧭 Pickup’a Git</button>
+      <button onclick="startJob('${j.job_id}')">YOLA ÇIKTIM</button>
     `;
   }
 
-  box.innerHTML=`
+  if(j.status==="active"){
+    btns = `
+      <button class="navBtn" onclick="navTo(${j.dropoff_lat},${j.dropoff_lng})">🧭 Teslimata Git</button>
+      <button onclick="completeJob('${j.job_id}')">İŞİ BİTİR</button>
+    `;
+    startLive(j.job_id);
+  }
+
+  box.innerHTML = `
     <b>${j.from_address} → ${j.to_address}</b><br>
     <span class="badge">${j.status}</span><br><br>${btns}
   `;
-
-  if(j.status==="on_route") startLive(j.job_id);
-  else stopLive();
-}
-
-/* ================= HISTORY ================= */
-function renderHistory(jobs){
-  $("history").innerHTML="";
-  jobs.filter(j=>j.status==="completed").slice(-10).reverse().forEach(j=>{
-    $("history").innerHTML+=`<div class="small">${j.from_address} → ${j.to_address}</div><hr>`;
-  });
 }
 
 /* ================= ACTIONS ================= */
-async function setStatus(jobId,status){
-  await fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body:JSON.stringify({
-      action:"updateStatus",
-      job_id:jobId,
-      status,
-      driver_id:DRIVER_ID
-    })
+async function startJob(jobId){
+  await apiPost(SEPT.ACTIONS.START_JOB,{
+    job_id:jobId,
+    driver_id:driver.driver_id
   });
-  loadData();
+  poll();
 }
 
+async function completeJob(jobId){
+  await apiPost(SEPT.ACTIONS.COMPLETE_JOB,{
+    job_id:jobId,
+    driver_id:driver.driver_id
+  });
+  stopLive();
+  poll();
+}
+
+/* ================= LIVE ================= */
 function startLive(jobId){
-  if(LIVE_TIMER) return;
-  LIVE_TIMER=setInterval(()=>{
+  if(liveTimer) return;
+  liveTimer = setInterval(()=>{
     navigator.geolocation.getCurrentPosition(p=>{
-      fetch(BACKEND_URL,{
-        method:"POST",
-        headers:{ "Content-Type":"text/plain;charset=utf-8" },
-        body:JSON.stringify({
-          action:"ping",
-          job_id:jobId,
-          driver_id:DRIVER_ID,
-          lat:p.coords.latitude,
-          lng:p.coords.longitude
-        })
+      apiPost(SEPT.ACTIONS.UPDATE_LIVE,{
+        job_id:jobId,
+        driver_id:driver.driver_id,
+        lat:p.coords.latitude,
+        lng:p.coords.longitude
       });
     });
-  },5000);
+  }, SEPT.DRIVER_PING_MS || 5000);
 }
 
 function stopLive(){
-  if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; }
+  if(liveTimer){
+    clearInterval(liveTimer);
+    liveTimer=null;
+  }
+}
+
+/* ================= NAV ================= */
+function navTo(lat,lng){
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  window.open(url,"_blank");
 }
 
 /* ================= AUTO ================= */
-if(DRIVER_ID) onAuth();
+if(driver) onAuth();
 </script>
 
 </body>
