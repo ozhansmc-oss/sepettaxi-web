@@ -82,8 +82,11 @@ textarea{width:100%;min-height:60px;border-radius:10px;border:0;background:#222;
   </div>
 </div>
 
-<!-- ================= LOG CORE ================= -->
+<!-- Global config (TEK KAYNAK) -->
+<script src="config.js"></script>
+
 <script>
+/* ===== LOG ===== */
 (function(){
   const L={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
   function log(l,t,m,d){
@@ -97,22 +100,14 @@ textarea{width:100%;min-height:60px;border-radius:10px;border:0;background:#222;
   window.logError=(t,m,d)=>log(L.ERROR,t,m,d);
   window.logFlow=(t,m,d)=>log(L.FLOW,t,m,d);
 })();
-</script>
 
-<script>
-/* ================= CONFIG ================= */
-
-const BACKEND_URL =
-  (window.SEPT && window.SEPT.BACKEND_URL) ||
-  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+/* ===== CONFIG ===== */
+const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
+if(!BACKEND_URL){ alert("BACKEND_URL yok (config.js)"); throw "BACKEND_URL yok"; }
 
 const qs=new URLSearchParams(location.search);
 const JOB_ID=qs.get("job_id");
-if(!JOB_ID){
-  alert("job_id bulunamadı");
-  logError("INIT","job_id missing");
-  throw "job_id yok";
-}
+if(!JOB_ID){ alert("job_id bulunamadı"); throw "job_id yok"; }
 
 logFlow("INIT","track.html loaded",{JOB_ID,BACKEND_URL});
 
@@ -120,17 +115,15 @@ let map,pickupM,dropM,driverM,routeLine;
 let rated=false, thanked=false, rating=0;
 let CURRENT_STATUS="";
 let firstFitDone=false;
+let pollTimer=null;
 
-/* ================= MAP ================= */
-
+/* ===== MAP ===== */
 function initMap(){
-  map=L.map("map").setView([41,29],12);
+  map=L.map("map").setView([40.195,29.060],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   setTimeout(()=>map.invalidateSize(),200);
 }
-
 function n(v){ const x=Number(v); return isFinite(x)?x:null; }
-
 function hav(a,b,c,d){
   const R=6371;
   const dLat=(c-a)*Math.PI/180;
@@ -138,7 +131,6 @@ function hav(a,b,c,d){
   const x=Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-
 function calcETA(fromLat,fromLng,toLat,toLng,status){
   const km=hav(fromLat,fromLng,toLat,toLng);
   const sp=(status==="on_route")?28:24;
@@ -146,56 +138,71 @@ function calcETA(fromLat,fromLng,toLat,toLng,status){
   return {km,min};
 }
 
-/* ================= LOAD ================= */
+/* ===== API ===== */
+async function apiGet(action, params){
+  const url = new URL(BACKEND_URL);
+  url.searchParams.set("action", action);
+  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), { method:"GET" });
+  return res.json();
+}
+async function apiPost(action, payload){
+  const res = await fetch(BACKEND_URL,{
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify(Object.assign({action},payload||{}))
+  });
+  return res.json();
+}
 
+/* ===== LOAD / POLL ===== */
 async function loadJob(){
   try{
-    const jobInfo=await fetch(`${BACKEND_URL}?action=checkJob&job_id=${encodeURIComponent(JOB_ID)}`).then(r=>r.json());
-    if(!jobInfo||jobInfo.error){
+    const jobInfo = await apiGet("checkJob",{job_id:JOB_ID});
+    if(!jobInfo || jobInfo.error){
       status.innerText="İş bulunamadı";
-      logWarn("API","checkJob empty",jobInfo);
       return;
     }
 
-    CURRENT_STATUS=jobInfo.status;
-    drvStatus.innerText=CURRENT_STATUS;
-    status.innerText=
+    CURRENT_STATUS = String(jobInfo.status||"");
+    drvStatus.innerText = CURRENT_STATUS;
+    status.innerText =
       CURRENT_STATUS==="completed"?"İş tamamlandı":
       CURRENT_STATUS==="on_route"?"Varışa gidiliyor":
       CURRENT_STATUS==="assigned"?"Sürücü geliyor":
       CURRENT_STATUS==="cancelled"?"İptal edildi":
-      CURRENT_STATUS;
+      "Sürücü bekleniyor";
 
-    const jobs=await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
-    const j=jobs.find(x=>String(x.job_id)===String(JOB_ID));
-    if(!j){ logWarn("API","job not found in getJobs"); return; }
+    // İlk createJob sırasında kaydedilen koordinatlar (index.html)
+    const pLat=n(sessionStorage.getItem("SEPT_pickup_lat"));
+    const pLng=n(sessionStorage.getItem("SEPT_pickup_lng"));
+    const dLat=n(sessionStorage.getItem("SEPT_drop_lat"));
+    const dLng=n(sessionStorage.getItem("SEPT_drop_lng"));
 
-    const pLat=n(j.pickup_lat), pLng=n(j.pickup_lng);
-    const dLat=n(j.dropoff_lat), dLng=n(j.dropoff_lng);
-    if(pLat==null||pLng==null||dLat==null||dLng==null) return;
-
-    if(!pickupM) pickupM=L.marker([pLat,pLng]).addTo(map);
-    if(!dropM) dropM=L.marker([dLat,dLng]).addTo(map);
-
-    let live=null;
-    try{
-      live=await fetch(`${BACKEND_URL}?action=getLive&job_id=${encodeURIComponent(JOB_ID)}`).then(r=>r.json());
-    }catch(e){
-      logWarn("API","getLive failed",e);
+    if(pLat!=null&&pLng!=null){
+      if(!pickupM) pickupM=L.marker([pLat,pLng]).addTo(map);
+    }
+    if(dLat!=null&&dLng!=null){
+      if(!dropM) dropM=L.marker([dLat,dLng]).addTo(map);
     }
 
-    let drvLat=null, drvLng=null;
-    let drvIdVal=jobInfo.driver_id||j.driver_id||"";
+    let live=null;
+    try{ live = await apiGet("getLive",{job_id:JOB_ID}); }catch(_){}
 
-    if(live&&live.ok&&live.has){
+    let drvLat=null, drvLng=null;
+    let drvIdVal = jobInfo.driver_id || "";
+
+    if(live && live.ok && live.has){
       drvLat=n(live.lat); drvLng=n(live.lng);
-      drvIdVal=drvIdVal||live.driver_id||"";
+      drvIdVal = drvIdVal || live.driver_id || "";
     }
 
     if(CURRENT_STATUS!=="pending"){
       driverCard.style.display="block";
-      drvId.innerText=drvIdVal||"—";
-    }else driverCard.style.display="none";
+      drvId.innerText = drvIdVal || "—";
+    }else{
+      driverCard.style.display="none";
+    }
 
     if(drvLat!=null&&drvLng!=null){
       if(!driverM) driverM=L.marker([drvLat,drvLng]).addTo(map);
@@ -204,24 +211,32 @@ async function loadJob(){
 
     if(CURRENT_STATUS==="completed"){
       eta.innerText="Tamamlandı";
+      stopPolling();
       if(!rated) openRating();
       else if(!thanked) openThanks();
+    }else if(CURRENT_STATUS==="cancelled"){
+      eta.innerText="İptal edildi";
+      stopPolling();
+    }else if(CURRENT_STATUS==="pending"){
+      eta.innerText="Sürücü bekleniyor";
     }else{
-      let fromLat=pLat, fromLng=pLng, toLat=dLat, toLng=dLng;
-      if(CURRENT_STATUS==="assigned"&&drvLat!=null){ fromLat=drvLat;fromLng=drvLng;toLat=pLat;toLng=pLng; }
-      if(CURRENT_STATUS==="on_route"&&drvLat!=null){ fromLat=drvLat;fromLng=drvLng;toLat=dLat;toLng=dLng; }
-      const e=calcETA(fromLat,fromLng,toLat,toLng,CURRENT_STATUS);
-      eta.innerText=`ETA: ${e.min} dk`;
+      if(drvLat!=null && pLat!=null && dLat!=null){
+        let fromLat=pLat, fromLng=pLng, toLat=dLat, toLng=dLng;
+        if(CURRENT_STATUS==="assigned"){ fromLat=drvLat;fromLng=drvLng;toLat=pLat;toLng=pLng; }
+        if(CURRENT_STATUS==="on_route"){ fromLat=drvLat;fromLng=drvLng;toLat=dLat;toLng=dLng; }
+        const e=calcETA(fromLat,fromLng,toLat,toLng,CURRENT_STATUS);
+        eta.innerText=`ETA: ${e.min} dk`;
+      }
     }
 
     drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,CURRENT_STATUS);
-
   }catch(e){
-    logError("API","loadJob failed",e);
+    console.error(e);
   }
 }
 
 function drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,status){
+  if(pLat==null||pLng==null||dLat==null||dLng==null) return;
   let pts;
   if(drvLat!=null&&drvLng!=null){
     pts=(status==="assigned")?[[drvLat,drvLng],[pLat,pLng],[dLat,dLng]]:[[pLat,pLng],[drvLat,drvLng],[dLat,dLng]];
@@ -236,8 +251,15 @@ function drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,status){
   }
 }
 
-/* ================= RATING / CANCEL ================= */
+function startPolling(){
+  stopPolling();
+  pollTimer=setInterval(loadJob,4000);
+}
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+}
 
+/* ===== RATING / CANCEL ===== */
 function openRating(){
   ratingModal.style.display="flex";
   stars.innerHTML="";
@@ -253,27 +275,18 @@ function setStar(nv){
   rating=nv;
   [...stars.children].forEach((s,i)=>s.classList.toggle("active",i<nv));
 }
-
 async function submitRating(){
   if(rating===0){ alert("Puan seç"); return; }
   rated=true;
   ratingModal.style.display="none";
   try{
-    const res=await fetch(BACKEND_URL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({action:"rateJob",job_id:JOB_ID,rating,comment:comment.value||""})
-    });
-    const d=await res.json();
+    const d=await apiPost("rateJob",{job_id:JOB_ID,rating,comment:comment.value||""});
     coupon.innerText=(d&&d.ok&&d.coupon)?d.coupon:"SEPET10";
-    logInfo("API","rateJob ok",{rating});
-  }catch(e){
+  }catch(_){
     coupon.innerText="SEPET10";
-    logWarn("API","rateJob failed",e);
   }
   openThanks();
 }
-
 function openThanks(){ thanked=true; thanksModal.style.display="flex"; }
 function closeThanks(){ thanksModal.style.display="none"; }
 
@@ -281,25 +294,20 @@ async function openCancel(){
   if(CURRENT_STATUS==="completed"){ alert("Tamamlanan iş iptal edilemez"); return; }
   if(confirm("Bu yolculuğu iptal etmek istiyor musunuz?")){
     try{
-      await fetch(BACKEND_URL,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({action:"updateStatus",job_id:JOB_ID,status:"cancelled"})
-      });
-      logInfo("USER","job cancelled",{JOB_ID});
+      await apiPost("updateStatus",{job_id:JOB_ID,status:"cancelled"});
+      stopPolling();
       alert("İş iptal edildi");
       loadJob();
     }catch(e){
-      logError("API","cancel failed",e);
+      alert("İptal edilemedi");
     }
   }
 }
 
-/* ================= START ================= */
-
+/* ===== START ===== */
 initMap();
 loadJob();
-setInterval(loadJob,4000);
+startPolling();
 </script>
 </body>
 </html>
