@@ -66,6 +66,7 @@ header span{color:var(--y)}
 /* TRACK */
 #trackOverlay{position:fixed;inset:0;background:#000;z-index:600;display:none}
 #trackMap{height:60vh}
+#driverActions{display:none}
 
 /* LOCK */
 .app-locked{filter:blur(4px) brightness(.6);pointer-events:none}
@@ -74,7 +75,6 @@ header span{color:var(--y)}
 
 <body>
 
-<!-- LANDING -->
 <div id="landing">
   <div class="overlay">
     <h1>Sepet<span>Taxi</span></h1>
@@ -82,13 +82,12 @@ header span{color:var(--y)}
   </div>
 </div>
 
-<!-- MENU -->
 <div id="menuBackdrop" onclick="closeMenu()"></div>
 <div id="sideMenu">
-  <div class="menuItem">🚗 Sürücü Ol<small>Yakında</small></div>
+  <div class="menuItem" onclick="setDriverMode(false)">👤 Müşteri Modu</div>
+  <div class="menuItem" onclick="setDriverMode(true)">🚗 Sürücü Modu</div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <header>
     <div id="hamburger" onclick="toggleMenu()">☰</div>
@@ -146,15 +145,20 @@ header span{color:var(--y)}
   <header><span>Canlı Takip</span></header>
   <div id="trackMap"></div>
   <div class="card">
-    <div id="trackStatus">Sürücü aranıyor…</div>
+    <div id="trackStatus">Durum: aranıyor</div>
+    <div id="driverActions">
+      <div id="callBar" onclick="setStatus('arrived')">GELDİM</div>
+      <div id="callBar" style="margin-top:6px" onclick="setStatus('picked')">ALDIM</div>
+      <div id="callBar" style="margin-top:6px;background:#333;color:#fff" onclick="setStatus('completed')">TAMAMLANDI</div>
+    </div>
   </div>
 </div>
 
 <script>
 const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-let map,fromM,toM,service=null,registered=false,user={},currentJobId=null,tMap,selfMarker;
+let map,fromM,toM,service=null,registered=false,user={},currentJobId=null;
+let tMap,selfMarker,driverMode=false;
 
-/* HELPERS */
 const $=id=>document.getElementById(id);
 function logEvent(tag,msg){
   fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({action:"log",tag,msg,job_id:currentJobId||""})}).catch(()=>{});
@@ -165,6 +169,7 @@ let menuOpen=false;
 function toggleMenu(){menuOpen?closeMenu():openMenu()}
 function openMenu(){sideMenu.classList.add("open");menuBackdrop.classList.add("open");menuOpen=true}
 function closeMenu(){sideMenu.classList.remove("open");menuBackdrop.classList.remove("open");menuOpen=false}
+function setDriverMode(v){driverMode=v;closeMenu();}
 
 /* START */
 function start(){landing.style.display="none";app.style.display="block";initMap()}
@@ -220,6 +225,7 @@ function calc(){
 
 /* CALL */
 async function callDriver(){
+  if(driverMode)return;
   if(!registered||!service||!fromM||!toM)return;
   if(service==="courier"){
     if(!pkgType.value||!contentNote.value||!recvName.value||!/^05\d{9}$/.test(recvPhone.value)||!contentAgree.checked){
@@ -245,12 +251,22 @@ function openTrack(){
   tMap=L.map("trackMap").setView(fromM.getLatLng(),15);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(tMap);
   selfMarker=L.marker(fromM.getLatLng()).addTo(tMap);
+
+  if(driverMode){driverActions.style.display="block"}
+  else{driverActions.style.display="none"}
+
   navigator.geolocation.watchPosition(p=>{
     const lat=p.coords.latitude,lng=p.coords.longitude;
     selfMarker.setLatLng([lat,lng]);
     tMap.setView([lat,lng],16);
     fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({action:"updateLocation",job_id:currentJobId,lat,lng})});
   });
+}
+
+function setStatus(st){
+  trackStatus.textContent="Durum: "+st;
+  fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({action:"updateStatus",job_id:currentJobId,status:st})});
+  if(st==="completed"){setTimeout(()=>location.reload(),800)}
 }
 
 /* REVERSE */
