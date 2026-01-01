@@ -14,10 +14,19 @@ body{margin:0;font-family:Arial;background:#000;color:#fff}
 header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
 header span{color:#f5c400}
 #map{height:calc(100vh - 56px)}
-.overlay{position:fixed;left:50%;transform:translateX(-50%);z-index:1000;border-radius:999px;padding:6px 14px;font-size:13px}
+
+.overlay{
+  position:fixed;left:50%;transform:translateX(-50%);
+  z-index:1000;border-radius:999px;padding:6px 14px;font-size:13px
+}
 .status{top:70px;background:#111;border:1px solid #333}
 .eta{top:110px;background:#f5c400;color:#000;font-weight:900}
-.driver-card{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #333;padding:14px 16px;border-radius:18px;min-width:280px;z-index:1000}
+
+.driver-card{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#111;border:1px solid #333;padding:14px 16px;
+  border-radius:18px;min-width:280px;z-index:1000
+}
 .driver-card b{color:#f5c400}
 .badge{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
 .actions{display:flex;gap:8px;margin-top:10px}
@@ -25,12 +34,25 @@ header span{color:#f5c400}
 .call{background:#f5c400;color:#000}
 .wa{background:#1ebe5d;color:#000}
 .cancel{background:#444;color:#fff}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:2000}
-.box{background:#111;border:1px solid #333;border-radius:16px;padding:16px;width:90%;max-width:360px;text-align:center}
-.cta{margin-top:10px;background:#f5c400;color:#000;border-radius:999px;padding:12px;font-weight:900}
+
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.92);
+  display:none;align-items:center;justify-content:center;z-index:2000
+}
+.box{
+  background:#111;border:1px solid #333;border-radius:16px;
+  padding:16px;width:90%;max-width:360px;text-align:center
+}
+.cta{
+  margin-top:10px;background:#f5c400;color:#000;
+  border-radius:999px;padding:12px;font-weight:900
+}
 .star{font-size:30px;cursor:pointer;color:#333}
 .star.active{color:#f5c400}
-textarea{width:100%;min-height:60px;border-radius:10px;border:0;background:#222;color:#fff;padding:10px}
+textarea{
+  width:100%;min-height:60px;border-radius:10px;border:0;
+  background:#222;color:#fff;padding:10px
+}
 </style>
 </head>
 
@@ -71,79 +93,117 @@ textarea{width:100%;min-height:60px;border-radius:10px;border:0;background:#222;
   </div>
 </div>
 
-<script src="config.js"></script>
-
 <script>
+/* ================= CONFIG (GÖMÜLÜ) ================= */
+window.SEPT = {
+  BACKEND_URL: "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec",
+  POLL_MS: 3000
+};
 const BACKEND_URL = window.SEPT.BACKEND_URL;
+
+/* ================= INIT ================= */
 const JOB_ID = new URLSearchParams(location.search).get("job_id");
-if(!JOB_ID) alert("job_id yok");
+if(!JOB_ID){ alert("job_id yok"); }
 
 let map, pickupM, dropM, driverM, routeLine;
 let CURRENT_STATUS="", pollTimer=null;
+let firstFitDone=false;
 
+/* ================= MAP ================= */
 function initMap(){
   map=L.map("map").setView([40.195,29.060],12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 }
 
+/* ================= OSRM ================= */
 async function fetchOSRMRoute(fromLat,fromLng,toLat,toLng){
-  const url=`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
-  const r=await fetch(url).then(r=>r.json());
-  const g=r.routes[0];
+  const url =
+    `https://router.project-osrm.org/route/v1/driving/` +
+    `${fromLng},${fromLat};${toLng},${toLat}` +
+    `?overview=full&geometries=geojson`;
+
+  const r = await fetch(url).then(r=>r.json());
+  if(!r.routes || !r.routes.length) throw "OSRM rota yok";
+
+  const g = r.routes[0];
   return {
-    coords:g.geometry.coordinates.map(c=>[c[1],c[0]]),
-    duration:g.duration
+    coords: g.geometry.coordinates.map(c=>[c[1],c[0]]),
+    durationMin: Math.max(2, Math.round(g.duration/60))
   };
 }
 
-async function drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,status){
-  let fromLat=pLat,fromLng=pLng,toLat=dLat,toLng=dLng;
-  if(status==="assigned"){ fromLat=drvLat;fromLng=drvLng;toLat=pLat;toLng=pLng; }
-  if(status==="on_route"){ fromLat=drvLat;fromLng=drvLng;toLat=dLat;toLng=dLng; }
+async function drawLiveRoute(fromLat,fromLng,toLat,toLng){
+  if(fromLat==null||fromLng==null||toLat==null||toLng==null) return;
 
-  const r=await fetchOSRMRoute(fromLat,fromLng,toLat,toLng);
+  try{
+    const r = await fetchOSRMRoute(fromLat,fromLng,toLat,toLng);
 
-  if(routeLine) routeLine.remove();
-  routeLine=L.polyline(r.coords,{color:"#f5c400",weight:5}).addTo(map);
-  map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
+    if(routeLine) routeLine.setLatLngs(r.coords);
+    else routeLine = L.polyline(r.coords,{color:"#f5c400",weight:5}).addTo(map);
 
-  eta.innerText=`ETA: ${Math.max(2,Math.round(r.duration/60))} dk`;
+    if(!firstFitDone){
+      map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
+      firstFitDone=true;
+    }
+
+    eta.innerText = `ETA: ${r.durationMin} dk`;
+  }catch(e){
+    console.warn("OSRM hata", e);
+  }
 }
 
+/* ================= LOAD ================= */
 async function loadJob(){
-  const job=await fetch(`${BACKEND_URL}?action=checkJob&job_id=${JOB_ID}`).then(r=>r.json());
+  const job = await fetch(`${BACKEND_URL}?action=checkJob&job_id=${JOB_ID}`).then(r=>r.json());
   if(!job) return;
 
-  CURRENT_STATUS=job.status;
-  drvStatus.innerText=CURRENT_STATUS;
+  CURRENT_STATUS = job.status;
+  drvStatus.innerText = CURRENT_STATUS;
 
-  const pLat=+sessionStorage.getItem("SEPT_pickup_lat");
-  const pLng=+sessionStorage.getItem("SEPT_pickup_lng");
-  const dLat=+sessionStorage.getItem("SEPT_drop_lat");
-  const dLng=+sessionStorage.getItem("SEPT_drop_lng");
+  status.innerText =
+    CURRENT_STATUS==="assigned" ? "Sürücü geliyor" :
+    CURRENT_STATUS==="on_route" ? "Varışa gidiliyor" :
+    CURRENT_STATUS==="completed" ? "Tamamlandı" :
+    CURRENT_STATUS==="cancelled" ? "İptal edildi" :
+    "Sürücü bekleniyor";
 
-  if(!pickupM) pickupM=L.marker([pLat,pLng]).addTo(map);
-  if(!dropM) dropM=L.marker([dLat,dLng]).addTo(map);
+  const pLat = +sessionStorage.getItem("SEPT_pickup_lat");
+  const pLng = +sessionStorage.getItem("SEPT_pickup_lng");
+  const dLat = +sessionStorage.getItem("SEPT_drop_lat");
+  const dLng = +sessionStorage.getItem("SEPT_drop_lng");
 
-  let drvLat=null,drvLng=null;
-  const live=await fetch(`${BACKEND_URL}?action=getLive&job_id=${JOB_ID}`).then(r=>r.json());
+  if(!pickupM && pLat) pickupM = L.marker([pLat,pLng]).addTo(map);
+  if(!dropM && dLat) dropM = L.marker([dLat,dLng]).addTo(map);
+
+  let drvLat=null, drvLng=null;
+  const live = await fetch(`${BACKEND_URL}?action=getLive&job_id=${JOB_ID}`).then(r=>r.json());
   if(live?.has){
-    drvLat=+live.lat; drvLng=+live.lng;
+    drvLat = +live.lat;
+    drvLng = +live.lng;
     if(!driverM) driverM=L.marker([drvLat,drvLng]).addTo(map);
     else driverM.setLatLng([drvLat,drvLng]);
   }
 
   if(CURRENT_STATUS!=="pending") driverCard.style.display="block";
 
-  await drawRoute(pLat,pLng,dLat,dLng,drvLat,drvLng,CURRENT_STATUS);
+  // ===== CANLI ROTA =====
+  if(CURRENT_STATUS==="assigned" && drvLat!=null){
+    drawLiveRoute(drvLat,drvLng,pLat,pLng);
+  }
+  if(CURRENT_STATUS==="on_route" && drvLat!=null){
+    drawLiveRoute(drvLat,drvLng,dLat,dLng);
+  }
+  if(CURRENT_STATUS==="pending"){
+    drawLiveRoute(pLat,pLng,dLat,dLng);
+  }
 }
 
+/* ================= FLOW ================= */
 function start(){
   initMap();
   loadJob();
-  pollTimer=setInterval(loadJob,4000);
+  pollTimer=setInterval(loadJob, Math.max(1500, window.SEPT.POLL_MS));
 }
-
 start();
 </script>
 </body>
