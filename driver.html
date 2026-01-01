@@ -20,6 +20,7 @@ button{width:100%;padding:14px;border-radius:22px;border:0;font-weight:900;backg
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
 .auth-only{display:none}
 hr{border:0;border-top:1px solid #222;margin:10px 0}
+.navBtn{background:#0f0f0f;color:#fff;border:1px solid #333;margin-bottom:8px}
 </style>
 </head>
 
@@ -35,7 +36,7 @@ hr{border:0;border-top:1px solid #222;margin:10px 0}
   <div style="height:10px"></div>
   <input id="dname" placeholder="Ad Soyad (opsiyonel)">
   <div style="height:10px"></div>
-  <input id="dphone" placeholder="Telefon (05XXXXXXXXX)" maxlength="11" inputmode="numeric">
+  <input id="dphone" placeholder="Telefon (05XXXXXXXXX)" maxlength="11">
   <div style="height:10px"></div>
   <button onclick="login()">Panele Gir</button>
 </div>
@@ -65,44 +66,37 @@ hr{border:0;border-top:1px solid #222;margin:10px 0}
 <script src="config.js"></script>
 
 <script>
-/* ================= CONFIG ================= */
-const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
-const COMMISSION = (window.SEPT && window.SEPT.COMMISSION) ? window.SEPT.COMMISSION : 0.15;
+const BACKEND_URL = window.SEPT.BACKEND_URL;
+const COMMISSION = window.SEPT.COMMISSION || 0.15;
 
 let DRIVER_ID = sessionStorage.getItem("SEPT_driver_id");
-let LIVE_TIMER = null;
+let LIVE_TIMER=null;
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
 
 /* ================= LOGIN ================= */
 async function login(){
-  DRIVER_ID = $("did").value.trim();
-  if(!DRIVER_ID){ alert("Driver ID gir"); return; }
+  DRIVER_ID=$("did").value.trim();
+  if(!DRIVER_ID) return alert("Driver ID gir");
 
-  sessionStorage.setItem("SEPT_driver_id", DRIVER_ID);
+  sessionStorage.setItem("SEPT_driver_id",DRIVER_ID);
 
-  $("dphone").value = $("dphone").value.replace(/\D/g,"").slice(0,11);
-
-  try{
-    await fetch(BACKEND_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"text/plain;charset=utf-8" },
-      body:JSON.stringify({
-        action:"ensureDriver",
-        driver_id:DRIVER_ID,
-        name:$("dname").value.trim(),
-        phone:$("dphone").value.trim(),
-        status:"available"
-      })
-    });
-  }catch(e){
-    console.error(e);
-  }
+  await fetch(BACKEND_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body:JSON.stringify({
+      action:"ensureDriver",
+      driver_id:DRIVER_ID,
+      name:$("dname").value,
+      phone:$("dphone").value,
+      status:"available"
+    })
+  });
 
   onAuth();
 }
 
-/* ================= AUTH STATE ================= */
+/* ================= AUTH ================= */
 function onAuth(){
   document.querySelectorAll(".auth-only").forEach(e=>e.style.display="block");
   $("loginCard").style.display="none";
@@ -112,17 +106,11 @@ function onAuth(){
 
 /* ================= DATA ================= */
 async function loadData(){
-  if(!DRIVER_ID) return;
-
-  try{
-    const jobs = await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
-    const mine = (Array.isArray(jobs)?jobs:[]).filter(j=>String(j.driver_id)===String(DRIVER_ID));
-    renderSummary(mine);
-    renderActive(mine);
-    renderHistory(mine);
-  }catch(e){
-    console.warn(e);
-  }
+  const jobs=await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
+  const mine=jobs.filter(j=>String(j.driver_id)===String(DRIVER_ID));
+  renderSummary(mine);
+  renderActive(mine);
+  renderHistory(mine);
 }
 
 function priceOf(j){
@@ -131,73 +119,96 @@ function priceOf(j){
 }
 
 function renderSummary(jobs){
-  const today=new Date().toISOString().slice(0,10);
-  let todaySum=0,total=0,comm=0;
+  let total=0,comm=0;
   jobs.forEach(j=>{
     if(j.status==="completed"){
       const p=priceOf(j);
       total+=p; comm+=p*COMMISSION;
-      if(String(j.completed_at||"").startsWith(today)) todaySum+=p;
     }
   });
-  $("todayEarn").innerText=todaySum.toFixed(0)+" TL";
   $("totalEarn").innerText=total.toFixed(0)+" TL";
   $("totalComm").innerText=comm.toFixed(0)+" TL";
   $("netEarn").innerText=(total-comm).toFixed(0)+" TL";
 }
 
+/* ================= NAV ================= */
+function openNav(fromLat,fromLng,toLat,toLng){
+  const url=
+    `https://www.google.com/maps/dir/?api=1`+
+    `&origin=${fromLat},${fromLng}`+
+    `&destination=${toLat},${toLng}`+
+    `&travelmode=driving`;
+  window.open(url,"_blank");
+}
+
+async function navTo(jobId,type){
+  const jobs=await fetch(`${BACKEND_URL}?action=getJobs`).then(r=>r.json());
+  const j=jobs.find(x=>x.job_id===jobId);
+  if(!j) return;
+
+  navigator.geolocation.getCurrentPosition(p=>{
+    if(type==="pickup"){
+      openNav(p.coords.latitude,p.coords.longitude,j.pickup_lat,j.pickup_lng);
+    }else{
+      openNav(p.coords.latitude,p.coords.longitude,j.dropoff_lat,j.dropoff_lng);
+    }
+  });
+}
+
+/* ================= ACTIVE ================= */
 function renderActive(jobs){
   const box=$("activeJob");
   const j=jobs.find(x=>x.status==="assigned"||x.status==="on_route");
   if(!j){ box.innerText="Aktif iş yok."; stopLive(); return; }
 
-  const p=priceOf(j);
-  let btn="";
-  if(j.status==="assigned") btn=`<button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>`;
-  if(j.status==="on_route") btn=`<button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>`;
+  let btns="";
+  if(j.status==="assigned"){
+    btns=`
+      <button class="navBtn" onclick="navTo('${j.job_id}','pickup')">🧭 Pickup’a Git</button>
+      <button onclick="setStatus('${j.job_id}','on_route')">YOLA ÇIKTIM</button>
+    `;
+  }
+  if(j.status==="on_route"){
+    btns=`
+      <button class="navBtn" onclick="navTo('${j.job_id}','dropoff')">🧭 Teslimata Git</button>
+      <button onclick="setStatus('${j.job_id}','completed')">İŞİ BİTİR</button>
+    `;
+  }
 
   box.innerHTML=`
-    <b>${j.from_address||"-"} → ${j.to_address||"-"}</b><br>
-    <span class="small">Ücret: ${p.toFixed(0)} TL</span><br>
-    <span class="badge">${j.status}</span><br><br>${btn}
+    <b>${j.from_address} → ${j.to_address}</b><br>
+    <span class="badge">${j.status}</span><br><br>${btns}
   `;
 
   if(j.status==="on_route") startLive(j.job_id);
   else stopLive();
 }
 
+/* ================= HISTORY ================= */
 function renderHistory(jobs){
   $("history").innerHTML="";
   jobs.filter(j=>j.status==="completed").slice(-10).reverse().forEach(j=>{
-    const p=priceOf(j);
-    $("history").innerHTML+=`
-      <div class="small">${j.from_address||"-"} → ${j.to_address||"-"}<br>
-      Ücret: ${p.toFixed(0)} TL · Komisyon: ${(p*COMMISSION).toFixed(0)} TL</div><hr>`;
+    $("history").innerHTML+=`<div class="small">${j.from_address} → ${j.to_address}</div><hr>`;
   });
 }
 
 /* ================= ACTIONS ================= */
 async function setStatus(jobId,status){
-  try{
-    await fetch(BACKEND_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"text/plain;charset=utf-8" },
-      body:JSON.stringify({
-        action:"updateStatus",
-        job_id:jobId,
-        status,
-        driver_id:DRIVER_ID,
-        actor:"driver:"+DRIVER_ID
-      })
-    });
-    loadData();
-  }catch(e){
-    console.error(e);
-  }
+  await fetch(BACKEND_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body:JSON.stringify({
+      action:"updateStatus",
+      job_id:jobId,
+      status,
+      driver_id:DRIVER_ID
+    })
+  });
+  loadData();
 }
 
 function startLive(jobId){
-  if(LIVE_TIMER||!navigator.geolocation) return;
+  if(LIVE_TIMER) return;
   LIVE_TIMER=setInterval(()=>{
     navigator.geolocation.getCurrentPosition(p=>{
       fetch(BACKEND_URL,{
@@ -219,10 +230,8 @@ function stopLive(){
   if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; }
 }
 
-/* ================= AUTO LOGIN ================= */
-if(DRIVER_ID){
-  onAuth();
-}
+/* ================= AUTO ================= */
+if(DRIVER_ID) onAuth();
 </script>
 
 </body>
