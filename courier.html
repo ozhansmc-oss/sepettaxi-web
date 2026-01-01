@@ -19,8 +19,8 @@ header{
 }
 header span{color:var(--y)}
 
-#map{height:30vh}
-#panel{padding:12px;display:flex;flex-direction:column;gap:10px}
+#map{height:30vh;border-bottom:1px solid var(--line)}
+#panel{padding:12px;display:flex;flex-direction:column;gap:10px;padding-bottom:140px}
 
 .card{
   background:#0f0f0f;border-radius:16px;padding:12px;
@@ -46,24 +46,38 @@ header span{color:var(--y)}
 
 #ctaBar{
   position:fixed;left:0;right:0;bottom:0;padding:12px;
-  background:linear-gradient(180deg,rgba(0,0,0,.6),#000)
+  background:linear-gradient(180deg,rgba(0,0,0,.6),#000);
+  border-top:1px solid var(--line)
 }
 #cta{
   border-radius:30px;padding:16px;text-align:center;
-  font-weight:900
+  font-weight:900;user-select:none
 }
 #cta.disabled{background:#2a2a2a;color:#999}
-#cta.enabled{background:var(--y);color:#000}
+#cta.enabled{background:var(--y);color:#000;cursor:pointer}
 
 #searching{
   position:fixed;inset:0;background:rgba(0,0,0,.95);
   display:none;align-items:center;justify-content:center;
   flex-direction:column;z-index:50
 }
+#searching .small{font-size:12px;color:#888;margin-top:6px;max-width:360px;text-align:center;line-height:1.35}
+#searching .btns{display:flex;gap:8px;margin-top:14px}
+#searching button{
+  border:1px solid var(--line);background:#0f0f0f;color:#ddd;border-radius:999px;
+  padding:8px 12px;font-size:12px;cursor:pointer
+}
+#toast{
+  position:fixed;left:50%;top:12px;transform:translateX(-50%);
+  background:#111;padding:10px 12px;border-radius:999px;font-size:12px;display:none;
+  border:1px solid var(--line);z-index:1200
+}
 </style>
 </head>
 
 <body>
+
+<div id="toast"></div>
 
 <header>Sepet<span>Taxi</span> – Kurye</header>
 
@@ -83,8 +97,8 @@ header span{color:var(--y)}
     <b>👤 Alıcı Bilgisi</b>
     <input id="rcvName" class="input" placeholder="Alıcı Adı">
     <div style="height:8px"></div>
-    <input id="rcvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <div class="helper">Telefon 11 haneli olmalı</div>
+    <input id="rcvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11" inputmode="numeric">
+    <div class="helper">Telefon 11 haneli olmalı (05XXXXXXXXX)</div>
   </div>
 
   <!-- ADRES -->
@@ -93,6 +107,7 @@ header span{color:var(--y)}
     <input id="fromAddr" class="input" readonly placeholder="Nereden (konum alınıyor)">
     <div style="height:8px"></div>
     <input id="toAddr" class="input" readonly placeholder="Nereye (haritaya dokun)">
+    <div class="helper">Varış için haritaya dokun.</div>
   </div>
 
   <!-- FİYAT -->
@@ -110,16 +125,23 @@ header span{color:var(--y)}
 </div>
 
 <div id="ctaBar">
-  <div id="cta" class="disabled" onclick="callCourier()">KURYECİ ÇAĞIR</div>
+  <div id="cta" class="disabled">KURYECİ ÇAĞIR</div>
 </div>
 
 <div id="searching">
   <div style="font-size:18px;font-weight:900">Kurye aranıyor…</div>
-  <div style="font-size:12px;color:#888;margin-top:6px">Lütfen bekleyin</div>
+  <div class="small" id="searchInfo">Talebiniz oluşturuluyor.</div>
+  <div class="btns">
+    <button id="cancelBtn" type="button">İptal</button>
+    <button id="goTrackBtn" type="button" style="display:none">Takibe Git</button>
+  </div>
 </div>
 
-<!-- ================= LOG ================= -->
+<!-- Global config -->
+<script src="config.js"></script>
+
 <script>
+/* ================= LOG ================= */
 (function(){
   const L={INFO:'INFO',WARN:'WARN',ERROR:'ERROR',FLOW:'FLOW'};
   function log(l,t,m,d){
@@ -133,34 +155,97 @@ header span{color:var(--y)}
   window.logError=(t,m,d)=>log(L.ERROR,t,m,d);
   window.logFlow=(t,m,d)=>log(L.FLOW,t,m,d);
 })();
-</script>
 
-<script>
 /* ================= CONFIG ================= */
-const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-const COMMISSION=0.15;
-
-let map,fromM,toM,lastKm=0,lastPrice=0;
+const BACKEND_URL = (window.SEPT && window.SEPT.BACKEND_URL) ? window.SEPT.BACKEND_URL : "";
+if(!BACKEND_URL){ alert("BACKEND_URL yok (config.js)"); throw "BACKEND_URL yok"; }
 
 const $=id=>document.getElementById(id);
+let map, fromM, toM, routeLine;
+let lastKm=0, lastPrice=0;
+
+let currentJobId="", currentTrackToken="";
+let pollTimer=null, pollStartedAt=0;
+
+/* ================= UI ================= */
+function toast(msg, ms=2400){
+  const t=$("toast");
+  t.textContent=msg;
+  t.style.display="block";
+  clearTimeout(toast._tm);
+  toast._tm=setTimeout(()=>t.style.display="none", ms);
+}
+function setCTAEnabled(on){
+  $("cta").className = on ? "enabled" : "disabled";
+}
+function showSearching(on){
+  $("searching").style.display = on ? "flex" : "none";
+}
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+}
+function gotoTrack(){
+  if(!currentJobId) return;
+  // track.html?job_id=...&track_token=...
+  const base = window.location.pathname.replace(/\/[^\/]*$/, "/track.html");
+  const url = new URL(window.location.origin + base);
+  url.searchParams.set("job_id", currentJobId);
+  if(currentTrackToken) url.searchParams.set("track_token", currentTrackToken);
+  window.location.href = url.toString();
+}
+
+/* ================= API ================= */
+async function apiGet(action, params){
+  const url = new URL(BACKEND_URL);
+  url.searchParams.set("action", action);
+  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res = await fetch(url.toString(), { method:"GET" });
+  return res.json();
+}
+async function apiPost(action, payload){
+  const res = await fetch(BACKEND_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body:JSON.stringify(Object.assign({action}, payload||{}))
+  });
+  return res.json();
+}
 
 /* ================= MAP ================= */
-map=L.map("map").setView([40.195,29.060],13);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+function initMap(){
+  map = L.map("map").setView([40.195,29.060],13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  setTimeout(()=>map.invalidateSize(),200);
 
-navigator.geolocation.getCurrentPosition(p=>{
-  fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
-  map.setView([p.coords.latitude,p.coords.longitude],15);
-  reverse(p.coords.latitude,p.coords.longitude,$("fromAddr"));
-});
+  map.on("click", async (e)=>{
+    toM ? toM.setLatLng(e.latlng) : (toM = L.marker(e.latlng).addTo(map));
+    await reverse(e.latlng.lat, e.latlng.lng, $("toAddr"));
+    calcAndUpdate();
+  });
+}
 
-map.on("click",e=>{
-  toM?toM.setLatLng(e.latlng):(toM=L.marker(e.latlng).addTo(map));
-  reverse(e.latlng.lat,e.latlng.lng,$("toAddr"));
-  calc();
-});
+function getLocation(){
+  if(!navigator.geolocation){
+    toast("Tarayıcı konum desteği yok.");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    async (p)=>{
+      const lat=p.coords.latitude, lng=p.coords.longitude;
+      fromM ? fromM.setLatLng([lat,lng]) : (fromM = L.marker([lat,lng]).addTo(map));
+      map.setView([lat,lng],15);
+      await reverse(lat,lng,$("fromAddr"));
+      calcAndUpdate();
+    },
+    (err)=>{
+      logWarn("GEO","geolocation failed",err);
+      toast("Konum izni verilmedi veya alınamadı.");
+    },
+    { enableHighAccuracy:true, timeout:12000, maximumAge:8000 }
+  );
+}
 
-/* ================= LOGIC ================= */
+/* ================= VALIDATION ================= */
 function valid(){
   return (
     $("pkgType").value.trim().length>1 &&
@@ -170,53 +255,170 @@ function valid(){
   );
 }
 
-function calc(){
-  if(!fromM||!toM) return;
-  const a=fromM.getLatLng(),b=toM.getLatLng();
-  const km=hav(a.lat,a.lng,b.lat,b.lng);
-  lastKm=km;
-  lastPrice=Math.max(80,40+km*15)|0;
-  $("dist").innerText=km.toFixed(2)+" km";
-  $("price").innerText=lastPrice+" TL";
-  $("cta").className=valid()?"enabled":"disabled";
-}
-
-function callCourier(){
-  if(!valid()) return;
-  $("searching").style.display="flex";
-
-  fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      action:"createJob",
-      service:"courier",
-      package_type:$("pkgType").value,
-      receiver_name:$("rcvName").value,
-      receiver_phone:$("rcvPhone").value,
-      pickup_address:$("fromAddr").value,
-      pickup_lat:fromM.getLatLng().lat,
-      pickup_lng:fromM.getLatLng().lng,
-      dropoff_address:$("toAddr").value,
-      dropoff_lat:toM.getLatLng().lat,
-      dropoff_lng:toM.getLatLng().lng,
-      distance_km:lastKm,
-      price:lastPrice
-    })
-  });
-}
-
-/* ================= HELPERS ================= */
+/* ================= PRICING (demo, stabil) ================= */
 function hav(a,b,c,d){
   const R=6371;
   const dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
   const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-function reverse(lat,lng,input){
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json()).then(d=>{if(d?.display_name)input.value=d.display_name});
+
+function drawRoute(a,b){
+  const pts = [[a.lat,a.lng],[b.lat,b.lng]];
+  if(routeLine) routeLine.setLatLngs(pts);
+  else routeLine = L.polyline(pts,{color:"#f5c400",weight:5,dashArray:"8,6"}).addTo(map);
 }
+
+function calcAndUpdate(){
+  if(!fromM||!toM) { setCTAEnabled(false); return; }
+
+  const a=fromM.getLatLng(), b=toM.getLatLng();
+  const km = Math.max(0.1, hav(a.lat,a.lng,b.lat,b.lng));
+  lastKm = km;
+
+  // Kurye demo fiyat: min 80, açılış 40 + km*15
+  lastPrice = (Math.max(80, 40 + km*15)) | 0;
+
+  $("dist").innerText = km.toFixed(2)+" km";
+  $("price").innerText = lastPrice+" TL";
+
+  drawRoute(a,b);
+  setCTAEnabled(valid());
+}
+
+/* ================= FLOW ================= */
+async function pollJob(){
+  if(!currentJobId) return;
+
+  const elapsed = Date.now() - pollStartedAt;
+  const TIMEOUT_MS = 60000;
+
+  if(elapsed > TIMEOUT_MS){
+    stopPolling();
+    $("searchInfo").textContent = "Henüz müsait kurye bulunamadı. Lütfen biraz sonra tekrar deneyin.";
+    $("goTrackBtn").style.display = "inline-block";
+    return;
+  }
+
+  const r = await apiGet("checkJob", { job_id: currentJobId });
+  if(r && r.ok){
+    const st = String(r.status||"");
+    if(st==="assigned" || st==="on_route"){
+      stopPolling();
+      $("searchInfo").textContent = "Kurye atandı. Takip ekranına yönlendiriliyorsunuz…";
+      setTimeout(gotoTrack, 650);
+      return;
+    }
+    if(st==="cancelled"){
+      stopPolling();
+      $("searchInfo").textContent = "İş iptal edildi.";
+      setTimeout(()=>showSearching(false), 900);
+      return;
+    }
+    if(st==="completed"){
+      stopPolling();
+      $("searchInfo").textContent = "İş tamamlandı.";
+      setTimeout(()=>showSearching(false), 900);
+      return;
+    }
+    $("searchInfo").textContent = "Kurye aranıyor…";
+  }else{
+    logWarn("API","checkJob error",r);
+  }
+}
+
+async function callCourier(){
+  if(!valid()) return;
+  if($("cta").classList.contains("disabled")) return;
+
+  showSearching(true);
+  $("searchInfo").textContent = "Talebiniz oluşturuluyor…";
+  $("goTrackBtn").style.display = "none";
+
+  try{
+    const a=fromM.getLatLng(), b=toM.getLatLng();
+
+    // Track ekranı için koordinatları da sakla (track.html kullanıyor)
+    sessionStorage.setItem("SEPT_pickup_lat", String(a.lat));
+    sessionStorage.setItem("SEPT_pickup_lng", String(a.lng));
+    sessionStorage.setItem("SEPT_drop_lat", String(b.lat));
+    sessionStorage.setItem("SEPT_drop_lng", String(b.lng));
+
+    const res = await apiPost("createJob",{
+      service_type: "courier", // backend normalize ediyor
+      package_type: $("pkgType").value.trim(),
+      receiver_name: $("rcvName").value.trim(),
+      receiver_phone: $("rcvPhone").value.trim(),
+      from_address: $("fromAddr").value,
+      to_address: $("toAddr").value,
+      pickup_lat: a.lat,
+      pickup_lng: a.lng,
+      dropoff_lat: b.lat,
+      dropoff_lng: b.lng,
+      distance_km: lastKm,
+      price: lastPrice,
+      final_price: lastPrice
+    });
+
+    if(!(res && res.ok)){
+      $("searchInfo").textContent = (res && res.error) ? String(res.error) : "createJob başarısız";
+      setTimeout(()=>showSearching(false), 1400);
+      return;
+    }
+
+    currentJobId = String(res.job_id||"");
+    currentTrackToken = String(res.track_token||"");
+    sessionStorage.setItem("SEPT_job_id", currentJobId);
+    sessionStorage.setItem("SEPT_track_token", currentTrackToken);
+
+    $("searchInfo").textContent = "Kurye aranıyor…";
+
+    pollStartedAt = Date.now();
+    stopPolling();
+    const pollMs = (window.SEPT && window.SEPT.POLL_MS) ? parseInt(window.SEPT.POLL_MS,10) : 3000;
+    pollTimer = setInterval(pollJob, Math.max(1500, pollMs));
+    pollJob();
+  }catch(e){
+    logError("API","createJob failed",e);
+    $("searchInfo").textContent = "Backend’e ulaşılamadı. (config.js BACKEND_URL kontrol edin)";
+    setTimeout(()=>showSearching(false), 1600);
+  }
+}
+
+function cancelFlow(){
+  stopPolling();
+  currentJobId="";
+  currentTrackToken="";
+  showSearching(false);
+}
+
+/* ================= HELPERS ================= */
+async function reverse(lat,lng,input){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const d=await r.json();
+    if(d && d.display_name) input.value=d.display_name;
+  }catch(e){
+    // sessiz geç
+  }
+}
+
+/* ================= START ================= */
+initMap();
+getLocation();
+
+// input değişince CTA güncellensin
+["pkgType","rcvName","rcvPhone"].forEach(id=>{
+  $(id).addEventListener("input", ()=>setCTAEnabled(valid() && fromM && toM));
+});
+
+// CTA click
+$("cta").addEventListener("click", callCourier);
+
+// overlay btns
+$("cancelBtn").addEventListener("click", cancelFlow);
+$("goTrackBtn").addEventListener("click", gotoTrack);
 </script>
+
 </body>
 </html>
