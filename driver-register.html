@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SepetTaxi – Sürücü Başvurusu</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#000;color:#fff;font-family:Arial}
+header{
+  height:56px;display:flex;align-items:center;justify-content:center;
+  font-weight:900;border-bottom:1px solid #222
+}
+header span{color:#f5c400}
+.wrap{padding:16px;max-width:420px;margin:auto}
+.card{
+  background:#111;border-radius:16px;padding:16px;
+  border:1px solid #222
+}
+input,select,button{
+  width:100%;padding:14px;border-radius:14px;
+  border:0;font-size:14px;margin-bottom:10px
+}
+input,select{background:#222;color:#fff}
+button{background:#f5c400;color:#000;font-weight:900;cursor:pointer}
+.small{font-size:12px;color:#aaa}
+.err{color:#ff6b6b;font-size:13px;display:none}
+.ok{color:#2ecc71;font-size:14px;display:none}
+</style>
+</head>
+
+<body>
+
+<header>Sepet<span>Taxi</span> – Sürücü Ol</header>
+
+<div class="wrap">
+  <div class="card">
+    <input id="name" placeholder="Ad Soyad">
+    <input id="phone" placeholder="Telefon (05XXXXXXXXX)" maxlength="11">
+    <select id="vehicle">
+      <option value="">Araç Tipi Seç</option>
+      <option value="Taksi">Taksi</option>
+      <option value="Motosiklet">Motosiklet</option>
+      <option value="Araba">Araba</option>
+      <option value="Panelvan">Panelvan</option>
+    </select>
+
+    <div id="err" class="err">Bilgiler eksik veya hatalı</div>
+    <div id="ok" class="ok">
+      Başvurun alındı.<br>
+      Admin onayından sonra <b>Driver ID</b> ile giriş yapabileceksin.
+    </div>
+
+    <button onclick="submit()">BAŞVURU YAP</button>
+
+    <div class="small">
+      Başvurun admin onayına düşer.  
+      Onay sonrası “Sürücü müsün?” ekranından giriş yaparsın.
+    </div>
+  </div>
+</div>
+
+<script>
+const BACKEND_URL =
+"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+
+const $=id=>document.getElementById(id);
+
+async function submit(){
+  const name=$("name").value.trim();
+  const phone=$("phone").value.trim();
+  const vehicle=$("vehicle").value;
+
+  if(name.length<3 || !/^05\d{9}$/.test(phone) || !vehicle){
+    $("err").style.display="block";
+    return;
+  }
+
+  $("err").style.display="none";
+
+  const driverId="DRV-"+Date.now().toString().slice(-6);
+
+  await fetch(BACKEND_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body:JSON.stringify({
+      action:"ensureDriver",
+      driver_id:driverId,
+      name:name,
+      phone:phone,
+      vehicle_type:vehicle,
+      status:"pending"
+    })
+  });
+
+  $("ok").style.display="block";
+}
+</script>
+
+</body>
+</html>
