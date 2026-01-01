@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SepetTaxi – Kurye</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
+header span{color:#f5c400}
+.wrap{padding:14px;max-width:720px;margin:auto}
+.card{background:#111;border-radius:16px;padding:14px;margin-bottom:12px}
+label{font-size:12px;color:#aaa}
+input,select,textarea{width:100%;padding:12px;border-radius:12px;border:0;background:#222;color:#fff;margin-top:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{width:100%;padding:14px;border-radius:22px;border:0;font-weight:900;background:#f5c400;color:#000;cursor:pointer}
+.small{font-size:12px;color:#aaa}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#222;color:#aaa;font-size:12px}
+.hidden{display:none}
+</style>
+</head>
+
+<body>
+<header>Sepet<span>Taxi</span> – Kurye</header>
+
+<div class="wrap">
+
+  <!-- Müşteri -->
+  <div class="card">
+    <b>Müşteri Bilgileri</b>
+    <label>Ad Soyad</label>
+    <input id="cname" placeholder="Ad Soyad">
+    <label>Telefon</label>
+    <input id="cphone" placeholder="05XXXXXXXXX" maxlength="11">
+  </div>
+
+  <!-- Adres -->
+  <div class="card">
+    <b>Adresler</b>
+    <label>Alım Adresi</label>
+    <input id="fromAddr" placeholder="Alım adresi">
+    <label>Teslim Adresi</label>
+    <input id="toAddr" placeholder="Teslim adresi">
+  </div>
+
+  <!-- Paket -->
+  <div class="card">
+    <b>Paket Bilgileri</b>
+    <label>Paket Tipi</label>
+    <select id="pkgType">
+      <option value="">Seçiniz</option>
+      <option value="zarf">Zarf / Evrak</option>
+      <option value="kucuk">Küçük Paket (0–3 kg)</option>
+      <option value="orta">Orta Paket (3–10 kg)</option>
+      <option value="buyuk">Büyük Paket (10–20 kg)</option>
+      <option value="hassas">Hassas / Kırılabilir</option>
+      <option value="yemek">Yemek</option>
+    </select>
+
+    <label>Not (opsiyonel)</label>
+    <textarea id="pkgNote" placeholder="Paketle ilgili not"></textarea>
+  </div>
+
+  <!-- Alıcı -->
+  <div class="card">
+    <b>Alıcı Bilgileri</b>
+    <label>Alıcı Ad Soyad</label>
+    <input id="rname" placeholder="Alıcı adı">
+    <label>Alıcı Telefon</label>
+    <input id="rphone" placeholder="05XXXXXXXXX" maxlength="11">
+  </div>
+
+  <!-- Özet -->
+  <div class="card">
+    <b>Özet</b>
+    <div class="small">
+      Hizmet: <span class="badge">Kurye</span><br>
+      Şehir: <span class="badge">Bursa</span>
+    </div>
+  </div>
+
+  <button onclick="createCourier()">KURYECİ ÇAĞIR</button>
+
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
+
+/* ================= HELPERS ================= */
+const $=id=>document.getElementById(id);
+const cleanPhone=v=>String(v||"").replace(/\D/g,"").slice(0,11);
+
+/* ================= ACTION ================= */
+async function createCourier(){
+  const payload={
+    action:"createJob",
+    service_type:"courier",
+
+    customer_name: $("cname").value.trim(),
+    customer_phone: cleanPhone($("cphone").value),
+
+    from_address: $("fromAddr").value.trim(),
+    to_address: $("toAddr").value.trim(),
+
+    package_type: $("pkgType").value,
+    package_note: $("pkgNote").value.trim(),
+
+    receiver_name: $("rname").value.trim(),
+    receiver_phone: cleanPhone($("rphone").value),
+
+    city:"Bursa"
+  };
+
+  // Zorunlu kontroller
+  if(!payload.customer_name || !payload.customer_phone){
+    alert("Müşteri bilgileri eksik"); return;
+  }
+  if(!payload.from_address || !payload.to_address){
+    alert("Adresler eksik"); return;
+  }
+  if(!payload.package_type){
+    alert("Paket tipi seçiniz"); return;
+  }
+  if(!payload.receiver_name || !payload.receiver_phone){
+    alert("Alıcı bilgileri eksik"); return;
+  }
+
+  try{
+    const res=await fetch(BACKEND_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    const d=await res.json();
+    if(d && d.ok){
+      // track sayfasına yönlendir
+      location.href=`track.html?job_id=${d.job_id}`;
+    }else{
+      alert("Oluşturulamadı");
+    }
+  }catch(e){
+    alert("Bağlantı hatası");
+  }
+}
+</script>
+</body>
+</html>
