@@ -25,7 +25,6 @@ header span{color:#f5c400}
 .status{top:70px}
 .eta{top:110px;background:#f5c400;color:#000;font-weight:900;border-color:#f5c400}
 
-/* === SÜRÜCÜ YAKLAŞIYOR ANİMASYONU === */
 .pulse{
   position:fixed;top:150px;left:50%;transform:translateX(-50%);
   padding:10px 18px;border-radius:999px;
@@ -42,7 +41,6 @@ header span{color:#f5c400}
   100%{transform:translateX(-50%) scale(1)}
 }
 
-/* === DRIVER CARD === */
 .driver-card{
   position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
   background:#111;border:1px solid #333;padding:14px 16px;
@@ -60,293 +58,148 @@ header span{color:#f5c400}
 </head>
 
 <body>
+
 <header>Sepet<span>Taxi</span> – Takip</header>
 
 <div id="status" class="overlay status">Yükleniyor…</div>
 <div id="eta" class="overlay eta">ETA: —</div>
 <div id="pulse" class="pulse">🚗 Sürücü Yaklaşıyor</div>
 
-<div id="driverCard" class="driver-card" style="display:none">
+<div id="driverCard" class="driver-card hidden">
   <div><b>Sürücü</b>: <span id="drvId">—</span></div>
   <div class="badge" id="drvStatus">—</div>
-  <div class="actions">
-    <a id="callBtn" class="btn call hidden" href="#">📞 Ara</a>
-    <a id="waBtn" class="btn wa hidden" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
-  </div>
 </div>
 
 <div id="map"></div>
 
+<script src="config.js"></script>
+<script src="log.js"></script>
+
 <script>
 /* =========================
-   CONFIG
+   PARAMS & STATE
 ========================= */
-// Eğer config.js kullanıyorsan, onu da track.html'e ekleyebilirsin.
-// Şimdilik bu sabit URL ile devam:
-const BACKEND_URL =
-  "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-
 const qs = new URLSearchParams(location.search);
-
-// job_id: URL -> sessionStorage
 const JOB_ID = qs.get("job_id") || sessionStorage.getItem("SEPT_job_id") || "";
-
-// track_token: URL -> sessionStorage
 const TRACK_TOKEN = qs.get("track_token") || sessionStorage.getItem("SEPT_track_token") || "";
 
-// Pickup/Drop: URL -> sessionStorage (index tarafında ayrıca yazdıracağız)
-function numOrNull(v){
-  const n = parseFloat(String(v));
-  return isFinite(n) ? n : null;
-}
-let pickupLat = numOrNull(qs.get("pickup_lat")) ?? numOrNull(sessionStorage.getItem("SEPT_pickup_lat"));
-let pickupLng = numOrNull(qs.get("pickup_lng")) ?? numOrNull(sessionStorage.getItem("SEPT_pickup_lng"));
-let dropLat   = numOrNull(qs.get("drop_lat"))   ?? numOrNull(sessionStorage.getItem("SEPT_drop_lat"));
-let dropLng   = numOrNull(qs.get("drop_lng"))   ?? numOrNull(sessionStorage.getItem("SEPT_drop_lng"));
-
-/* =========================
-   STATE
-========================= */
 let map, pickupM, dropM, driverM, routeLine;
 let firstFit=false;
-let lastDriverPos=null;        // {lat,lng} in degrees
-let lastRouteKey="";           // to prevent redundant OSRM calls
-let pollTimer=null;
-let startedAt=Date.now();
-let failures=0;
+let lastDriverPos=null;
+let lastRouteKey="";
 
 /* =========================
    DOM
 ========================= */
-const $ = (id)=>document.getElementById(id);
+const $ = id => document.getElementById(id);
 const statusEl = $("status");
 const etaEl = $("eta");
 const pulseEl = $("pulse");
 const driverCard = $("driverCard");
 const drvIdEl = $("drvId");
 const drvStatusEl = $("drvStatus");
-const callBtn = $("callBtn");
-const waBtn = $("waBtn");
 
 /* =========================
    MAP
 ========================= */
 function initMap(){
-  map = L.map("map",{zoomControl:true}).setView([40.195,29.060],12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-    attribution:"&copy; OpenStreetMap"
-  }).addTo(map);
+  map = L.map("map").setView([40.195,29.060],12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 }
 
 /* =========================
-   DRIVER ICON (ROTATE)
+   HELPERS
 ========================= */
-function carIcon(angle=0){
+function num(v){ const n=parseFloat(v); return isFinite(n)?n:null; }
+function toRad(d){return d*Math.PI/180;}
+function bearing(a,b){
+  const y=Math.sin(toRad(b.lng-a.lng))*Math.cos(toRad(b.lat));
+  const x=Math.cos(toRad(a.lat))*Math.sin(toRad(b.lat)) -
+          Math.sin(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.cos(toRad(b.lng-a.lng));
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function carIcon(angle){
   return L.divIcon({
-    html:`<div style="width:32px;height:32px;transform:rotate(${angle}deg);font-size:26px;color:#f5c400;line-height:32px;text-align:center">🚗</div>`,
-    className:"",
-    iconSize:[32,32],
-    iconAnchor:[16,16]
+    html:`<div style="transform:rotate(${angle}deg);font-size:26px;color:#f5c400">🚗</div>`,
+    className:"",iconSize:[32,32],iconAnchor:[16,16]
   });
 }
-function toRad(d){ return d*Math.PI/180; }
-function bearingDeg(a,b){
-  // a,b: {lat,lng} degrees
-  const lat1=toRad(a.lat), lat2=toRad(b.lat);
-  const dLon=toRad(b.lng-a.lng);
-  const y=Math.sin(dLon)*Math.cos(lat2);
-  const x=Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
-  return (Math.atan2(y,x)*180/Math.PI + 360) % 360;
+
+/* =========================
+   STATUS LABELS (LOCKED)
+========================= */
+function statusLabel(st){
+  switch(st){
+    case "pending": return "Sürücü aranıyor";
+    case "assigned": return "Sürücü geliyor";
+    case "active": return "Yoldayız";
+    case "done": return "Tamamlandı";
+    case "cancelled": return "İptal edildi";
+    default: return "Durum alınıyor";
+  }
 }
 
 /* =========================
-   BACKEND CALLS (token guarded)
+   API
 ========================= */
 async function apiGet(action, params){
-  const url = new URL(BACKEND_URL);
+  const url = new URL(SEPT.BACKEND_URL);
   url.searchParams.set("action", action);
   Object.entries(params||{}).forEach(([k,v])=>{
-    if(v!==undefined && v!==null && String(v).length) url.searchParams.set(k, v);
+    if(v) url.searchParams.set(k,v);
   });
-  const res = await fetch(url.toString(), { method:"GET" });
-  const txt = await res.text();
-  try{ return JSON.parse(txt); }catch(_){ return { ok:false, error:"JSON parse", raw:txt }; }
-}
-
-function statusLabel(st){
-  if(st==="assigned") return "Sürücü atandı, geliyor";
-  if(st==="on_route") return "Varışa gidiliyor";
-  if(st==="completed") return "Tamamlandı";
-  if(st==="cancelled") return "İptal edildi";
-  if(st==="pending") return "Sürücü bekleniyor";
-  return "Durum güncelleniyor";
+  const r = await fetch(url.toString());
+  const j = await r.json();
+  Log.api(action,params,j);
+  return j;
 }
 
 /* =========================
-   OSRM ROUTE
+   MAIN LOOP
 ========================= */
-async function getRoute(aLat,aLng,bLat,bLng){
-  const url =
-    `https://router.project-osrm.org/route/v1/driving/`+
-    `${aLng},${aLat};${bLng},${bLat}?overview=full&geometries=geojson`;
-  const r = await fetch(url).then(r=>r.json());
-  if(!r || !r.routes || !r.routes[0]) throw new Error("OSRM route yok");
-  const g = r.routes[0];
-  return {
-    pts: (g.geometry.coordinates||[]).map(c=>[c[1],c[0]]),
-    eta: Math.max(2, Math.round((g.duration||0)/60))
-  };
-}
-
-/* =========================
-   RENDER HELPERS
-========================= */
-function ensurePickupDropMarkers(){
-  if(pickupLat!=null && pickupLng!=null){
-    if(!pickupM) pickupM=L.marker([pickupLat,pickupLng]).addTo(map);
-    else pickupM.setLatLng([pickupLat,pickupLng]);
-  }
-  if(dropLat!=null && dropLng!=null){
-    if(!dropM) dropM=L.marker([dropLat,dropLng]).addTo(map);
-    else dropM.setLatLng([dropLat,dropLng]);
-  }
-}
-
-function updateDriverMarker(lat,lng){
-  const nowPos = {lat, lng};
-  let angle=0;
-  if(lastDriverPos){
-    angle = bearingDeg(lastDriverPos, nowPos);
-  }
-  lastDriverPos = nowPos;
-
-  if(!driverM) driverM = L.marker([lat,lng],{icon:carIcon(angle)}).addTo(map);
-  else{
-    driverM.setLatLng([lat,lng]);
-    driverM.setIcon(carIcon(angle));
-  }
-}
-
-function fitOnce(){
-  if(firstFit) return;
-  const items = [];
-  if(pickupLat!=null && pickupLng!=null) items.push([pickupLat,pickupLng]);
-  if(dropLat!=null && dropLng!=null) items.push([dropLat,dropLng]);
-  if(driverM) items.push(driverM.getLatLng());
-  if(items.length>=1){
-    map.fitBounds(L.latLngBounds(items).pad(0.25),{padding:[40,40]});
-    firstFit=true;
-  }
-}
-
-/* =========================
-   MAIN LOAD LOOP
-========================= */
-async function loadOnce(){
+async function tick(){
   if(!JOB_ID){
-    statusEl.textContent = "job_id yok (takip linki eksik).";
-    etaEl.textContent = "ETA: —";
-    pulseEl.style.display="none";
+    statusEl.textContent="Takip bilgisi yok";
     return;
   }
 
-  // 1) checkJob
-  const job = await apiGet("checkJob", { job_id: JOB_ID, track_token: TRACK_TOKEN });
+  const job = await apiGet(SEPT.ACTIONS.CHECK_JOB,{
+    job_id:JOB_ID, track_token:TRACK_TOKEN
+  });
+
   if(!job || !job.ok){
-    failures++;
-    statusEl.textContent = (job && job.error) ? `Bağlantı: ${job.error}` : "Bağlantı hatası";
-    // failure toleransı: sayfayı bozma, sadece status göster
+    statusEl.textContent="Bağlantı hatası";
     return;
   }
 
-  failures=0;
-
-  const st = String(job.status||"pending");
-  drvStatusEl.textContent = st;
+  const st = job.status;
   statusEl.textContent = statusLabel(st);
-  pulseEl.style.display = (st==="assigned") ? "block" : "none";
+  pulseEl.style.display = (st==="assigned")?"block":"none";
 
-  drvIdEl.textContent = job.driver_id ? String(job.driver_id) : "—";
-  driverCard.style.display = job.driver_id ? "block" : "none";
-
-  // 2) pickup/drop markerları
-  ensurePickupDropMarkers();
-
-  // Koordinatlar yoksa net uyarı (ama status devam)
-  if(pickupLat==null || pickupLng==null || dropLat==null || dropLng==null){
-    etaEl.textContent = "ETA: —";
-    if(st==="assigned" || st==="on_route"){
-      statusEl.textContent = statusLabel(st) + " (rota için koordinat eksik)";
-    }
+  if(job.driver_id){
+    driverCard.classList.remove("hidden");
+    drvIdEl.textContent = job.driver_id;
+    drvStatusEl.textContent = st;
   }
 
-  // 3) getLive (driver location)
-  const live = await apiGet("getLive", { job_id: JOB_ID, track_token: TRACK_TOKEN });
+  const live = await apiGet(SEPT.ACTIONS.GET_LIVE,{
+    job_id:JOB_ID, track_token:TRACK_TOKEN
+  });
 
-  let drvLat=null, drvLng=null;
   if(live && live.ok && live.has){
-    drvLat = numOrNull(live.lat);
-    drvLng = numOrNull(live.lng);
-    if(drvLat!=null && drvLng!=null){
-      updateDriverMarker(drvLat, drvLng);
-      // driver kart iletişim butonları: elimizde telefon yok -> gizli kalır
-      callBtn.classList.add("hidden");
-      waBtn.classList.add("hidden");
-    }
-  }
+    const lat=num(live.lat), lng=num(live.lng);
+    if(lat && lng){
+      const now={lat,lng};
+      let angle=0;
+      if(lastDriverPos) angle=bearing(lastDriverPos,now);
+      lastDriverPos=now;
 
-  // 4) Route logic (OSRM)
-  // pending: rota yok
-  // assigned: driver -> pickup (driver konumu varsa)
-  // on_route: driver -> drop (driver konumu varsa)
-  // completed/cancelled: rota sabit kalabilir ama ETA durur
-  let fromLat=null, fromLng=null, toLat=null, toLng=null;
-
-  if(st==="assigned"){
-    if(drvLat!=null && drvLng!=null && pickupLat!=null && pickupLng!=null){
-      fromLat=drvLat; fromLng=drvLng; toLat=pickupLat; toLng=pickupLng;
-    }
-  }else if(st==="on_route"){
-    if(drvLat!=null && drvLng!=null && dropLat!=null && dropLng!=null){
-      fromLat=drvLat; fromLng=drvLng; toLat=dropLat; toLng=dropLng;
-    }
-  }else{
-    // pending/completed/cancelled
-    etaEl.textContent = "ETA: —";
-  }
-
-  // Rota çağrısı sadece veriler tam ve değişmişse
-  if(fromLat!=null && fromLng!=null && toLat!=null && toLng!=null){
-    const key = `${st}|${fromLat.toFixed(5)},${fromLng.toFixed(5)}->${toLat.toFixed(5)},${toLng.toFixed(5)}`;
-    // çok sık OSRM çağrısını azaltmak için küçük hareketlerde çağırma
-    if(key !== lastRouteKey){
-      lastRouteKey = key;
-      try{
-        const r = await getRoute(fromLat,fromLng,toLat,toLng);
-        etaEl.textContent = `ETA: ${r.eta} dk`;
-
-        if(r.pts && r.pts.length){
-          if(routeLine) routeLine.setLatLngs(r.pts);
-          else routeLine = L.polyline(r.pts,{color:"#f5c400",weight:5}).addTo(map);
-          if(!firstFit){
-            map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
-            firstFit=true;
-          }
-        }
-      }catch(e){
-        // OSRM geçici sorunlarında UI’yı bozma
-        etaEl.textContent = "ETA: —";
+      if(!driverM) driverM=L.marker([lat,lng],{icon:carIcon(angle)}).addTo(map);
+      else{
+        driverM.setLatLng([lat,lng]);
+        driverM.setIcon(carIcon(angle));
       }
     }
-  }
-
-  // 5) İlk görünüm
-  fitOnce();
-
-  // 6) Timeout bilgilendirme (opsiyonel)
-  const elapsed = Date.now()-startedAt;
-  if(st==="pending" && elapsed>90000){
-    statusEl.textContent = "Sürücü bekleniyor (90sn+). Lütfen biraz sonra tekrar deneyin.";
   }
 }
 
@@ -354,8 +207,8 @@ async function loadOnce(){
    START
 ========================= */
 initMap();
-loadOnce();
-pollTimer = setInterval(loadOnce, 3000);
+tick();
+setInterval(tick, SEPT.POLL_MS);
 </script>
 
 </body>
