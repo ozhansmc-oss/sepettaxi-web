@@ -293,7 +293,70 @@ function calc(){
   price.textContent=Math.round(service==="taxi"?Math.max(120,60+km*22):Math.max(80,40+km*15))+" TL";
 }
 
-function callDriver(){alert("createJob → track akışı hazır")}
+<script>
+async function callDriver(){
+  if(!registered || !service || !fromM || !toM){
+    alert("Bilgiler eksik");
+    return;
+  }
+
+  const a = fromM.getLatLng();
+  const b = toM.getLatLng();
+  const km = h(a.lat,a.lng,b.lat,b.lng);
+  const price = Math.round(
+    service==="taxi"
+      ? Math.max(120,60+km*22)
+      : Math.max(80,40+km*15)
+  );
+
+  const payload = {
+    action: "createJob",
+    service_type: service,
+    customer_first: fn?.value || "",
+    customer_last: ln?.value || "",
+    customer_phone: ph?.value || "",
+    from_address: fromAddr.value,
+    to_address: toAddr.value,
+    pickup_lat: a.lat,
+    pickup_lng: a.lng,
+    dropoff_lat: b.lat,
+    dropoff_lng: b.lng,
+    distance_km: km,
+    price: price,
+    final_price: price
+  };
+
+  try{
+    const res = await fetch(BACKEND_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).then(r=>r.json());
+
+    if(!res.ok){
+      alert("İş oluşturulamadı");
+      return;
+    }
+
+    // 🔒 TRACK BİLGİLERİ
+    sessionStorage.setItem("SEPT_job_id",res.job_id);
+    sessionStorage.setItem("SEPT_track_token",res.track_token);
+    sessionStorage.setItem("SEPT_pickup_lat",a.lat);
+    sessionStorage.setItem("SEPT_pickup_lng",a.lng);
+    sessionStorage.setItem("SEPT_drop_lat",b.lat);
+    sessionStorage.setItem("SEPT_drop_lng",b.lng);
+
+    // ➜ TRACK
+    location.href =
+      "track.html?job_id="+encodeURIComponent(res.job_id)+
+      "&track_token="+encodeURIComponent(res.track_token);
+
+  }catch(e){
+    alert("Bağlantı hatası");
+  }
+}
+</script>
+
 
 function h(a,b,c,d){
   const R=6371;
