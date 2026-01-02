@@ -410,23 +410,31 @@ function saveCustomer(){
   const phone = $("cPhone").value.replace(/\D/g,"");
   const kvkk  = $("kvkk").checked;
 
-  const ok = first.length>=2 && last.length>=2 && /^05\\d{9}$/.test(phone) && kvkk;
+  const ok =
+    first.length >= 2 &&
+    last.length  >= 2 &&
+    /^05\d{9}$/.test(phone) &&
+    kvkk;
+
   if(!ok){
-    $("regErr").style.display="block";
+    $("regErr").style.display = "block";
     return;
   }
+
   customer = { first, last, phone };
   registered = true;
   localStorage.setItem("st_customer", JSON.stringify(customer));
+
+  $("regErr").style.display = "none";
   closeRegister();
 
-  // kullanıcı hizmet seçmek için tıklamıştıysa devam et
   if(pendingService){
     const s = pendingService;
-    pendingService=null;
+    pendingService = null;
     pickService(s, true);
   }
 }
+
 
 /* ============ SERVICE ============ */
 function pickService(t, skipRegisterCheck=false){
