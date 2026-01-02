@@ -182,14 +182,20 @@ function start(){
   app.style.display="block";
   map=L.map("map").setView([40.195,29.060],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  navigator.geolocation.getCurrentPosition(p=>{
-    fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
-    map.setView([p.coords.latitude,p.coords.longitude],15);
-  });
-  map.on("click",e=>{
-    toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
-    calc();
-  });
+  nnavigator.geolocation.getCurrentPosition(p=>{
+  const lat = p.coords.latitude;
+  const lng = p.coords.longitude;
+  fromM = L.marker([lat, lng]).addTo(map);
+  map.setView([lat, lng], 15);
+  reverseGeocode(lat, lng, fromAddr);
+});
+
+  map.on("click", e=>{
+  const { lat, lng } = e.latlng;
+  toM ? toM.setLatLng(e.latlng) : toM = L.marker(e.latlng).addTo(map);
+  reverseGeocode(lat, lng, toAddr);
+  calc();
+});
 }
 
 function pickService(t){
@@ -235,6 +241,24 @@ async function callCustomer(){
   alert("PWA + sistem hazır. Backend entegrasyonu çalışıyor.");
 }
 </script>
+  async function reverseGeocode(lat, lng, inputEl){
+  try{
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=tr`;
+    const res = await fetch(url, {
+      headers: { "Accept": "application/json" }
+    });
+    const data = await res.json();
+    if(data && data.display_name){
+      inputEl.value = data.display_name;
+    }else{
+      inputEl.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+  }catch(e){
+    console.error("Reverse error", e);
+    inputEl.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }
+}
+
 
 </body>
 </html>
