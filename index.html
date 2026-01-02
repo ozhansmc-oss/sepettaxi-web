@@ -118,10 +118,85 @@ function calc(){
   price.textContent=Math.round(service==="taxi"?Math.max(120,60+km*22):Math.max(80,40+km*15))+" TL";
 }
 
-function callDriver(){
-  if(!registered||!service||!toM){alert("Eksik bilgi");return;}
-  alert("createJob → backend hazır");
+<script>
+async function callDriver(){
+
+  /* 1️⃣ ZORUNLU KONTROLLER */
+  if(!registered){
+    openRegister();
+    return;
+  }
+  if(!service){
+    alert("Hizmet seçmelisin");
+    return;
+  }
+  if(!fromM || !toM){
+    alert("Nereden / Nereye eksik");
+    return;
+  }
+
+  /* 2️⃣ MESAFE & ÜCRET */
+  const a = fromM.getLatLng();
+  const b = toM.getLatLng();
+  const km = h(a.lat,a.lng,b.lat,b.lng);
+
+  const price =
+    service==="taxi"
+      ? Math.round(Math.max(120,60+km*22))
+      : Math.round(Math.max(80,40+km*15));
+
+  /* 3️⃣ PAYLOAD */
+  const payload = {
+    action: "createJob",
+    service_type: service,
+    from_addr: fromAddr.value,
+    to_addr: toAddr.value,
+    from_lat: a.lat,
+    from_lng: a.lng,
+    to_lat: b.lat,
+    to_lng: b.lng,
+    distance_km: Number(km.toFixed(2)),
+    price_brut: price,
+    customer: {
+      first: fn.value,
+      last: ln.value,
+      phone: ph.value
+    }
+  };
+
+  /* 4️⃣ UI KİLİT */
+  call.innerText = "Gönderiliyor...";
+  call.style.pointerEvents = "none";
+
+  /* 5️⃣ BACKEND */
+  try{
+    const res = await fetch(BACKEND_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if(!data.ok || !data.job_id){
+      throw new Error("createJob failed");
+    }
+
+    alert("İş oluşturuldu: " + data.job_id);
+
+    // BİR SONRAKİ KİLİTLİ ADIM:
+    // window.location.href = "track.html?job_id="+data.job_id;
+
+  }catch(err){
+    console.error(err);
+    alert("Backend hatası – console kontrol et");
+  }finally{
+    call.innerText = "ÇAĞIR";
+    call.style.pointerEvents = "auto";
+  }
 }
+</script>
+
 
 function h(a,b,c,d){
   const R=6371;
