@@ -4,126 +4,130 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Admin</title>
-
-<script src="config.js"></script>
-
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#0b0b0b;color:#fff}
-.hidden{display:none}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
 header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
 header span{color:#f5c400}
-
-#loginWrap{height:100vh;display:flex;align-items:center;justify-content:center}
-.loginCard{background:#111;border-radius:18px;padding:20px;width:100%;max-width:340px;border:1px solid #222}
-.loginCard h1{text-align:center;margin:0 0 14px 0}
-.loginCard h1 span{color:#f5c400}
-.loginCard input{width:100%;padding:14px;border-radius:14px;border:0;background:#222;color:#fff;margin-bottom:10px}
-.loginCard button{width:100%;padding:14px;border-radius:18px;border:0;font-weight:900;background:#f5c400;color:#000}
-.err{color:#ff6b6b;font-size:13px;text-align:center;display:none}
-
-.wrap{padding:14px;max-width:1200px;margin:auto}
-.card{background:#111;border-radius:16px;padding:14px;margin-bottom:14px;border:1px solid #222}
-.btnSmall{background:#f5c400;border:0;border-radius:12px;padding:8px 10px;font-weight:900;cursor:pointer}
-.btnRed{background:#6f1f1f;color:#fff}
+.container{padding:12px}
+.card{background:#111;border:1px solid #222;border-radius:14px;padding:12px;margin-bottom:10px}
+.row{display:flex;gap:8px;align-items:center}
+.input{flex:1;width:100%;padding:10px;border-radius:12px;border:1px solid #222;background:#000;color:#fff}
+.btn{background:#f5c400;color:#000;border-radius:14px;padding:10px 12px;font-weight:900;cursor:pointer;text-align:center}
+.btn.secondary{background:#333;color:#fff}
 .small{font-size:12px;color:#aaa}
+.item{padding:10px;border-radius:12px;border:1px solid #222;background:#0f0f0f;margin-top:8px;cursor:pointer}
+.item b{color:#fff}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #333;font-size:12px;color:#ddd;margin-left:8px}
 </style>
 </head>
-
 <body>
 
-<!-- LOGIN -->
-<div id="loginWrap">
-  <div class="loginCard">
-    <h1>Sepet<span>Taxi</span></h1>
-    <input id="aid" placeholder="Admin ID">
-    <input id="pin" type="password" placeholder="PIN">
-    <button onclick="login()">GİRİŞ</button>
-    <div id="err" class="err">Hatalı giriş</div>
-  </div>
-</div>
-
-<!-- ADMIN -->
-<div id="adminWrap" class="hidden">
 <header>Sepet<span>Taxi</span> – Admin</header>
 
-<div class="wrap">
-
+<div class="container">
   <div class="card">
-    <b>Sürücü Adayları (Onay Bekleyen)</b>
-    <div id="candidates" class="small" style="margin-top:10px">Yükleniyor…</div>
+    <div class="row">
+      <input id="limit" class="input" value="50" placeholder="limit">
+      <input id="status" class="input" placeholder="status (searching/assigned/...)">
+      <input id="service" class="input" placeholder="service (taxi/courier)">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="btn" onclick="load()">YENİLE</div>
+      <div class="btn secondary" onclick="openDrivers()">SÜRÜCÜLER</div>
+    </div>
+    <div class="small" style="margin-top:8px" id="info">—</div>
   </div>
 
-</div>
+  <div class="card">
+    <div style="font-weight:900">İşler</div>
+    <div id="list"></div>
+  </div>
+
+  <div class="card" id="detail" style="display:none">
+    <div style="font-weight:900">Detay</div>
+    <div class="small" id="dText" style="margin-top:8px">—</div>
+    <div class="row" style="margin-top:10px">
+      <div class="btn" onclick="openTrack()">TRACK</div>
+      <div class="btn secondary" onclick="hideDetail()">KAPAT</div>
+    </div>
+  </div>
+
+  <div class="card" id="driversBox" style="display:none">
+    <div style="font-weight:900">Sürücüler</div>
+    <div id="drivers"></div>
+  </div>
 </div>
 
 <script>
-const BACKEND_URL = SEPT.BACKEND_URL;
-const ADMIN_ID="admin";
-const ADMIN_PIN="1234";
+const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
 const $=id=>document.getElementById(id);
+let selectedJob="";
 
-/* ===== AUTH ===== */
-function login(){
-  if($("aid").value.trim()===ADMIN_ID && $("pin").value.trim()===ADMIN_PIN){
-    sessionStorage.setItem("admin_auth","ok");
-    showAdmin();
-  }else{
-    $("err").style.display="block";
-  }
-}
-function showAdmin(){
-  $("loginWrap").classList.add("hidden");
-  $("adminWrap").classList.remove("hidden");
-  loadDrivers();
-  setInterval(loadDrivers,5000);
-}
-if(sessionStorage.getItem("admin_auth")==="ok") showAdmin();
-
-/* ===== API ===== */
-async function apiPost(action,payload){
-  return fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body:JSON.stringify(Object.assign({action},payload||{}))
-  }).then(r=>r.json());
+function qs(o){
+  const u=new URL(BACKEND_URL);
+  Object.entries(o).forEach(([k,v])=>u.searchParams.set(k,v));
+  return u.toString();
 }
 
-/* ===== DRIVERS ===== */
-async function loadDrivers(){
-  const res = await apiPost("adminListDrivers",{});
-  if(!res.ok) return;
-  renderCandidates(res.drivers||[]);
+async function load(){
+  const p={
+    action:"listJobs",
+    limit: (limit.value||"50").trim(),
+    status: (status.value||"").trim(),
+    service_type: (service.value||"").trim()
+  };
+  const r=await fetch(qs(p));
+  const j=await r.json().catch(()=>({}));
+  if(!j.ok){ info.textContent="Hata"; return; }
+  info.textContent = `Toplam: ${j.items.length}`;
+  list.innerHTML="";
+  j.items.forEach(it=>{
+    const div=document.createElement("div");
+    div.className="item";
+    div.innerHTML = `<b>${it.job_id}</b><span class="badge">${it.status}</span><div class="small">${it.service_type} • ${it.price_brut} TL • Driver: ${it.driver_id||"—"}</div>`;
+    div.onclick=()=>select(it.job_id);
+    list.appendChild(div);
+  });
 }
 
-function renderCandidates(drivers){
-  const pending = drivers.filter(d=>d.status==="pending");
-  if(!pending.length){
-    $("candidates").innerText="Onay bekleyen sürücü yok.";
-    return;
-  }
-  $("candidates").innerHTML = pending.map(d=>`
-    <div style="margin-bottom:12px">
-      <b>${d.name}</b><br>
-      📞 ${d.phone}<br>
-      🚗 ${d.vehicle_type}<br>
-      🆔 ${d.driver_id}<br>
-      <button class="btnSmall" onclick="approve('${d.driver_id}')">ONAYLA</button>
-      <button class="btnSmall btnRed" onclick="reject('${d.driver_id}')">REDDET</button>
-    </div>
-  `).join("");
+async function select(jobId){
+  selectedJob=jobId;
+  const r=await fetch(qs({action:"getJob",job_id:jobId}));
+  const j=await r.json().catch(()=>({}));
+  if(!j.ok) return;
+  detail.style.display="block";
+  dText.innerText =
+    `job: ${j.job_id}\n`+
+    `status: ${j.status}\n`+
+    `service: ${j.service_type}\n`+
+    `brut: ${j.price_brut} / com: ${j.commission_amount} / net: ${j.price_driver_net}\n`+
+    `from: ${j.from_addr}\n`+
+    `to: ${j.to_addr}\n`+
+    `driver: ${j.driver_id || "—"}\n`+
+    (j.service_type==="courier" ? (`\nPaket: ${j.pkg_type}\nAlıcı: ${j.recv_name} (${j.recv_phone})\nNot: ${j.content_note}`) : "");
+}
+function hideDetail(){ detail.style.display="none"; selectedJob=""; }
+function openTrack(){
+  if(!selectedJob) return;
+  location.href = `track.html?role=customer&job=${encodeURIComponent(selectedJob)}`;
 }
 
-async function approve(id){
-  await apiPost("adminApproveDriver",{driver_id:id});
-  loadDrivers();
+async function openDrivers(){
+  driversBox.style.display="block";
+  const r=await fetch(qs({action:"listDrivers"}));
+  const j=await r.json().catch(()=>({}));
+  if(!j.ok) return;
+  drivers.innerHTML="";
+  j.items.forEach(d=>{
+    const div=document.createElement("div");
+    div.className="item";
+    div.innerHTML = `<b>${d.driver_id}</b><span class="badge">${d.approved}</span><div class="small">${d.name||""} • ${d.phone||""} • ${d.vehicle||""}</div>`;
+    drivers.appendChild(div);
+  });
 }
-async function reject(id){
-  await apiPost("adminRejectDriver",{driver_id:id});
-  loadDrivers();
-}
+
+load();
 </script>
-
 </body>
 </html>
-
