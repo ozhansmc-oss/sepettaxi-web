@@ -10,112 +10,136 @@
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;font-family:Arial,Helvetica,sans-serif;
-  background:#000;color:#fff
-}
-:root{--y:#f5c400}
+html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff}
 
 header{
-  height:56px;background:#000;border-bottom:1px solid #111;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;font-weight:900
+  height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  border-bottom:1px solid #222
 }
-header span{color:var(--y)}
+header span{color:#f5c400}
 
-#map{height:calc(100vh - 160px)}
+#map{height:calc(100vh - 56px)}
 
-.panel{
-  padding:12px;background:#0f0f0f;border-top:1px solid #111
+.badge{
+  position:fixed;
+  top:70px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#111;
+  border:1px solid #333;
+  border-radius:999px;
+  padding:8px 16px;
+  font-size:14px;
+  z-index:1000
 }
-.row{margin-bottom:6px;font-size:13px}
-.status{
-  display:inline-block;padding:6px 12px;
-  border-radius:999px;background:#111;border:1px solid #222
-}
-.status.assigned{border-color:#f5c400}
-.status.completed{border-color:#4caf50}
-
-.hidden{display:none}
 </style>
 </head>
 
 <body>
 
-<header>Sepet<span>Taxi</span> Takip</header>
-
+<header>Sepet<span>Taxi</span> Canlı Takip</header>
 <div id="map"></div>
-
-<div class="panel">
-  <div class="row"><b>Durum:</b> <span id="status" class="status">—</span></div>
-  <div class="row"><b>Nereden:</b> <span id="from">—</span></div>
-  <div class="row"><b>Nereye:</b> <span id="to">—</span></div>
-  <div class="row"><b>Mesafe:</b> <span id="km">—</span></div>
-</div>
+<div id="status" class="badge">Bağlanıyor…</div>
 
 <script>
-const BACKEND_URL =
-  "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
+/* ================= CONFIG ================= */
+const API =
+"https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
 
-const params = new URLSearchParams(location.search);
-const jobId = params.get("job_id");
+const qs = new URLSearchParams(location.search);
+const jobId = qs.get("job_id");
+const isDriver = qs.get("driver") === "1";
 
 if(!jobId){
   alert("job_id yok");
-  throw new Error("job_id missing");
+  throw "job_id missing";
 }
 
-let map, fromM, toM, driverM;
+/* ================= MAP ================= */
+const map = L.map("map").setView([40.195, 29.060], 14);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  maxZoom:19
+}).addTo(map);
 
-/* INIT */
-document.addEventListener("DOMContentLoaded", ()=>{
-  map = L.map("map").setView([41,29], 13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  loadJob();
-  setInterval(loadJob, 5000);
+const customerIcon = L.icon({
+  iconUrl:"https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png",
+  iconSize:[32,32],
+  iconAnchor:[16,32]
+});
+const driverIcon = L.icon({
+  iconUrl:"https://maps.gstatic.com/mapfiles/ms2/micons/yellow-dot.png",
+  iconSize:[32,32],
+  iconAnchor:[16,32]
 });
 
-/* LOAD JOB */
-async function loadJob(){
-  const r = await fetch(
-    BACKEND_URL +
-    "?action=getJob&job_id=" +
-    encodeURIComponent(jobId)
-  );
-  const d = await r.json();
-  if(!d || !d.ok) return;
+let customerMarker=null;
+let driverMarker=null;
 
-  from.textContent = d.from_addr || "—";
-  to.textContent   = d.to_addr || "—";
-  km.textContent   = d.distance_km
-    ? Number(d.distance_km).toFixed(2) + " km"
-    : "—";
+/* ================= STATUS ================= */
+const statusBox=document.getElementById("status");
+function setStatus(t){ statusBox.innerText=t; }
 
-  status.textContent = d.status || "—";
-  status.className = "status " + (d.status||"");
+/* ================= API ================= */
+async function post(body){
+  const r=await fetch(API,{
+    method:"POST",
+    body:JSON.stringify(body)
+  });
+  return r.json();
+}
+async function get(p){
+  const r=await fetch(API+"?"+new URLSearchParams(p));
+  return r.json();
+}
 
-  // markers
-  if(d.from_lat && d.from_lng){
-    if(!fromM){
-      fromM = L.marker([d.from_lat,d.from_lng]).addTo(map);
-      map.setView([d.from_lat,d.from_lng], 14);
-    }
-  }
-  if(d.to_lat && d.to_lng){
-    if(!toM){
-      toM = L.marker([d.to_lat,d.to_lng]).addTo(map);
-    }
-  }
-  if(d.driver_lat && d.driver_lng){
-    if(!driverM){
-      driverM = L.marker([d.driver_lat,d.driver_lng],{
-        title:"Sürücü"
-      }).addTo(map);
-    }else{
-      driverM.setLatLng([d.driver_lat,d.driver_lng]);
+/* ================= JOB WATCH ================= */
+async function watchJob(){
+  const j = await get({action:"getJob",job_id:jobId});
+  if(j.status) setStatus("Durum: "+j.status);
+  if(j.from_lat && j.from_lng){
+    if(!customerMarker){
+      customerMarker=L.marker(
+        [j.from_lat,j.from_lng],
+        {icon:customerIcon}
+      ).addTo(map);
+      map.setView([j.from_lat,j.from_lng],15);
     }
   }
 }
+setInterval(watchJob,3000);
+
+/* ================= LIVE LOCATION ================= */
+navigator.geolocation.watchPosition(pos=>{
+  const lat=pos.coords.latitude;
+  const lng=pos.coords.longitude;
+
+  post({
+    action:"updateLocation",
+    job_id:jobId,
+    who:isDriver?"driver":"customer",
+    lat,lng
+  });
+
+  if(isDriver){
+    if(!driverMarker){
+      driverMarker=L.marker([lat,lng],{icon:driverIcon}).addTo(map);
+    }else{
+      driverMarker.setLatLng([lat,lng]);
+    }
+  }else{
+    if(!customerMarker){
+      customerMarker=L.marker([lat,lng],{icon:customerIcon}).addTo(map);
+    }else{
+      customerMarker.setLatLng([lat,lng]);
+    }
+  }
+},{
+  enableHighAccuracy:true
+});
 </script>
 
 </body>
