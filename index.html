@@ -42,7 +42,11 @@ const $ = (id)=>document.getElementById(id);
 
 /* ============ INIT ============ */
 document.addEventListener("DOMContentLoaded", ()=>{
-  $("startBtn").onclick = start;
+  function start(){
+  document.getElementById("landing").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  initMap();
+}
   $("svcTaxi").onclick = ()=>pickService("taxi");
   $("svcCourier").onclick = ()=>pickService("courier");
   $("callBtn").onclick = callDriver;
