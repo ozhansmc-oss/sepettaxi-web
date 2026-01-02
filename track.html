@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SepetTaxi – Canlı Takip</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -13,118 +13,134 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-#map{height:100%}
-#top{
-  position:fixed;left:0;right:0;top:0;height:58px;
-  display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,.15));
-  z-index:500;
+html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff}
+header{
+  height:56px;display:flex;align-items:center;justify-content:center;
+  font-weight:900;border-bottom:1px solid #222
 }
-#top b{font-size:18px}
-#top b span{color:#f5c400}
-#badge{
+header span{color:#f5c400}
+#map{height:calc(100vh - 56px)}
+.badge{
   position:fixed;top:70px;left:50%;transform:translateX(-50%);
-  padding:10px 14px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(16,16,18,.65);
-  box-shadow:0 14px 40px rgba(0,0,0,.6);
-  z-index:520;
-  font-size:13px;color:rgba(255,255,255,.92);
+  background:#111;border:1px solid #333;border-radius:999px;
+  padding:8px 16px;font-size:14px;z-index:1000
 }
 </style>
 </head>
+
 <body>
-<div id="top"><b>Sepet<span>Taxi</span> Takip</b></div>
+<header>Sepet<span>Taxi</span> Canlı Takip</header>
 <div id="map"></div>
-<div id="badge">Bağlanıyor…</div>
+<div id="status" class="badge">Bağlanıyor…</div>
 
 <script>
-const API = (window.SEPT && SEPT.BACKEND_URL) ? SEPT.BACKEND_URL : "";
+const API = window.SEPT && SEPT.BACKEND_URL ? SEPT.BACKEND_URL : "";
 const qs = new URLSearchParams(location.search);
 const jobId = qs.get("job_id");
 const isDriver = qs.get("driver") === "1";
-if(!jobId){ alert("job_id yok"); throw new Error("job_id missing"); }
+const driverId = (qs.get("driver_id") || localStorage.getItem("st_driver_id") || "").toUpperCase();
 
-const badge = document.getElementById("badge");
-let jobStatus = "searching";
+if(!jobId){ alert("job_id yok"); throw "job_id missing"; }
 
-const map = L.map("map", { zoomControl:false }).setView([41.0,29.0], 14);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom:19 }).addTo(map);
+const map = L.map("map", { zoomControl:false }).setView([40.195, 29.060], 14);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:20}).addTo(map);
 
-const custIcon = L.divIcon({ className:"", html:`<div style="width:18px;height:18px;border-radius:99px;background:#2c7dff;box-shadow:0 0 0 8px rgba(44,125,255,.18)"></div>`, iconSize:[18,18], iconAnchor:[9,9]});
-const drvIcon  = L.divIcon({ className:"", html:`<div style="width:18px;height:18px;border-radius:99px;background:#f5c400;box-shadow:0 0 0 8px rgba(245,196,0,.16)"></div>`, iconSize:[18,18], iconAnchor:[9,9]});
+const customerIcon = L.icon({ iconUrl:"https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png", iconSize:[32,32], iconAnchor:[16,32] });
+const driverIcon   = L.icon({ iconUrl:"https://maps.gstatic.com/mapfiles/ms2/micons/yellow-dot.png", iconSize:[32,32], iconAnchor:[16,32] });
 
-let custM=null, drvM=null, line=null;
+let customerMarker=null, driverMarker=null;
+const statusBox=document.getElementById("status");
+function setStatus(t){ statusBox.innerText=t; }
 
-async function getJob(){
-  const data = await fetch(API + "?" + new URLSearchParams({ action:"getJob", job_id: jobId })).then(r=>r.json());
-  if(window.Log) Log.api("getJob", {job_id:jobId}, data);
-
-  if(!data || !data.ok) {
-    badge.textContent = "İş bulunamadı / bağlantı hatası";
-    return;
-  }
-
-  jobStatus = String(data.status||"searching");
-  badge.textContent = "Durum: " + jobStatus;
-
-  // customer pickup marker from job (from_lat/lng)
-  if(data.from_lat && data.from_lng){
-    const ll = [Number(data.from_lat), Number(data.from_lng)];
-    if(!custM){ custM = L.marker(ll, {icon:custIcon}).addTo(map); map.setView(ll, 15); }
-  }
-
-  // live markers
-  if(data.customer_lat && data.customer_lng){
-    const ll = [Number(data.customer_lat), Number(data.customer_lng)];
-    if(!custM) custM = L.marker(ll, {icon:custIcon}).addTo(map);
-    else custM.setLatLng(ll);
-  }
-  if(data.driver_lat && data.driver_lng){
-    const ll = [Number(data.driver_lat), Number(data.driver_lng)];
-    if(!drvM) drvM = L.marker(ll, {icon:drvIcon}).addTo(map);
-    else drvM.setLatLng(ll);
-  }
-
-  // line
-  if(custM && drvM){
-    const a = custM.getLatLng(), b = drvM.getLatLng();
-    if(line) line.remove();
-    line = L.polyline([a,b], { color:"#f5c400", weight:5, opacity:.9, dashArray:"10 10" }).addTo(map);
-  }
+async function get(p){
+  const r=await fetch(API+"?"+new URLSearchParams(p));
+  return r.json();
+}
+async function post(body, noCors=false){
+  const opt = {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body: JSON.stringify(body)
+  };
+  if(noCors) opt.mode="no-cors";
+  const r=await fetch(API, opt);
+  if(noCors) return { ok:true, opaque:true };
+  return r.json();
 }
 
-setInterval(getJob, (SEPT && SEPT.POLL_MS) ? SEPT.POLL_MS : 3000);
-getJob();
+let notFoundCount=0;
 
-/* CORS-safe POST */
-async function postLocation(who, lat, lng){
-  if(jobStatus === "searching") return; // backend rejects early updates
-  const payload = JSON.stringify({
+async function watchJob(){
+  try{
+    const j = await get({action:"getJob", job_id:jobId});
+    Log.api("getJob", {job_id:jobId}, j);
+
+    if(!j || !j.ok){
+      notFoundCount++;
+      setStatus(notFoundCount<8 ? "İş oluşturuluyor…" : "İş bulunamadı. (Backend yazmadı / deploy?)");
+      return;
+    }
+
+    setStatus("Durum: " + (j.status || "—"));
+
+    // pins from live
+    const fl = Number(j.from_lat), fg = Number(j.from_lng);
+    if(fl && fg && !customerMarker){
+      customerMarker=L.marker([fl,fg],{icon:customerIcon}).addTo(map);
+      map.setView([fl,fg], 15);
+    }
+
+    const dl = Number(j.driver_lat), dg = Number(j.driver_lng);
+    if(dl && dg){
+      if(!driverMarker) driverMarker=L.marker([dl,dg],{icon:driverIcon}).addTo(map);
+      else driverMarker.setLatLng([dl,dg]);
+    }
+
+    const cl = Number(j.customer_lat), cg = Number(j.customer_lng);
+    if(cl && cg){
+      if(!customerMarker) customerMarker=L.marker([cl,cg],{icon:customerIcon}).addTo(map);
+      else customerMarker.setLatLng([cl,cg]);
+    }
+  }catch(e){
+    Log.error("watchJob error", e);
+    setStatus("Bağlantı hatası…");
+  }
+}
+setInterval(watchJob, SEPT.POLL_MS || 3000);
+watchJob();
+
+navigator.geolocation.watchPosition(async pos=>{
+  const lat=pos.coords.latitude;
+  const lng=pos.coords.longitude;
+
+  // Backend, searching iken updateLocation reddedebilir; track tarafında yine göndereceğiz.
+  const body = {
     action:"updateLocation",
     job_id: jobId,
-    who,
+    who: isDriver ? "driver" : "customer",
     lat, lng
-  });
-  try{
-    const r = await fetch(API, {
-      method:"POST",
-      headers:{ "Content-Type":"text/plain;charset=utf-8" },
-      body: payload
-    });
-    let d=null; try{ d=await r.json(); }catch(_){}
-    if(window.Log) Log.api("updateLocation", {who,lat,lng}, d);
-  }catch(_){}
-}
+  };
+  if(isDriver && driverId) body.driver_id = driverId;
 
-// watch location
-if(navigator.geolocation){
-  navigator.geolocation.watchPosition((pos)=>{
-    const lat=pos.coords.latitude, lng=pos.coords.longitude;
-    postLocation(isDriver ? "driver" : "customer", lat, lng);
-  }, ()=>{}, { enableHighAccuracy:true, maximumAge:2000, timeout:12000 });
-}
+  try{
+    // normal -> fallback no-cors
+    try{
+      const d = await post(body, false);
+      Log.api("updateLocation", body, d);
+    }catch(_){
+      await post(body, true);
+    }
+  }catch(_){}
+
+  // local marker
+  if(isDriver){
+    if(!driverMarker) driverMarker=L.marker([lat,lng],{icon:driverIcon}).addTo(map);
+    else driverMarker.setLatLng([lat,lng]);
+  }else{
+    if(!customerMarker) customerMarker=L.marker([lat,lng],{icon:customerIcon}).addTo(map);
+    else customerMarker.setLatLng([lat,lng]);
+  }
+},{ enableHighAccuracy:true });
 </script>
 </body>
 </html>
