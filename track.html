@@ -2,176 +2,121 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SepetTaxi – Takip</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SepetTaxi – Canlı Takip</title>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
+body{
+  margin:0;font-family:Arial,Helvetica,sans-serif;
+  background:#000;color:#fff
+}
 :root{--y:#f5c400}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #111;position:relative}
+
+header{
+  height:56px;background:#000;border-bottom:1px solid #111;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900
+}
 header span{color:var(--y)}
-#back{position:absolute;left:10px;top:50%;transform:translateY(-50%);border:1px solid #222;background:#111;color:#fff;border-radius:12px;padding:8px 10px;cursor:pointer}
-#map{height:calc(100vh - 56px)}
-.overlay{
-  position:fixed;left:50%;transform:translateX(-50%);
-  z-index:1000;border-radius:999px;padding:8px 14px;font-size:12px;
-  background:#111;border:1px solid #333;color:#ddd
+
+#map{height:calc(100vh - 160px)}
+
+.panel{
+  padding:12px;background:#0f0f0f;border-top:1px solid #111
 }
-#statusPill{top:70px}
-#infoPill{top:112px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#driverActions{
-  position:fixed;left:10px;right:10px;bottom:12px;z-index:1100;
-  display:none;gap:8px
+.row{margin-bottom:6px;font-size:13px}
+.status{
+  display:inline-block;padding:6px 12px;
+  border-radius:999px;background:#111;border:1px solid #222
 }
-.btn{flex:1;padding:14px;border-radius:14px;border:1px solid #222;background:#121212;color:#fff;font-weight:900;cursor:pointer}
-.btn.primary{background:var(--y);border-color:transparent;color:#000}
+.status.assigned{border-color:#f5c400}
+.status.completed{border-color:#4caf50}
+
+.hidden{display:none}
 </style>
 </head>
+
 <body>
-<header>
-  <button id="back">←</button>
-  Sepet<span>Taxi</span> – Takip
-</header>
+
+<header>Sepet<span>Taxi</span> Takip</header>
+
 <div id="map"></div>
 
-<div id="statusPill" class="overlay">Durum: —</div>
-<div id="infoPill" class="overlay">—</div>
-
-<div id="driverActions">
-  <button class="btn" id="btnArrived">GELDİM</button>
-  <button class="btn" id="btnPicked">ALDIM</button>
-  <button class="btn primary" id="btnDone">BİTTİ</button>
-  <button class="btn" id="btnCancel">İPTAL</button>
+<div class="panel">
+  <div class="row"><b>Durum:</b> <span id="status" class="status">—</span></div>
+  <div class="row"><b>Nereden:</b> <span id="from">—</span></div>
+  <div class="row"><b>Nereye:</b> <span id="to">—</span></div>
+  <div class="row"><b>Mesafe:</b> <span id="km">—</span></div>
 </div>
 
 <script>
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
+const BACKEND_URL =
+  "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
 
-const qs = new URLSearchParams(location.search);
-const job_id = (qs.get("job_id")||"").trim();
-const role = (qs.get("role")||"").trim(); // "driver" or ""
-const driver_id = (qs.get("driver_id")||localStorage.getItem("st_driver_id")||"").trim().toUpperCase();
+const params = new URLSearchParams(location.search);
+const jobId = params.get("job_id");
 
-document.getElementById("back").onclick = ()=>window.location.href = (role==="driver" ? "driver.html" : "index.html");
-
-if(!job_id){
-  document.getElementById("statusPill").textContent = "job_id yok";
+if(!jobId){
+  alert("job_id yok");
   throw new Error("job_id missing");
 }
 
-let map, custM=null, drvM=null;
-let pollTimer=null, geoTimer=null;
+let map, fromM, toM, driverM;
 
-init();
+/* INIT */
+document.addEventListener("DOMContentLoaded", ()=>{
+  map = L.map("map").setView([41,29], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  loadJob();
+  setInterval(loadJob, 5000);
+});
 
-function init(){
-  map = L.map("map", { zoomControl:true }).setView([41,29], 13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:19 }).addTo(map);
+/* LOAD JOB */
+async function loadJob(){
+  const r = await fetch(
+    BACKEND_URL +
+    "?action=getJob&job_id=" +
+    encodeURIComponent(jobId)
+  );
+  const d = await r.json();
+  if(!d || !d.ok) return;
 
-  if(role==="driver"){
-    document.getElementById("driverActions").style.display="flex";
-    hookDriverButtons();
-    startDriverLocation();
+  from.textContent = d.from_addr || "—";
+  to.textContent   = d.to_addr || "—";
+  km.textContent   = d.distance_km
+    ? Number(d.distance_km).toFixed(2) + " km"
+    : "—";
+
+  status.textContent = d.status || "—";
+  status.className = "status " + (d.status||"");
+
+  // markers
+  if(d.from_lat && d.from_lng){
+    if(!fromM){
+      fromM = L.marker([d.from_lat,d.from_lng]).addTo(map);
+      map.setView([d.from_lat,d.from_lng], 14);
+    }
   }
-
-  poll();
-  pollTimer = setInterval(poll, 3000);
-}
-
-function setPills(job){
-  document.getElementById("statusPill").textContent = `Durum: ${job.status || "—"}`;
-  const info = `${job.service_type || ""} • ${job.from_addr || ""} → ${job.to_addr || ""} • ${job.price_brut || ""} TL`;
-  document.getElementById("infoPill").textContent = info;
-}
-
-async function poll(){
-  try{
-    const url = `${BACKEND_URL}?action=getJob&job_id=${encodeURIComponent(job_id)}`;
-    const res = await fetch(url);
-    const job = await res.json();
-    if(!job || !job.ok) return;
-
-    setPills(job);
-
-    // customer marker (job from/to yok; live müşteri konumu backend’de olabilir)
-    // burada müşteri konumunu "from_lat/from_lng" ile başlatıp varsa live ile güncelle
-    const cLat = Number(job.customer_lat || job.from_lat || 0);
-    const cLng = Number(job.customer_lng || job.from_lng || 0);
-    if(cLat && cLng){
-      if(!custM){ custM = L.marker([cLat,cLng]).addTo(map).bindPopup("Müşteri"); }
-      else custM.setLatLng([cLat,cLng]);
+  if(d.to_lat && d.to_lng){
+    if(!toM){
+      toM = L.marker([d.to_lat,d.to_lng]).addTo(map);
     }
-
-    // driver marker
-    const dLat = Number(job.driver_lat || 0);
-    const dLng = Number(job.driver_lng || 0);
-    if(dLat && dLng){
-      if(!drvM){ drvM = L.marker([dLat,dLng]).addTo(map).bindPopup("Sürücü"); }
-      else drvM.setLatLng([dLat,dLng]);
-    }
-
-    // fit bounds ilk sefer
-    if(custM && drvM){
-      const b = L.latLngBounds([custM.getLatLng(), drvM.getLatLng()]);
-      map.fitBounds(b, { padding:[40,40] });
-    }else if(custM){
-      map.setView(custM.getLatLng(), 15);
-    }
-
-  }catch(e){
-    console.error(e);
   }
-}
-
-/* ===== Driver location updates ===== */
-function startDriverLocation(){
-  if(!navigator.geolocation) return;
-  // track’e girince status searching olabilir; backend bunu engelliyorsa sorun olmaz (ok:false döner)
-  geoTimer = setInterval(()=>{
-    navigator.geolocation.getCurrentPosition(async p=>{
-      const lat = p.coords.latitude, lng = p.coords.longitude;
-      try{
-        await fetch(BACKEND_URL,{
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({
-            action:"updateLocation",
-            job_id,
-            who:"driver",
-            driver_id,
-            lat, lng
-          })
-        });
-      }catch(_){}
-    }, _=>{}, { enableHighAccuracy:true, timeout:8000 });
-  }, 4000);
-}
-
-function hookDriverButtons(){
-  document.getElementById("btnArrived").onclick = ()=>setStatus("arrived");
-  document.getElementById("btnPicked").onclick  = ()=>setStatus("picked");
-  document.getElementById("btnDone").onclick    = ()=>setStatus("completed");
-  document.getElementById("btnCancel").onclick  = ()=>setStatus("cancelled");
-}
-
-async function setStatus(status){
-  try{
-    const res = await fetch(BACKEND_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ action:"updateStatus", job_id, status })
-    });
-    const data = await res.json();
-    if(!data || !data.ok){
-      console.warn("status update failed", data);
+  if(d.driver_lat && d.driver_lng){
+    if(!driverM){
+      driverM = L.marker([d.driver_lat,d.driver_lng],{
+        title:"Sürücü"
+      }).addTo(map);
+    }else{
+      driverM.setLatLng([d.driver_lat,d.driver_lng]);
     }
-    poll();
-  }catch(e){
-    console.error(e);
   }
 }
 </script>
+
 </body>
 </html>
