@@ -11,9 +11,7 @@
   const DEBUG = !!SEPT.DEBUG;
   const PREFIX = "[SepetTaxi]";
 
-  function now() {
-    return new Date().toISOString();
-  }
+  function now() { return new Date().toISOString(); }
 
   function fmt(level, msg, data) {
     return { time: now(), level, msg, data: data !== undefined ? data : null };
