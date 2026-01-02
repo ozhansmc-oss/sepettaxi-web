@@ -10,194 +10,266 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900}
-header span{color:#f5c400}
-#map{height:34vh}
-#panel{padding:10px;display:flex;flex-direction:column;gap:10px}
-.card{background:#111;border-radius:14px;padding:12px}
-.service-row{display:flex;gap:8px}
-.service{flex:1;text-align:center;padding:12px;border-radius:12px;border:1px solid #222;color:#888}
-.service.active{border-color:#f5c400;color:#fff}
-.input{width:100%;padding:10px;border-radius:12px;background:#000;border:1px solid #222;color:#fff}
-.stats{display:flex;gap:8px}
-.stat{flex:1;background:#0f0f0f;border-radius:12px;padding:10px;text-align:center}
-#call{margin:10px;background:#f5c400;color:#000;border-radius:30px;padding:16px;text-align:center;font-weight:900}
-#register{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:999}
-#register .box{background:#111;padding:16px;border-radius:16px;width:90%;max-width:340px}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
+:root{--y:#f5c400}
+
+/* HEADER */
+header{
+  height:56px;background:#000;border-bottom:1px solid #111;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;position:relative
+}
+header span{color:var(--y)}
+#burger{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  width:40px;height:36px;border-radius:12px;
+  border:1px solid #222;background:#111;color:#fff;cursor:pointer
+}
+
+/* MAP */
+#map{height:32vh}
+
+/* PANEL */
+#panel{
+  height:calc(68vh - 56px);
+  padding:10px;display:flex;flex-direction:column;gap:10px;
+  padding-bottom:120px
+}
+.card{
+  background:#0f0f0f;border-radius:16px;padding:12px;border:1px solid #111
+}
+.service-row{display:flex;gap:10px}
+.service{
+  flex:1;padding:12px;border-radius:14px;text-align:center;
+  border:1px solid #222;color:#aaa;cursor:pointer
+}
+.service.active{
+  border-color:var(--y);color:#fff;
+  box-shadow:0 0 0 1px rgba(245,196,0,.3)
+}
+.input{
+  width:100%;padding:12px;border-radius:14px;
+  border:1px solid #222;background:#000;color:#fff
+}
+
+/* STATS */
+.stats{display:flex;gap:10px}
+.stat{
+  flex:1;background:#111;border-radius:14px;padding:12px;text-align:center
+}
+.stat .lbl{font-size:12px;color:#aaa}
+.stat .val{font-size:20px;font-weight:900}
+
+/* CALL */
+#callBar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#000;padding:12px;border-top:1px solid #111
+}
+#callBtn{
+  background:var(--y);color:#000;border-radius:30px;
+  padding:16px;text-align:center;font-weight:900;cursor:pointer
+}
+#hint{font-size:11px;color:#888;text-align:center;margin-top:6px}
+
+/* DRIVER SIDE */
+#driverSide{
+  position:fixed;right:10px;top:90px;
+  background:#0f0f0f;border:1px solid #222;border-radius:16px;
+  padding:10px;width:160px;z-index:50
+}
+#driverSide button{
+  width:100%;padding:10px;margin-top:8px;
+  border-radius:12px;border:1px solid #222;
+  background:#111;color:#fff;font-weight:900;cursor:pointer
+}
+
+/* REGISTER */
+#register{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center;z-index:200
+}
+#register .box{
+  background:#0f0f0f;border:1px solid #222;
+  border-radius:16px;padding:16px;width:90%;max-width:360px
+}
 .err{color:#ff5c5c;font-size:12px;display:none}
 </style>
 </head>
 
 <body>
 
-<header>Sepet<span>Taxi</span></header>
+<header>
+  Sepet<span>Taxi</span>
+  <button id="burger">☰</button>
+</header>
+
 <div id="map"></div>
 
 <div id="panel">
+
   <div class="card">
     <b>Hizmet Seç</b>
-    <div class="service-row">
-      <div id="svcTaxi" class="service" onclick="selectService('taxi')">🚕 Taksi</div>
-      <div id="svcCourier" class="service" onclick="selectService('courier')">📦 Kurye</div>
+    <div class="service-row" style="margin-top:8px">
+      <div id="svcTaxi" class="service">🚕 Taksi</div>
+      <div id="svcCourier" class="service">📦 Kurye</div>
     </div>
-    <small style="color:#777">Hizmet seçmeden önce kayıt zorunludur</small>
+    <div style="font-size:11px;color:#777;margin-top:6px">
+      Hizmet seçmeden önce kayıt zorunludur.
+    </div>
   </div>
 
-  <div class="card"><input id="fromAddr" class="input" placeholder="Nereden" readonly></div>
-  <div class="card"><input id="toAddr" class="input" placeholder="Nereye" readonly></div>
+  <div class="card">
+    <input id="fromAddr" class="input" readonly placeholder="Nereden">
+  </div>
+
+  <div class="card">
+    <input id="toAddr" class="input" readonly placeholder="Nereye (haritadan seç)">
+  </div>
 
   <div class="stats">
-    <div class="stat"><div>Mesafe</div><b id="dist">—</b></div>
-    <div class="stat"><div>Ücret</div><b id="price">—</b></div>
+    <div class="stat">
+      <div class="lbl">Mesafe</div>
+      <div id="dist" class="val">—</div>
+    </div>
+    <div class="stat">
+      <div class="lbl">Ücret</div>
+      <div id="price" class="val">—</div>
+    </div>
   </div>
+
 </div>
 
-<div id="call" onclick="callDriver()">ÇAĞIR</div>
+<div id="driverSide">
+  <b>🚗 Sürücü müsün?</b>
+  <button onclick="location.href='driver-register.html'">Sürücü Ol</button>
+  <button onclick="location.href='driver.html'">Sürücü Girişi</button>
+</div>
+
+<div id="callBar">
+  <div id="callBtn">ÇAĞIR</div>
+  <div id="hint">Haritadan “Nereye” seçmeden çağrı oluşturulmaz.</div>
+</div>
 
 <!-- REGISTER -->
 <div id="register">
   <div class="box">
+    <h3>Zorunlu Kayıt</h3>
     <input id="fn" class="input" placeholder="Ad">
+    <br><br>
     <input id="ln" class="input" placeholder="Soyad">
+    <br><br>
     <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <label style="font-size:12px"><input type="checkbox" id="kvkk"> KVKK kabul</label>
+    <br><br>
+    <label style="font-size:12px">
+      <input type="checkbox" id="kvkk"> KVKK kabul
+    </label>
     <div id="regErr" class="err">Bilgiler hatalı</div>
-    <div id="call" onclick="completeRegister()">KAYDI TAMAMLA</div>
+    <br>
+    <div id="regOk" style="background:var(--y);color:#000;border-radius:14px;padding:12px;text-align:center;font-weight:900;cursor:pointer">
+      KAYDI TAMAMLA
+    </div>
   </div>
 </div>
 
 <script>
+/* CONFIG */
 const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
 
-let map,fromM,toM;
-let service=null;
-let registered=false;
+/* STATE */
+let map,fromM=null,toM=null,service=null;
+let registered=false,customer=null;
 
-function init(){
-  map=L.map("map").setView([40.2,28.9],13);
+/* INIT */
+document.addEventListener("DOMContentLoaded",()=>{
+  initMap();
+  svcTaxi.onclick=()=>pickService("taxi");
+  svcCourier.onclick=()=>pickService("courier");
+  callBtn.onclick=callDriver;
+  regOk.onclick=saveCustomer;
+});
+
+/* MAP */
+function initMap(){
+  map=L.map("map").setView([40.195,29.060],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
   navigator.geolocation.getCurrentPosition(p=>{
     fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
-    reverse(p.coords.latitude,p.coords.longitude,fromAddr);
     map.setView([p.coords.latitude,p.coords.longitude],15);
+    reverse(p.coords.latitude,p.coords.longitude,fromAddr);
   });
 
   map.on("click",e=>{
-    if(!registered || !service) return;
-    toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
+    if(!toM) toM=L.marker(e.latlng).addTo(map);
+    else toM.setLatLng(e.latlng);
     reverse(e.latlng.lat,e.latlng.lng,toAddr);
     calc();
   });
 }
-init();
 
-function selectService(t){
-  if(!registered){openRegister();return;}
+/* SERVICE */
+function pickService(t){
+  if(!registered){ openRegister(); return; }
   service=t;
   svcTaxi.classList.toggle("active",t==="taxi");
   svcCourier.classList.toggle("active",t==="courier");
+  calc();
 }
 
-function openRegister(){ register.style.display="flex"; }
-
-function completeRegister(){
+/* REGISTER */
+function openRegister(){
+  register.style.display="flex";
+}
+function saveCustomer(){
   if(fn.value.length<2||ln.value.length<2||!/^05\d{9}$/.test(ph.value)||!kvkk.checked){
     regErr.style.display="block";return;
   }
+  customer={first:fn.value,last:ln.value,phone:ph.value};
   registered=true;
   register.style.display="none";
 }
 
+/* CALC */
 function calc(){
   if(!service||!fromM||!toM) return;
   const a=fromM.getLatLng(),b=toM.getLatLng();
   const km=h(a.lat,a.lng,b.lat,b.lng);
   dist.textContent=km.toFixed(2)+" km";
-  price.textContent=Math.round(service==="taxi"?Math.max(120,60+km*22):Math.max(80,40+km*15))+" TL";
+  price.textContent=
+    Math.round(service==="taxi"?Math.max(120,60+km*22):Math.max(80,40+km*15))+" TL";
 }
 
-<script>
+/* CALL */
 async function callDriver(){
+  if(!registered){ openRegister(); return; }
+  if(!service||!fromM||!toM) return alert("Eksik bilgi");
 
-  /* 1️⃣ ZORUNLU KONTROLLER */
-  if(!registered){
-    openRegister();
-    return;
-  }
-  if(!service){
-    alert("Hizmet seçmelisin");
-    return;
-  }
-  if(!fromM || !toM){
-    alert("Nereden / Nereye eksik");
-    return;
-  }
+  const a=fromM.getLatLng(),b=toM.getLatLng();
+  const km=h(a.lat,a.lng,b.lat,b.lng);
+  const pr=Math.round(Math.max(120,60+km*22));
 
-  /* 2️⃣ MESAFE & ÜCRET */
-  const a = fromM.getLatLng();
-  const b = toM.getLatLng();
-  const km = h(a.lat,a.lng,b.lat,b.lng);
-
-  const price =
-    service==="taxi"
-      ? Math.round(Math.max(120,60+km*22))
-      : Math.round(Math.max(80,40+km*15));
-
-  /* 3️⃣ PAYLOAD */
-  const payload = {
-    action: "createJob",
-    service_type: service,
-    from_addr: fromAddr.value,
-    to_addr: toAddr.value,
-    from_lat: a.lat,
-    from_lng: a.lng,
-    to_lat: b.lat,
-    to_lng: b.lng,
-    distance_km: Number(km.toFixed(2)),
-    price_brut: price,
-    customer: {
-      first: fn.value,
-      last: ln.value,
-      phone: ph.value
-    }
+  const payload={
+    action:"createJob",
+    service_type:service,
+    from_addr:fromAddr.value,
+    to_addr:toAddr.value,
+    from_lat:a.lat,from_lng:a.lng,
+    to_lat:b.lat,to_lng:b.lng,
+    distance_km:km,
+    price_brut:pr,
+    customer
   };
 
-  /* 4️⃣ UI KİLİT */
-  call.innerText = "Gönderiliyor...";
-  call.style.pointerEvents = "none";
-
-  /* 5️⃣ BACKEND */
-  try{
-    const res = await fetch(BACKEND_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json();
-
-    if(!data.ok || !data.job_id){
-      throw new Error("createJob failed");
-    }
-
-    alert("İş oluşturuldu: " + data.job_id);
-
-    // BİR SONRAKİ KİLİTLİ ADIM:
-    // window.location.href = "track.html?job_id="+data.job_id;
-
-  }catch(err){
-    console.error(err);
-    alert("Backend hatası – console kontrol et");
-  }finally{
-    call.innerText = "ÇAĞIR";
-    call.style.pointerEvents = "auto";
-  }
+  const r=await fetch(BACKEND_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(payload)
+  });
+  const d=await r.json();
+  if(d.ok) alert("İş oluşturuldu: "+d.job_id);
 }
-</script>
 
-
+/* HELPERS */
 function h(a,b,c,d){
   const R=6371;
   const dLat=(c-a)*Math.PI/180;
@@ -207,10 +279,9 @@ function h(a,b,c,d){
     Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-
 function reverse(lat,lng,input){
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-  .then(r=>r.json()).then(d=>{if(d.display_name)input.value=d.display_name});
+    .then(r=>r.json()).then(d=>{if(d.display_name) input.value=d.display_name});
 }
 </script>
 
