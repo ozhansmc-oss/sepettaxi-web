@@ -2,293 +2,203 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>SepetTaxi – Admin</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#000;color:#fff}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
-header span{color:#f5c400}
-.container{padding:12px}
-.card{background:#111;border:1px solid #222;border-radius:14px;padding:12px;margin-bottom:10px}
-.input,select{width:100%;padding:10px;border-radius:12px;border:1px solid #222;background:#000;color:#fff}
-.btn{background:#f5c400;color:#000;border-radius:14px;padding:12px;font-weight:900;text-align:center;cursor:pointer}
-.btn.secondary{background:#333;color:#fff}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
+:root{--y:#f5c400}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #111}
+header span{color:var(--y)}
+.wrap{padding:12px;display:flex;flex-direction:column;gap:10px}
+.card{background:#0f0f0f;border:1px solid #222;border-radius:16px;padding:12px}
+.row{display:flex;gap:10px;align-items:center}
+.input{width:100%;padding:12px;border-radius:14px;border:1px solid #222;background:#000;color:#fff}
+.btn{padding:12px;border-radius:14px;border:1px solid #222;background:#121212;color:#fff;font-weight:900;cursor:pointer}
+.btn.primary{background:var(--y);border-color:transparent;color:#000}
 .small{font-size:12px;color:#aaa}
-.item{padding:10px;border-radius:12px;border:1px solid #222;background:#0f0f0f;margin-top:8px}
-.row{display:flex;gap:8px;align-items:center}
-.badge{padding:2px 8px;border:1px solid #333;border-radius:999px;font-size:12px}
-.hidden{display:none}
-.kpis{display:flex;gap:8px;margin-top:10px}
-.kpi{flex:1;background:#0f0f0f;border:1px solid #222;border-radius:12px;padding:10px}
-.kpi .t{font-size:11px;color:#aaa}
-.kpi .v{font-size:18px;font-weight:900;margin-top:4px}
-table{width:100%;border-collapse:collapse;margin-top:8px}
-th,td{border-bottom:1px solid #222;padding:8px;font-size:13px;text-align:left}
-th{color:#aaa;font-weight:900}
+.tabs{display:flex;gap:8px}
+.tab{flex:1;text-align:center;padding:12px;border-radius:14px;border:1px solid #222;background:#121212;cursor:pointer;font-weight:900}
+.tab.active{border-color:rgba(245,196,0,.5)}
+.list{white-space:pre-wrap;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-size:12px;color:#ddd}
 </style>
 </head>
 <body>
-
 <header>Sepet<span>Taxi</span> – Admin</header>
 
-<div class="container">
-
-  <!-- LOGIN -->
-  <div id="login" class="card">
-    <div class="small">Admin PIN</div>
-    <input id="pin" class="input" type="password" placeholder="••••">
-    <div class="btn" style="margin-top:10px" onclick="doLogin()">GİRİŞ</div>
-    <div class="small" id="loginErr" style="margin-top:8px;color:#ff5c5c"></div>
+<div class="wrap">
+  <div class="card" id="loginCard">
+    <div style="font-weight:900;margin-bottom:8px">Admin Giriş</div>
+    <div class="row">
+      <input id="pin" class="input" placeholder="PIN">
+      <button id="login" class="btn primary">GİR</button>
+    </div>
+    <div class="small" id="loginMsg" style="margin-top:8px"></div>
   </div>
 
-  <!-- PANEL -->
-  <div id="panel" class="hidden">
-
-    <div class="card row">
-      <div class="btn secondary" onclick="logout()">ÇIKIŞ</div>
-      <div class="btn" onclick="reloadAll()">YENİLE</div>
-      <div class="small" id="exp"></div>
+  <div class="card" id="panelCard" style="display:none">
+    <div class="tabs">
+      <div class="tab active" id="tJobs">Jobs</div>
+      <div class="tab" id="tDrivers">Drivers</div>
+      <div class="tab" id="tFinance">Finance</div>
     </div>
 
-    <!-- FINANCE DASHBOARD -->
-    <div class="card">
-      <div style="font-weight:900">📊 Finans Dashboard</div>
-      <div class="small" style="margin-top:6px">Filtrele ve raporu üret.</div>
+    <div style="height:10px"></div>
 
-      <div class="row" style="margin-top:10px">
-        <div style="flex:1">
-          <div class="small">Başlangıç</div>
-          <input id="fStart" class="input" type="date">
-        </div>
-        <div style="flex:1">
-          <div class="small">Bitiş</div>
-          <input id="fEnd" class="input" type="date">
-        </div>
+    <div id="jobsBox">
+      <div class="row">
+        <button class="btn" id="reloadJobs">Yenile</button>
+        <input class="input" id="filterStatus" placeholder="status (opsiyonel)">
+        <input class="input" id="filterSvc" placeholder="service_type (opsiyonel)">
       </div>
-
-      <div class="row" style="margin-top:10px">
-        <div style="flex:1">
-          <div class="small">Periyot</div>
-          <select id="fPeriod">
-            <option value="day">Gün</option>
-            <option value="month">Ay</option>
-          </select>
-        </div>
-        <div style="flex:1">
-          <div class="small">Hizmet</div>
-          <select id="fService">
-            <option value="">Hepsi</option>
-            <option value="taxi">Taksi</option>
-            <option value="courier">Kurye</option>
-          </select>
-        </div>
-        <div style="flex:1">
-          <div class="small">Status</div>
-          <select id="fStatus">
-            <option value="">Hepsi</option>
-            <option value="completed">completed</option>
-            <option value="assigned">assigned</option>
-            <option value="searching">searching</option>
-            <option value="picked">picked</option>
-            <option value="arrived">arrived</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div class="btn" style="flex:1" onclick="loadFinance()">RAPORU GETİR</div>
-      </div>
-
-      <div class="kpis" id="kpis" style="display:none">
-        <div class="kpi"><div class="t">Brüt</div><div class="v" id="kBrut">—</div></div>
-        <div class="kpi"><div class="t">Komisyon</div><div class="v" id="kCom">—</div></div>
-        <div class="kpi"><div class="t">Sürücü Net</div><div class="v" id="kNet">—</div></div>
-        <div class="kpi"><div class="t">İş Adedi</div><div class="v" id="kCnt">—</div></div>
-      </div>
-
-      <div id="svcTableWrap" style="display:none">
-        <div class="small" style="margin-top:10px">Servis Kırılımı</div>
-        <table>
-          <thead><tr><th>Servis</th><th>Brüt</th><th>Komisyon</th><th>Net</th><th>Adet</th></tr></thead>
-          <tbody id="svcRows"></tbody>
-        </table>
-      </div>
-
-      <div id="periodTableWrap" style="display:none">
-        <div class="small" style="margin-top:10px">Periyot Kırılımı</div>
-        <table>
-          <thead><tr><th>Periyot</th><th>Brüt</th><th>Komisyon</th><th>Net</th><th>Adet</th></tr></thead>
-          <tbody id="periodRows"></tbody>
-        </table>
-      </div>
-
-      <div class="small" id="financeErr" style="margin-top:10px;color:#ff5c5c"></div>
+      <div style="height:10px"></div>
+      <div class="list" id="jobsList">—</div>
     </div>
 
-    <!-- JOBS -->
-    <div class="card">
-      <div style="font-weight:900">İşler</div>
-      <div class="row" style="margin-top:10px">
-        <input id="jLimit" class="input" value="50" placeholder="limit">
-        <input id="jStatus" class="input" placeholder="status (opsiyonel)">
-        <input id="jService" class="input" placeholder="service_type (opsiyonel)">
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div class="btn" style="flex:1" onclick="loadJobs()">İŞLERİ GETİR</div>
-      </div>
-      <div id="jobs"></div>
+    <div id="driversBox" style="display:none">
+      <button class="btn" id="reloadDrivers">Yenile</button>
+      <div style="height:10px"></div>
+      <div class="list" id="driversList">—</div>
     </div>
 
-    <!-- DRIVERS -->
-    <div class="card">
-      <div style="font-weight:900">Sürücüler</div>
-      <div class="row" style="margin-top:10px">
-        <div class="btn" style="flex:1" onclick="loadDrivers()">SÜRÜCÜLERİ GETİR</div>
+    <div id="financeBox" style="display:none">
+      <div class="row">
+        <input class="input" id="fStart" placeholder="start YYYY-MM-DD">
+        <input class="input" id="fEnd" placeholder="end YYYY-MM-DD">
       </div>
-      <div id="drivers"></div>
+      <div style="height:10px"></div>
+      <div class="row">
+        <input class="input" id="fPeriod" placeholder="period day|month (day)">
+        <button class="btn primary" id="reloadFinance">Getir</button>
+      </div>
+      <div style="height:10px"></div>
+      <div class="list" id="financeOut">—</div>
     </div>
-
   </div>
 </div>
 
 <script>
-const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
-const tokenKey="SEPET_ADMIN_TOKEN";
-const expKey="SEPET_ADMIN_EXP";
-const $=id=>document.getElementById(id);
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
+const TOKEN_KEY = "st_admin_token";
 
-function getToken(){ return localStorage.getItem(tokenKey)||""; }
-function setToken(t,exp){ localStorage.setItem(tokenKey,t); localStorage.setItem(expKey,exp||""); }
-function clearToken(){ localStorage.removeItem(tokenKey); localStorage.removeItem(expKey); }
+let token = localStorage.getItem(TOKEN_KEY) || "";
 
-function qs(o){
-  const u=new URL(BACKEND_URL);
-  Object.entries(o).forEach(([k,v])=>u.searchParams.set(k,v));
-  return u.toString();
+const $ = (id)=>document.getElementById(id);
+
+$("login").onclick = login;
+
+$("tJobs").onclick = ()=>tab("jobs");
+$("tDrivers").onclick = ()=>tab("drivers");
+$("tFinance").onclick = ()=>tab("finance");
+
+$("reloadJobs").onclick = loadJobs;
+$("reloadDrivers").onclick = loadDrivers;
+$("reloadFinance").onclick = loadFinance;
+
+boot();
+
+async function boot(){
+  if(token){
+    const ok = await adminCheck();
+    if(ok){
+      $("loginCard").style.display="none";
+      $("panelCard").style.display="block";
+      loadJobs();
+      return;
+    }
+    token=""; localStorage.removeItem(TOKEN_KEY);
+  }
 }
 
-async function doLogin(){
-  loginErr.textContent="";
-  const p=pin.value.trim();
-  if(!p){ loginErr.textContent="PIN gerekli"; return; }
-  const r=await fetch(qs({action:"adminAuth",pin:p}));
-  const j=await r.json().catch(()=>({}));
-  if(!j.ok){ loginErr.textContent="Hatalı PIN"; return; }
-  setToken(j.token, j.expires_at);
-  await showPanel();
+async function login(){
+  const pin = $("pin").value.trim();
+  $("loginMsg").textContent = "Giriş yapılıyor...";
+  try{
+    const url = `${BACKEND_URL}?action=adminAuth&pin=${encodeURIComponent(pin)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data || !data.ok || !data.token) throw new Error("auth failed");
+    token = data.token;
+    localStorage.setItem(TOKEN_KEY, token);
+    $("loginMsg").textContent = "OK";
+    $("loginCard").style.display="none";
+    $("panelCard").style.display="block";
+    loadJobs();
+  }catch(e){
+    $("loginMsg").textContent = "PIN hatalı / backend hatası.";
+    console.error(e);
+  }
 }
 
-async function showPanel(){
-  const t=getToken();
-  if(!t) return;
-  const ok=await fetch(qs({action:"adminCheck",token:t})).then(r=>r.json()).then(x=>x.ok).catch(()=>false);
-  if(!ok){ logout(); return; }
-  login.classList.add("hidden");
-  panel.classList.remove("hidden");
-  exp.textContent="Token expiry: "+(localStorage.getItem(expKey)||"");
-  initFinanceDefaults();
-  reloadAll();
+async function adminCheck(){
+  try{
+    const res = await fetch(`${BACKEND_URL}?action=adminCheck&token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    return !!(data && data.ok);
+  }catch(_){
+    return false;
+  }
 }
 
-function logout(){
-  const t=getToken();
-  fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({action:"adminRevoke",token:t})}).catch(()=>{});
-  clearToken();
-  panel.classList.add("hidden");
-  login.classList.remove("hidden");
+function tab(which){
+  $("tJobs").classList.toggle("active", which==="jobs");
+  $("tDrivers").classList.toggle("active", which==="drivers");
+  $("tFinance").classList.toggle("active", which==="finance");
+
+  $("jobsBox").style.display = (which==="jobs") ? "block" : "none";
+  $("driversBox").style.display = (which==="drivers") ? "block" : "none";
+  $("financeBox").style.display = (which==="finance") ? "block" : "none";
 }
 
-function reloadAll(){
-  loadJobs();
-  loadDrivers();
-  loadFinance();
+async function loadJobs(){
+  $("jobsList").textContent = "Yükleniyor...";
+  const status = $("filterStatus").value.trim();
+  const svc = $("filterSvc").value.trim();
+  const url = `${BACKEND_URL}?action=listJobs&token=${encodeURIComponent(token)}&limit=80`
+    + (status?`&status=${encodeURIComponent(status)}`:"")
+    + (svc?`&service_type=${encodeURIComponent(svc)}`:"");
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error("unauthorized");
+    $("jobsList").textContent = JSON.stringify(data.items||[], null, 2);
+  }catch(e){
+    $("jobsList").textContent = "Yüklenemedi (token / backend).";
+    console.error(e);
+  }
 }
 
-/* ===== FINANCE ===== */
-function initFinanceDefaults(){
-  const today=new Date();
-  const end = today.toISOString().slice(0,10);
-  const start = new Date(Date.now()-30*24*3600*1000).toISOString().slice(0,10);
-  if(!fEnd.value) fEnd.value=end;
-  if(!fStart.value) fStart.value=start;
+async function loadDrivers(){
+  $("driversList").textContent = "Yükleniyor...";
+  try{
+    const res = await fetch(`${BACKEND_URL}?action=listDrivers&token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error("unauthorized");
+    $("driversList").textContent = JSON.stringify(data.items||[], null, 2);
+  }catch(e){
+    $("driversList").textContent = "Yüklenemedi (token / backend).";
+    console.error(e);
+  }
 }
-
-function fmtTL(n){ return (Math.round(Number(n)||0)).toLocaleString("tr-TR")+" TL"; }
 
 async function loadFinance(){
-  financeErr.textContent="";
-  const t=getToken();
-  const start=fStart.value || "";
-  const end=fEnd.value || "";
-  const period=fPeriod.value || "day";
-  const service=fService.value || "";
-  const status=fStatus.value || "";
-
-  const u=qs({action:"getFinance",token:t,start,end,period,service_type:service,status});
-  const j=await fetch(u).then(r=>r.json()).catch(()=>({ok:false,error:"fetch failed"}));
-  if(!j.ok){
-    financeErr.textContent=j.error||"Rapor alınamadı";
-    return;
+  $("financeOut").textContent = "Yükleniyor...";
+  const start = $("fStart").value.trim();
+  const end = $("fEnd").value.trim();
+  const period = ($("fPeriod").value.trim() || "day");
+  const url = `${BACKEND_URL}?action=getFinance&token=${encodeURIComponent(token)}&period=${encodeURIComponent(period)}`
+    + (start?`&start=${encodeURIComponent(start)}`:"")
+    + (end?`&end=${encodeURIComponent(end)}`:"");
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error("unauthorized");
+    $("financeOut").textContent = JSON.stringify(data, null, 2);
+  }catch(e){
+    $("financeOut").textContent = "Yüklenemedi (token / backend).";
+    console.error(e);
   }
-
-  // KPIs
-  kpis.style.display="flex";
-  kBrut.textContent=fmtTL(j.totals.brut);
-  kCom.textContent=fmtTL(j.totals.commission);
-  kNet.textContent=fmtTL(j.totals.net);
-  kCnt.textContent=(Number(j.totals.count)||0).toLocaleString("tr-TR");
-
-  // By service
-  svcTableWrap.style.display="block";
-  svcRows.innerHTML="";
-  (j.by_service||[]).forEach(s=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${s.service_type||"—"}</td><td>${fmtTL(s.brut)}</td><td>${fmtTL(s.commission)}</td><td>${fmtTL(s.net)}</td><td>${(s.count||0)}</td>`;
-    svcRows.appendChild(tr);
-  });
-
-  // By period
-  periodTableWrap.style.display="block";
-  periodRows.innerHTML="";
-  (j.by_period||[]).forEach(p=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${p.key}</td><td>${fmtTL(p.brut)}</td><td>${fmtTL(p.commission)}</td><td>${fmtTL(p.net)}</td><td>${(p.count||0)}</td>`;
-    periodRows.appendChild(tr);
-  });
 }
-
-/* ===== JOBS ===== */
-async function loadJobs(){
-  const t=getToken();
-  const u=qs({action:"listJobs",token:t,limit:jLimit.value||50,status:jStatus.value||"",service_type:jService.value||""});
-  const j=await fetch(u).then(r=>r.json()).catch(()=>({ok:false}));
-  jobs.innerHTML="";
-  (j.items||[]).forEach(it=>{
-    const d=document.createElement("div");
-    d.className="item";
-    d.innerHTML=`<b>${it.job_id}</b> <span class="badge">${it.status}</span>
-      <div class="small">${it.service_type} • ${fmtTL(it.price_brut)} • Kom: ${fmtTL(it.commission_amount)} • Net: ${fmtTL(it.price_driver_net)} • Driver: ${it.driver_id||"—"}</div>`;
-    jobs.appendChild(d);
-  });
-}
-
-/* ===== DRIVERS ===== */
-async function loadDrivers(){
-  const t=getToken();
-  const u=qs({action:"listDrivers",token:t});
-  const j=await fetch(u).then(r=>r.json()).catch(()=>({ok:false}));
-  drivers.innerHTML="";
-  (j.items||[]).forEach(it=>{
-    const d=document.createElement("div");
-    d.className="item";
-    d.innerHTML=`<b>${it.driver_id}</b> <span class="badge">${it.approved}</span>
-      <div class="small">${it.name||""} • ${it.phone||""} • ${it.vehicle||""}</div>`;
-    drivers.appendChild(d);
-  });
-}
-
-showPanel();
 </script>
 </body>
 </html>
