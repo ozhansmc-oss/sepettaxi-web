@@ -2,8 +2,11 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Canlı Takip</title>
+
+<meta name="theme-color" content="#f5c400">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -13,134 +16,234 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial;background:#000;color:#fff}
-header{
-  height:56px;display:flex;align-items:center;justify-content:center;
-  font-weight:900;border-bottom:1px solid #222
+html,body{
+  margin:0;height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#000;color:#fff;overflow:hidden
 }
-header span{color:#f5c400}
-#map{height:calc(100vh - 56px)}
-.badge{
-  position:fixed;top:70px;left:50%;transform:translateX(-50%);
-  background:#111;border:1px solid #333;border-radius:999px;
-  padding:8px 16px;font-size:14px;z-index:1000
+:root{
+  --y:#f5c400;
+  --line:#222;
+}
+
+/* HEADER */
+header{
+  position:fixed;top:0;left:0;right:0;
+  height:56px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;
+  background:rgba(0,0,0,.85);
+  border-bottom:1px solid var(--line);
+  z-index:500
+}
+header span{color:var(--y)}
+
+/* MAP */
+#map{
+  position:absolute;
+  top:56px;bottom:120px;left:0;right:0;
+}
+
+/* STATUS BAR */
+#statusBar{
+  position:fixed;
+  left:0;right:0;bottom:64px;
+  padding:10px 14px;
+  background:rgba(0,0,0,.85);
+  border-top:1px solid var(--line);
+  font-size:14px;
+  z-index:600;
+  text-align:center;
+  font-weight:900
+}
+#statusBar span{color:var(--y)}
+
+/* INFO BAR */
+#infoBar{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  height:64px;
+  background:#000;
+  border-top:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-around;
+  z-index:600
+}
+.info{
+  text-align:center;
+  font-size:12px
+}
+.info b{
+  display:block;
+  font-size:16px;
+  font-weight:900
 }
 </style>
 </head>
 
 <body>
+
 <header>Sepet<span>Taxi</span> Canlı Takip</header>
+
 <div id="map"></div>
-<div id="status" class="badge">Bağlanıyor…</div>
+
+<div id="statusBar">
+  Durum: <span id="status">Bağlanıyor…</span>
+</div>
+
+<div id="infoBar">
+  <div class="info">
+    <b id="dist">—</b>
+    Mesafe
+  </div>
+  <div class="info">
+    <b id="eta">—</b>
+    Tahmini Süre
+  </div>
+  <div class="info">
+    <b id="price">—</b>
+    Ücret
+  </div>
+</div>
 
 <script>
-const API = window.SEPT && SEPT.BACKEND_URL ? SEPT.BACKEND_URL : "";
+/* ========== PARAMS ========== */
 const qs = new URLSearchParams(location.search);
 const jobId = qs.get("job_id");
-const isDriver = qs.get("driver") === "1";
-const driverId = (qs.get("driver_id") || localStorage.getItem("st_driver_id") || "").toUpperCase();
+const isDriver = qs.get("driver")==="1";
 
-if(!jobId){ alert("job_id yok"); throw "job_id missing"; }
+if(!jobId){
+  alert("job_id bulunamadı");
+  throw "job_id missing";
+}
 
-const map = L.map("map", { zoomControl:false }).setView([40.195, 29.060], 14);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:20}).addTo(map);
+/* ========== MAP INIT ========== */
+let map=L.map("map",{zoomControl:false});
+L.tileLayer(
+  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  {maxZoom:19}
+).addTo(map);
 
-const customerIcon = L.icon({ iconUrl:"https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png", iconSize:[32,32], iconAnchor:[16,32] });
-const driverIcon   = L.icon({ iconUrl:"https://maps.gstatic.com/mapfiles/ms2/micons/yellow-dot.png", iconSize:[32,32], iconAnchor:[16,32] });
+let customerMarker=null;
+let driverMarker=null;
+let routeLine=null;
 
-let customerMarker=null, driverMarker=null;
-const statusBox=document.getElementById("status");
-function setStatus(t){ statusBox.innerText=t; }
+/* ICONS */
+const taxiIcon=L.icon({
+  iconUrl:"https://maps.gstatic.com/mapfiles/ms2/micons/yellow-dot.png",
+  iconSize:[32,32],
+  iconAnchor:[16,32]
+});
+const userIcon=L.icon({
+  iconUrl:"https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png",
+  iconSize:[32,32],
+  iconAnchor:[16,32]
+});
 
-async function get(p){
-  const r=await fetch(API+"?"+new URLSearchParams(p));
+/* UI */
+const $=id=>document.getElementById(id);
+function setStatus(s){ $("status").textContent=s; }
+
+/* ========== API HELPERS ========== */
+async function apiGet(p){
+  const r=await fetch(SEPT.BACKEND_URL+"?"+new URLSearchParams(p));
   return r.json();
 }
-async function post(body, noCors=false){
-  const opt = {
+async function apiPost(b){
+  const r=await fetch(SEPT.BACKEND_URL,{
     method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body: JSON.stringify(body)
-  };
-  if(noCors) opt.mode="no-cors";
-  const r=await fetch(API, opt);
-  if(noCors) return { ok:true, opaque:true };
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(b)
+  });
   return r.json();
 }
 
-let notFoundCount=0;
-
+/* ========== JOB WATCH ========== */
 async function watchJob(){
   try{
-    const j = await get({action:"getJob", job_id:jobId});
-    Log.api("getJob", {job_id:jobId}, j);
+    const j=await apiGet({action:"getJob",job_id:jobId});
+    if(!j||!j.ok) return;
 
-    if(!j || !j.ok){
-      notFoundCount++;
-      setStatus(notFoundCount<8 ? "İş oluşturuluyor…" : "İş bulunamadı. (Backend yazmadı / deploy?)");
-      return;
+    if(j.status) setStatus(j.status.toUpperCase());
+
+    $("dist").textContent =
+      j.distance_km ? Number(j.distance_km).toFixed(1)+" km" : "—";
+    $("price").textContent =
+      j.price_brut ? j.price_brut+" TL" : "—";
+
+    if(j.from_lat&&j.from_lng){
+      if(!customerMarker){
+        customerMarker=L.marker(
+          [j.from_lat,j.from_lng],
+          {icon:userIcon}
+        ).addTo(map);
+        map.setView([j.from_lat,j.from_lng],15);
+      }
     }
 
-    setStatus("Durum: " + (j.status || "—"));
-
-    // pins from live
-    const fl = Number(j.from_lat), fg = Number(j.from_lng);
-    if(fl && fg && !customerMarker){
-      customerMarker=L.marker([fl,fg],{icon:customerIcon}).addTo(map);
-      map.setView([fl,fg], 15);
+    if(j.driver_lat&&j.driver_lng){
+      if(!driverMarker){
+        driverMarker=L.marker(
+          [j.driver_lat,j.driver_lng],
+          {icon:taxiIcon}
+        ).addTo(map);
+      }else{
+        driverMarker.setLatLng([j.driver_lat,j.driver_lng]);
+      }
     }
 
-    const dl = Number(j.driver_lat), dg = Number(j.driver_lng);
-    if(dl && dg){
-      if(!driverMarker) driverMarker=L.marker([dl,dg],{icon:driverIcon}).addTo(map);
-      else driverMarker.setLatLng([dl,dg]);
+    if(customerMarker&&driverMarker&&!routeLine){
+      routeLine=L.polyline(
+        [customerMarker.getLatLng(),driverMarker.getLatLng()],
+        {color:"#f5c400",weight:3,opacity:.8}
+      ).addTo(map);
+      map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
     }
 
-    const cl = Number(j.customer_lat), cg = Number(j.customer_lng);
-    if(cl && cg){
-      if(!customerMarker) customerMarker=L.marker([cl,cg],{icon:customerIcon}).addTo(map);
-      else customerMarker.setLatLng([cl,cg]);
+    if(driverMarker&&customerMarker){
+      const km=calcKm(
+        driverMarker.getLatLng(),
+        customerMarker.getLatLng()
+      );
+      $("eta").textContent =
+        Math.max(1,Math.round(km/0.5))+" dk";
     }
+
   }catch(e){
-    Log.error("watchJob error", e);
-    setStatus("Bağlantı hatası…");
+    console.error(e);
   }
 }
-setInterval(watchJob, SEPT.POLL_MS || 3000);
-watchJob();
+setInterval(watchJob,3000);
 
-navigator.geolocation.watchPosition(async pos=>{
-  const lat=pos.coords.latitude;
-  const lng=pos.coords.longitude;
-
-  // Backend, searching iken updateLocation reddedebilir; track tarafında yine göndereceğiz.
-  const body = {
+/* ========== LIVE LOCATION PUSH ========== */
+navigator.geolocation.watchPosition(pos=>{
+  apiPost({
     action:"updateLocation",
-    job_id: jobId,
-    who: isDriver ? "driver" : "customer",
-    lat, lng
-  };
-  if(isDriver && driverId) body.driver_id = driverId;
+    job_id:jobId,
+    who:isDriver?"driver":"customer",
+    lat:pos.coords.latitude,
+    lng:pos.coords.longitude
+  });
+},{enableHighAccuracy:true});
 
-  try{
-    // normal -> fallback no-cors
-    try{
-      const d = await post(body, false);
-      Log.api("updateLocation", body, d);
-    }catch(_){
-      await post(body, true);
-    }
-  }catch(_){}
+/* ========== UTIL ========== */
+function calcKm(a,b){
+  const R=6371;
+  const dLat=(b.lat-a.lat)*Math.PI/180;
+  const dLon=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+
+    Math.cos(a.lat*Math.PI/180)*
+    Math.cos(b.lat*Math.PI/180)*
+    Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
 
-  // local marker
-  if(isDriver){
-    if(!driverMarker) driverMarker=L.marker([lat,lng],{icon:driverIcon}).addTo(map);
-    else driverMarker.setLatLng([lat,lng]);
-  }else{
-    if(!customerMarker) customerMarker=L.marker([lat,lng],{icon:customerIcon}).addTo(map);
-    else customerMarker.setLatLng([lat,lng]);
-  }
-},{ enableHighAccuracy:true });
+/* PWA */
+if("serviceWorker"in navigator){
+  navigator.serviceWorker.register("/service-worker.js");
+}
 </script>
+
 </body>
 </html>
