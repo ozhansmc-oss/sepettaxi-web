@@ -3,148 +3,160 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Sürücü</title>
-
+<title>SepetTaxi – Driver</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#000;color:#fff;font-family:Arial}
-header{
-  height:56px;display:flex;align-items:center;justify-content:center;
-  font-weight:900;border-bottom:1px solid #222
-}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #222}
 header span{color:#f5c400}
-.wrap{padding:14px;max-width:520px;margin:auto}
-.card{
-  background:#111;border-radius:16px;padding:14px;margin-bottom:12px;
-  border:1px solid #222
-}
-input,button{
-  width:100%;padding:14px;border-radius:14px;
-  border:0;font-size:14px
-}
-input{background:#222;color:#fff}
-button{
-  background:#f5c400;color:#000;font-weight:900;cursor:pointer
-}
-.badge{
-  display:inline-block;padding:4px 10px;border-radius:999px;
-  background:#222;font-size:12px;margin-top:6px
-}
-.hidden{display:none}
+.container{padding:12px}
+.card{background:#111;border:1px solid #222;border-radius:14px;padding:12px;margin-bottom:10px}
+.row{display:flex;gap:8px}
+.btn{background:#f5c400;color:#000;border-radius:16px;padding:14px;text-align:center;font-weight:900;cursor:pointer}
+.btn.secondary{background:#333;color:#fff}
+.input{width:100%;padding:10px;border-radius:12px;border:1px solid #222;background:#000;color:#fff}
 .small{font-size:12px;color:#aaa}
-hr{border:0;border-top:1px solid #222;margin:10px 0}
+.pill{flex:1;border:1px solid #222;border-radius:12px;padding:10px;text-align:center;background:#0f0f0f;color:#aaa;cursor:pointer}
+.pill.active{border-color:#f5c400;color:#fff}
 </style>
 </head>
-
 <body>
 
 <header>Sepet<span>Taxi</span> – Sürücü</header>
 
-<div class="wrap">
+<div class="container">
+  <div class="card">
+    <div class="small">Driver ID</div>
+    <input id="driverId" class="input" placeholder="Örn: DRV001">
+    <div class="small" style="margin-top:8px">İsim (opsiyonel)</div>
+    <input id="name" class="input" placeholder="Ad Soyad">
+    <div class="small" style="margin-top:8px">Telefon (opsiyonel)</div>
+    <input id="phone" class="input" placeholder="05XXXXXXXXX">
+    <div class="btn" style="margin-top:10px" onclick="saveDriver()">KAYDET</div>
+  </div>
 
-<div id="loginCard" class="card">
-  <b>Sürücü Girişi</b><br><br>
-  <input id="did" placeholder="Driver ID (DRV-001)">
-  <button onclick="login()">GİRİŞ</button>
-</div>
+  <div class="card">
+    <div class="small">Hizmet Seç</div>
+    <div class="row" style="margin-top:8px">
+      <div id="tTaxi" class="pill" onclick="pick('taxi')">🚕 Taksi</div>
+      <div id="tCourier" class="pill" onclick="pick('courier')">📦 Kurye</div>
+    </div>
+    <div class="btn" style="margin-top:10px" onclick="startSearch()">İŞ ARA</div>
+    <div class="btn secondary" style="margin-top:8px" onclick="stopSearch()">DURDUR</div>
+    <div class="small" style="margin-top:8px" id="status">Durum: —</div>
+  </div>
 
-<div id="jobCard" class="card hidden">
-  <b id="jobTitle">Aktif İş</b><br><br>
+  <div class="card" id="jobCard" style="display:none">
+    <div style="font-weight:900;margin-bottom:6px">Yeni İş</div>
+    <div class="small" id="jobInfo">—</div>
+    <div class="small" style="margin-top:8px">Brüt / Komisyon / Net</div>
+    <div style="font-weight:900;margin-top:4px" id="money">—</div>
 
-  <div id="jobRoute"></div>
-  <div id="jobExtra" class="small"></div>
+    <div id="courierDetails" style="display:none;margin-top:10px">
+      <div class="small">Paket</div><div style="font-weight:900" id="pkg">—</div>
+      <div class="small" style="margin-top:6px">Not</div><div style="font-weight:900" id="note">—</div>
+      <div class="small" style="margin-top:6px">Alıcı</div><div style="font-weight:900" id="recv">—</div>
+      <div class="small" style="margin-top:6px">Telefon</div><div style="font-weight:900" id="rphone">—</div>
+    </div>
 
-  <hr>
-
-  <div id="jobStatus" class="badge">—</div><br><br>
-
-  <button id="btnStart" onclick="startJob()" class="hidden">🚗 YOLA ÇIKTIM</button>
-  <button id="btnFinish" onclick="finishJob()" class="hidden">✅ İŞİ BİTİR</button>
-</div>
-
+    <div class="btn" style="margin-top:12px" onclick="accept()">KABUL ET</div>
+    <div class="btn secondary" style="margin-top:8px" onclick="reject()">REDDET</div>
+  </div>
 </div>
 
 <script>
-const BACKEND_URL =
-"https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-
-let DRIVER_ID = sessionStorage.getItem("SEPT_driver_id") || "";
-let ACTIVE_JOB = null;
+const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
 
 const $=id=>document.getElementById(id);
+let service=null, timer=null, found=null;
 
-function login(){
-  DRIVER_ID=$("did").value.trim();
-  if(!DRIVER_ID) return alert("Driver ID gir");
-  sessionStorage.setItem("SEPT_driver_id",DRIVER_ID);
-  $("loginCard").classList.add("hidden");
-  $("jobCard").classList.remove("hidden");
-  loadJob();
-  setInterval(loadJob,4000);
+function qs(o){
+  const u=new URL(BACKEND_URL);
+  Object.entries(o).forEach(([k,v])=>u.searchParams.set(k,v));
+  return u.toString();
 }
 
-async function loadJob(){
-  const jobs = await fetch(BACKEND_URL+"?action=getJobs").then(r=>r.json());
-  const j = jobs.find(x=>x.driver_id===DRIVER_ID && x.status!=="completed");
-  if(!j){
-    $("jobRoute").innerText="Aktif iş yok";
-    $("jobExtra").innerText="";
-    $("jobStatus").innerText="—";
-    $("btnStart").classList.add("hidden");
-    $("btnFinish").classList.add("hidden");
-    return;
+function pick(s){
+  service=s;
+  tTaxi.classList.toggle("active",s==="taxi");
+  tCourier.classList.toggle("active",s==="courier");
+}
+
+function load(){
+  const id=localStorage.getItem("SEPET_DRIVER_ID")||"";
+  driverId.value=id;
+  name.value=localStorage.getItem("SEPET_DRIVER_NAME")||"";
+  phone.value=localStorage.getItem("SEPET_DRIVER_PHONE")||"";
+}
+function saveDriver(){
+  if(!driverId.value.trim()){ alert("Driver ID gerekli"); return; }
+  localStorage.setItem("SEPET_DRIVER_ID", driverId.value.trim());
+  localStorage.setItem("SEPET_DRIVER_NAME", name.value.trim());
+  localStorage.setItem("SEPET_DRIVER_PHONE", phone.value.trim());
+
+  // backend upsert
+  fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({
+    action:"upsertDriver",
+    driver_id: driverId.value.trim(),
+    name: name.value.trim(),
+    phone: phone.value.trim(),
+    approved: "true"
+  })}).catch(()=>{});
+
+  status.textContent="Durum: Kaydedildi";
+}
+
+async function startSearch(){
+  if(!service){ alert("Hizmet seç"); return; }
+  if(!driverId.value.trim()){ alert("Driver ID kaydet"); return; }
+  stopSearch();
+  status.textContent="Durum: İş aranıyor…";
+
+  timer=setInterval(async()=>{
+    const r=await fetch(qs({action:"getOpenJob",service_type:service}));
+    const j=await r.json().catch(()=>({}));
+    if(j && j.job_id){
+      found=j;
+      showJob(j);
+      stopSearch();
+    }
+  }, 3000);
+}
+function stopSearch(){
+  if(timer){ clearInterval(timer); timer=null; }
+}
+
+function showJob(j){
+  jobCard.style.display="block";
+  jobInfo.textContent = `${j.service_type} • ${Number(j.distance_km||0).toFixed(2)} km`;
+  money.textContent = `${Math.round(Number(j.price_brut||0))} / ${Math.round(Number(j.commission_amount||0))} / ${Math.round(Number(j.price_driver_net||0))} TL`;
+
+  if(String(j.service_type)==="courier"){
+    courierDetails.style.display="block";
+    pkg.textContent=j.pkg_type||"—";
+    note.textContent=j.content_note||"—";
+    recv.textContent=j.recv_name||"—";
+    rphone.textContent=j.recv_phone||"—";
+  } else {
+    courierDetails.style.display="none";
   }
-
-  ACTIVE_JOB=j;
-
-  // Ortak
-  $("jobRoute").innerText = j.from_address+" → "+j.to_address;
-  $("jobStatus").innerText = j.status;
-
-  // 🚕 TAKSİ
-  if(j.service_type==="taxi"){
-    $("jobTitle").innerText="🚕 Taksi İşi";
-    $("jobExtra").innerText="";
-  }
-
-  // 📦 KURYE
-  if(j.service_type==="courier"){
-    $("jobTitle").innerText="📦 Kurye Teslimatı";
-    $("jobExtra").innerHTML=
-      "Paket: <b>"+(j.package_type||"-")+"</b><br>"+
-      "Alıcı: <b>"+(j.receiver_name||"-")+"</b><br>"+
-      "Telefon: <b>"+(j.receiver_phone||"-")+"</b>";
-  }
-
-  $("btnStart").classList.toggle("hidden",j.status!=="assigned");
-  $("btnFinish").classList.toggle("hidden",j.status!=="on_route");
+  status.textContent="Durum: Yeni iş bulundu";
 }
 
-async function updateStatus(status){
-  if(!ACTIVE_JOB) return;
-  await fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body:JSON.stringify({
-      action:"updateStatus",
-      job_id:ACTIVE_JOB.job_id,
-      status,
-      driver_id:DRIVER_ID
-    })
-  });
-  loadJob();
+async function accept(){
+  if(!found) return;
+  await fetch(BACKEND_URL,{method:"POST",body:JSON.stringify({
+    action:"assignJob", job_id: found.job_id, driver_id: driverId.value.trim()
+  })});
+  location.href = `track.html?role=driver&job=${encodeURIComponent(found.job_id)}&driver=${encodeURIComponent(driverId.value.trim())}`;
+}
+function reject(){
+  found=null;
+  jobCard.style.display="none";
+  status.textContent="Durum: Reddedildi";
 }
 
-function startJob(){ updateStatus("on_route"); }
-function finishJob(){ updateStatus("completed"); }
-
-if(DRIVER_ID){
-  $("loginCard").classList.add("hidden");
-  $("jobCard").classList.remove("hidden");
-  loadJob();
-  setInterval(loadJob,4000);
-}
+load();
 </script>
-
 </body>
 </html>
