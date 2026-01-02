@@ -170,7 +170,12 @@ if("serviceWorker" in navigator){
 const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
 let map,fromM,toM,service=null,registered=false,user={};
 const $=id=>document.getElementById(id);
-const phoneOk=s=>/^05\\d{9}$/.test(s||"");
+function phoneOk(s){
+  if(!s) return false;
+  const p = String(s).replace(/\s+/g,"").trim();
+  return /^05\d{9}$/.test(p);
+}
+
 
 function start(){
   landing.style.display="none";
@@ -197,7 +202,13 @@ function pickService(t){
 }
 
 function saveUser(){
-  if(fn.value.length<2||ln.value.length<2||!phoneOk(ph.value)||!kvkk.checked){
+ if(
+  fn.value.trim().length < 2 ||
+  ln.value.trim().length < 2 ||
+  !phoneOk(ph.value) ||
+  !kvkk.checked
+){
+
     regErr.style.display="block";return
   }
   user={first:fn.value,last:ln.value,phone:ph.value};
