@@ -407,7 +407,7 @@ function initMap(){
 function saveCustomer(){
   const first = $("cFirst").value.trim();
   const last  = $("cLast").value.trim();
-  const phone = $("cPhone").value.trim();
+  const phone = $("cPhone").value.replace(/\D/g,"");
   const kvkk  = $("kvkk").checked;
 
   const ok = first.length>=2 && last.length>=2 && /^05\\d{9}$/.test(phone) && kvkk;
