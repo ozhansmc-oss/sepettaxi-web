@@ -1,78 +1,194 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SepetTaxi – Driver</title>
-<style>/* … minimal styling … */</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SepetTaxi – Sürücü</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
+:root{--y:#f5c400}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-weight:900;border-bottom:1px solid #111;position:relative}
+header span{color:var(--y)}
+#back{position:absolute;left:10px;top:50%;transform:translateY(-50%);border:1px solid #222;background:#111;color:#fff;border-radius:12px;padding:8px 10px;cursor:pointer}
+.wrap{padding:12px;display:flex;flex-direction:column;gap:10px}
+.card{background:#0f0f0f;border:1px solid #222;border-radius:16px;padding:12px}
+.row{display:flex;gap:10px;align-items:center}
+.btn{padding:12px;border-radius:14px;border:1px solid #222;background:#121212;color:#fff;font-weight:900;cursor:pointer;width:100%}
+.btn.primary{background:var(--y);border-color:transparent;color:#000}
+.small{font-size:12px;color:#aaa}
+.badge{display:inline-block;padding:6px 10px;border:1px solid #222;border-radius:999px;font-size:12px;color:#ddd}
+#jobBox{display:none}
+#jobTitle{font-weight:900;margin-bottom:8px}
+.kv{font-size:12px;color:#aaa;margin-top:6px}
+</style>
 </head>
 <body>
+<header>
+  <button id="back">←</button>
+  Sepet<span>Taxi</span> – Sürücü
+</header>
 
-<header>Sepet<span>Taxi</span> – Sürücü</header>
+<div class="wrap">
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <div style="font-weight:900">Driver ID</div>
+        <div class="small" id="driverId">—</div>
+      </div>
+      <span class="badge" id="onlineBadge">OFFLINE</span>
+    </div>
+    <div style="height:10px"></div>
+    <div class="row">
+      <button class="btn" id="toggleOnline">Online Ol</button>
+      <button class="btn" id="goTrack" style="max-width:160px">Track Aç</button>
+    </div>
+    <div style="height:10px"></div>
+    <div class="small">Online iken sistem açık iş arar. İş gelirse “Kabul Et” ile alırsın.</div>
+  </div>
 
-<div>
-  Driver ID: <input id="driverId">
-  <button onclick="saveDriver()">Kaydet</button>
-</div>
+  <div class="card">
+    <div style="font-weight:900;margin-bottom:8px">Hizmet Filtre</div>
+    <div class="row">
+      <button class="btn" id="fltTaxi">🚕 Taksi</button>
+      <button class="btn" id="fltCourier">📦 Kurye</button>
+    </div>
+    <div class="small" style="margin-top:10px">Sadece seçtiğin hizmet tipindeki işleri görürsün.</div>
+  </div>
 
-<div>
-  Hizmet: <button onclick="pick('taxi')">🚕</button><button onclick="pick('courier')">📦</button>
-  <button onclick="startSearch()">İŞ ARA</button>
-  <button onclick="stopSearch()">DURDUR</button>
-</div>
+  <div class="card" id="jobBox">
+    <div id="jobTitle">Yeni İş</div>
+    <div class="kv" id="jobInfo">—</div>
+    <div style="height:10px"></div>
+    <button class="btn primary" id="acceptJob">KABUL ET</button>
+    <div class="small" id="jobErr" style="color:#ff7b7b;display:none;margin-top:8px"></div>
+  </div>
 
-<div id="status">Durum: —</div>
-
-<div id="jobCard" style="display:none">
-  <div id="jobInfo"></div>
-  <button onclick="accept()">KABUL</button>
-  <button onclick="reject()">REDDET</button>
+  <div class="card">
+    <div style="font-weight:900;margin-bottom:8px">Durum</div>
+    <div class="small" id="status">Hazır</div>
+  </div>
 </div>
 
 <script>
-const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
-let service=null,driverId="",timer=null,found=null;
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
 
-function pick(s){ service=s; }
+const driver_id = (localStorage.getItem("st_driver_id")||"").trim().toUpperCase();
+document.getElementById("driverId").textContent = driver_id || "Driver ID yok (index > sürücü girişi)";
 
-function saveDriver(){
-  driverId=document.getElementById("driverId").value;
-  fetch(BACKEND_URL,{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({action:"upsertDriver",driver_id:driverId})
-  });
-  document.getElementById("status").textContent="Driver kaydedildi";
+let online=false;
+let pollTimer=null;
+let service_type="taxi";
+let openJob=null;
+
+document.getElementById("back").onclick = ()=>window.location.href="index.html";
+document.getElementById("goTrack").onclick = ()=>{
+  if(openJob && openJob.job_id){
+    window.location.href = `track.html?job_id=${encodeURIComponent(openJob.job_id)}&role=driver&driver_id=${encodeURIComponent(driver_id)}`;
+  }else{
+    setStatus("Açık iş yok.");
+  }
+};
+
+document.getElementById("fltTaxi").onclick = ()=>setFilter("taxi");
+document.getElementById("fltCourier").onclick = ()=>setFilter("courier");
+
+document.getElementById("toggleOnline").onclick = ()=>{
+  if(!driver_id){ setStatus("Driver ID olmadan online olunamaz."); return; }
+  online=!online;
+  updateOnlineUI();
+  if(online) startPolling();
+  else stopPolling();
+};
+
+document.getElementById("acceptJob").onclick = accept;
+
+function setFilter(t){
+  service_type=t;
+  setStatus("Filtre: "+t);
+  if(online) fetchOpenJob();
 }
 
-function startSearch(){
-  if(!service||!driverId) return;
-  stopSearch();
-  timer=setInterval(async()=>{
-    const url=new URL(BACKEND_URL);
-    url.searchParams.set("action","getOpenJob");
-    url.searchParams.set("service_type",service);
-    const r=await fetch(url.toString());
-    const j=await r.json();
-    if(j.job_id){ found=j; showJob(j); stopSearch(); }
-  },3000);
+function updateOnlineUI(){
+  document.getElementById("onlineBadge").textContent = online ? "ONLINE" : "OFFLINE";
+  document.getElementById("toggleOnline").textContent = online ? "Offline Ol" : "Online Ol";
 }
 
-function stopSearch(){ if(timer){clearInterval(timer);timer=null;} }
+function setStatus(s){ document.getElementById("status").textContent = s; }
 
-function showJob(j){
-  document.getElementById("jobCard").style.display="block";
-  document.getElementById("jobInfo").textContent=`${j.service_type} • ${j.price_brut} TL`;
+function startPolling(){
+  fetchOpenJob();
+  pollTimer=setInterval(fetchOpenJob, 4000);
+}
+function stopPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer=null;
+  openJob=null;
+  hideJob();
 }
 
-function accept(){
-  fetch(BACKEND_URL,{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ action:"assignJob",job_id:found.job_id,driver_id:driverId })
-  })
-  .then(()=>location.href=`track.html?role=driver&job_id=${encodeURIComponent(found.job_id)}&driver_id=${encodeURIComponent(driverId)}`);
+function showJob(job){
+  openJob=job;
+  document.getElementById("jobBox").style.display="block";
+  document.getElementById("jobErr").style.display="none";
+  const info =
+    `Hizmet: ${job.service_type}\n`+
+    `Nereden: ${job.from_addr}\n`+
+    `Nereye: ${job.to_addr}\n`+
+    `Ücret: ${job.price_brut} TL`;
+  document.getElementById("jobInfo").textContent = info;
+}
+function hideJob(){
+  document.getElementById("jobBox").style.display="none";
+  document.getElementById("jobInfo").textContent = "—";
 }
 
-function reject(){ document.getElementById("jobCard").style.display="none"; }
+async function fetchOpenJob(){
+  try{
+    const url = `${BACKEND_URL}?action=getOpenJob&service_type=${encodeURIComponent(service_type)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data && data.ok && data.job_id){
+      // Eğer aynı job zaten ekranda ise tekrar çizme
+      if(!openJob || openJob.job_id !== data.job_id){
+        showJob(data);
+        setStatus("Yeni iş bulundu.");
+      }
+    }else{
+      openJob=null;
+      hideJob();
+      setStatus("Açık iş yok.");
+    }
+  }catch(e){
+    setStatus("Backend bağlantı hatası.");
+    console.error(e);
+  }
+}
+
+async function accept(){
+  if(!openJob || !openJob.job_id) return;
+  document.getElementById("jobErr").style.display="none";
+  try{
+    const res = await fetch(BACKEND_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ action:"assignJob", job_id: openJob.job_id, driver_id })
+    });
+    const data = await res.json();
+    if(!data || !data.ok){
+      throw new Error((data && data.error) || "assign failed");
+    }
+    setStatus("İş alındı. Track’e yönlendiriliyor...");
+    window.location.href = `track.html?job_id=${encodeURIComponent(openJob.job_id)}&role=driver&driver_id=${encodeURIComponent(driver_id)}`;
+  }catch(e){
+    document.getElementById("jobErr").style.display="block";
+    document.getElementById("jobErr").textContent = "Bu iş alınmış olabilir. Yenileniyor...";
+    console.error(e);
+    setTimeout(fetchOpenJob, 1000);
+  }
+}
 </script>
-
 </body>
 </html>
