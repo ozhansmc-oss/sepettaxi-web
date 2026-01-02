@@ -4,84 +4,76 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Driver</title>
-
+<script src="config.js"></script>
+<script src="log.js"></script>
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;font-family:Arial,Helvetica,sans-serif;
-  background:#000;color:#fff
-}
+html,body{margin:0;height:100%;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif}
 :root{--y:#f5c400}
-
 header{
-  height:56px;background:#000;border-bottom:1px solid #111;
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:900
+  height:58px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,.15));
+  border-bottom:1px solid rgba(255,255,255,.06);
 }
-header span{color:var(--y)}
-
-.container{padding:14px}
-
+header b{font-size:18px}
+header b span{color:var(--y)}
+.wrap{padding:14px;max-width:520px;margin:0 auto}
 .card{
-  background:#0f0f0f;border:1px solid #222;border-radius:16px;
-  padding:14px;margin-bottom:14px
+  border-radius:18px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(16,16,18,.60);
+  box-shadow:0 18px 50px rgba(0,0,0,.55);
+  padding:14px;margin-top:14px
 }
-.card b{display:block;margin-bottom:8px}
-
+.field label{display:block;font-size:12px;color:rgba(255,255,255,.55);margin:6px 0}
+.field input{
+  width:100%;padding:12px 14px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.55);color:#fff
+}
 .btn{
-  width:100%;padding:14px;border-radius:14px;
-  border:0;background:var(--y);color:#000;
-  font-weight:900;font-size:16px;cursor:pointer
+  margin-top:12px;width:100%;height:58px;border-radius:999px;
+  border:0;background:linear-gradient(180deg,#ffdf6a,var(--y));
+  color:#000;font-weight:900;font-size:18px;cursor:pointer
 }
-.btn.dark{
-  background:#111;color:#fff;border:1px solid #222
+.btn.secondary{
+  background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.10)
 }
-.small{font-size:12px;color:#aaa}
-
+.small{font-size:12px;color:rgba(255,255,255,.55);line-height:1.4}
 .hidden{display:none}
 </style>
 </head>
-
 <body>
+<header><b>Sepet<span>Taxi</span> Driver</b></header>
 
-<header>Sepet<span>Taxi</span> Driver</header>
+<div class="wrap">
 
-<div class="container">
-
-  <!-- LOGIN -->
   <div id="loginCard" class="card hidden">
-    <b>Driver Girişi</b>
-    <input id="drvId" class="input" placeholder="Driver ID (DRV-XXXX)">
-    <div style="height:10px"></div>
-    <button class="btn" onclick="login()">GİRİŞ</button>
-    <div class="small" style="margin-top:8px">
-      Driver ID, “Sürücü Ol” başvurusunda verilir.
+    <div style="font-weight:900">Sürücü Girişi</div>
+    <div class="field">
+      <label>Driver ID</label>
+      <input id="drvId" placeholder="DRV-ABC123">
     </div>
+    <button class="btn" id="btnLogin">Giriş</button>
+    <div class="small" style="margin-top:10px">Driver ID, “Sürücü Ol” başvurusunda verilir.</div>
   </div>
 
-  <!-- JOB -->
   <div id="jobCard" class="card hidden">
-    <b>Açık İş</b>
-    <div id="jobInfo" class="small">Yükleniyor…</div>
-    <div style="height:12px"></div>
-    <button class="btn" onclick="acceptJob()">KABUL ET</button>
+    <div style="font-weight:900">Açık İş</div>
+    <div id="jobInfo" class="small" style="margin-top:10px">Yükleniyor…</div>
+    <button class="btn" id="btnAccept">Kabul Et</button>
+    <button class="btn secondary" id="btnReload">Yenile</button>
   </div>
 
-  <!-- NO JOB -->
   <div id="emptyCard" class="card hidden">
-    <b>Açık İş Yok</b>
-    <div class="small">Şu anda bekleyen iş bulunmuyor.</div>
-    <div style="height:12px"></div>
-    <button class="btn dark" onclick="loadJob()">Yenile</button>
+    <div style="font-weight:900">Açık İş Yok</div>
+    <div class="small" style="margin-top:10px">Şu anda bekleyen iş bulunmuyor.</div>
+    <button class="btn secondary" id="btnReload2">Yenile</button>
   </div>
 
 </div>
 
 <script>
-const BACKEND_URL =
-  "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
-
-let driverId = localStorage.getItem("st_driver_id") || null;
+const API = (window.SEPT && SEPT.BACKEND_URL) ? SEPT.BACKEND_URL : "";
+let driverId = (localStorage.getItem("st_driver_id")||"").trim() || null;
 let currentJob = null;
 
 const loginCard = document.getElementById("loginCard");
@@ -89,74 +81,92 @@ const jobCard   = document.getElementById("jobCard");
 const emptyCard = document.getElementById("emptyCard");
 const jobInfo   = document.getElementById("jobInfo");
 
-/* INIT */
-document.addEventListener("DOMContentLoaded", ()=>{
-  if(!driverId){
-    loginCard.classList.remove("hidden");
-  }else{
-    loadJob();
-  }
-});
+document.getElementById("btnLogin").onclick = login;
+document.getElementById("btnAccept").onclick = acceptJob;
+document.getElementById("btnReload").onclick = loadJob;
+document.getElementById("btnReload2").onclick = loadJob;
 
-/* LOGIN */
+boot();
+
+function showOnly(which){
+  loginCard.classList.add("hidden");
+  jobCard.classList.add("hidden");
+  emptyCard.classList.add("hidden");
+  if(which==="login") loginCard.classList.remove("hidden");
+  if(which==="job") jobCard.classList.remove("hidden");
+  if(which==="empty") emptyCard.classList.remove("hidden");
+}
+
+function boot(){
+  if(!driverId) showOnly("login");
+  else loadJob();
+}
+
 function login(){
-  const id = drvId.value.trim().toUpperCase();
+  const id = (document.getElementById("drvId").value||"").trim().toUpperCase();
   if(!id || !/^DRV-/.test(id)) return alert("Geçerli Driver ID gir");
   localStorage.setItem("st_driver_id", id);
   driverId = id;
-  loginCard.classList.add("hidden");
   loadJob();
 }
 
-/* LOAD JOB */
 async function loadJob(){
-  jobCard.classList.add("hidden");
-  emptyCard.classList.add("hidden");
+  showOnly("job");
+  jobInfo.textContent = "Yükleniyor…";
+  currentJob = null;
 
-  const res = await fetch(
-    BACKEND_URL + "?action=getOpenJob"
-  );
-  const d = await res.json();
+  try{
+    const url = API + "?" + new URLSearchParams({ action:"getOpenJob" });
+    const d = await fetch(url).then(r=>r.json());
+    if(window.Log) Log.api("getOpenJob", {}, d);
 
-  if(d && d.ok && d.job_id){
-    currentJob = d;
-    jobInfo.innerHTML = `
-      <b>Mesafe:</b> ${Number(d.distance_km).toFixed(2)} km<br>
-      <b>Ücret (Net):</b> ${d.price_driver_net} TL<br>
-      <b>Nereden:</b> ${d.from_addr}<br>
-      <b>Nereye:</b> ${d.to_addr}
-    `;
-    jobCard.classList.remove("hidden");
-  }else{
-    emptyCard.classList.remove("hidden");
+    if(d && d.ok && d.job_id){
+      currentJob = d;
+      jobInfo.innerHTML =
+        `<b>Mesafe:</b> ${Number(d.distance_km||0).toFixed(2)} km<br>` +
+        `<b>Ücret (Net):</b> ${d.price_driver_net || "-"} TL<br>` +
+        `<b>Nereden:</b> ${(d.from_addr||"").toString().slice(0,120)}<br>` +
+        `<b>Nereye:</b> ${(d.to_addr||"").toString().slice(0,120)}`;
+      showOnly("job");
+    }else{
+      showOnly("empty");
+    }
+  }catch(e){
+    console.error(e);
+    showOnly("empty");
   }
 }
 
-/* ACCEPT */
 async function acceptJob(){
   if(!currentJob) return;
 
-  const res = await fetch(BACKEND_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
+  try{
+    const payload = JSON.stringify({
       action:"assignJob",
       job_id: currentJob.job_id,
       driver_id: driverId
-    })
-  });
-  const d = await res.json();
+    });
 
-  if(d && d.ok){
-    location.href =
-      "track.html?job_id=" +
-      encodeURIComponent(currentJob.job_id);
-  }else{
-    alert("İş alınamadı. Başkası almış olabilir.");
-    loadJob();
+    const r = await fetch(API, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: payload
+    });
+
+    let d=null; try{ d=await r.json(); }catch(_){}
+    if(window.Log) Log.api("assignJob", {job_id:currentJob.job_id,driver_id:driverId}, d);
+
+    if(d && d.ok){
+      location.href = "track.html?job_id=" + encodeURIComponent(currentJob.job_id) + "&driver=1";
+    }else{
+      alert("İş alınamadı. Başkası almış olabilir.");
+      loadJob();
+    }
+  }catch(e){
+    console.error(e);
+    alert("İş alınamadı. (Backend/CORS)");
   }
 }
 </script>
-
 </body>
 </html>
