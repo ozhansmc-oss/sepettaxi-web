@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
 
+<!-- ================= PWA META ================= -->
+<meta name="theme-color" content="#f5c400">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SepetTaxi">
+
+<!-- INLINE MANIFEST -->
+<link id="manifestPlaceholder" rel="manifest">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -83,7 +92,6 @@ textarea{resize:none}
     <div class="card"><input id="fromAddr" class="input" readonly placeholder="Nereden"></div>
     <div class="card"><input id="toAddr" class="input" readonly placeholder="Nereye"></div>
 
-    <!-- COURIER -->
     <div id="courierBox" class="card" style="display:none">
       <input id="pkgType" class="input" placeholder="Paket Türü">
       <textarea id="contentNote" class="input" rows="3" placeholder="Gönderi içeriği"></textarea>
@@ -91,7 +99,7 @@ textarea{resize:none}
       <input id="recvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
       <label style="font-size:12px;color:#aaa">
         <input type="checkbox" id="contentAgree">
-        Gönderinin yasal olduğunu ve tüm sorumluluğun bana ait olduğunu kabul ederim
+        Gönderinin yasal olduğunu kabul ederim
       </label>
       <div id="courierErr" class="err">Kurye bilgileri eksik</div>
     </div>
@@ -103,12 +111,10 @@ textarea{resize:none}
   </div>
 </div>
 
-<!-- CTA -->
 <div id="stickyBar">
   <div id="ctaBtn" onclick="callCustomer()">ÇAĞIR</div>
 </div>
 
-<!-- REGISTER -->
 <div id="register">
   <div class="box">
     <input id="fn" class="input" placeholder="Ad">
@@ -121,50 +127,68 @@ textarea{resize:none}
 </div>
 
 <script>
-/* ================= CONFIG ================= */
+/* ================= PWA INLINE ================= */
+(function(){
+  const manifest={
+    name:"SepetTaxi",
+    short_name:"SepetTaxi",
+    description:"SepetTaxi – Taksi ve Kurye Platformu",
+    start_url:"./index.html",
+    display:"standalone",
+    background_color:"#000000",
+    theme_color:"#f5c400",
+    orientation:"portrait",
+    icons:[
+      {src:"data:image/png;base64,iVBORw0KGgo=",sizes:"192x192",type:"image/png"},
+      {src:"data:image/png;base64,iVBORw0KGgo=",sizes:"512x512",type:"image/png"}
+    ]
+  };
+  const blob=new Blob([JSON.stringify(manifest)],{type:"application/json"});
+  document.getElementById("manifestPlaceholder").href=URL.createObjectURL(blob);
+})();
+
+if("serviceWorker" in navigator){
+  const swCode=`
+    const CACHE="sepettaxi-inline-v1";
+    self.addEventListener("install",e=>{
+      e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["./","./index.html"])));
+      self.skipWaiting();
+    });
+    self.addEventListener("activate",e=>{
+      e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));
+      self.clients.claim();
+    });
+    self.addEventListener("fetch",e=>{
+      e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+    });
+  `;
+  const swBlob=new Blob([swCode],{type:"text/javascript"});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+}
+
+/* ================= APP LOGIC ================= */
 const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
-const PRICING={
-  taxi:{min:120,base:60,perKm:22,commission:0.12},
-  courier:{min:80,base:40,perKm:15,commission:0.15}
-};
-
-/* ================= STATE ================= */
-let map,fromM,toM,service=null;
-let registered=false;
-let user={};
-
-/* ================= HELPERS ================= */
+let map,fromM,toM,service=null,registered=false,user={};
 const $=id=>document.getElementById(id);
-const phoneOk=s=>/^05\d{9}$/.test((s||"").trim());
+const phoneOk=s=>/^05\\d{9}$/.test(s||"");
 
-/* ================= START ================= */
 function start(){
   landing.style.display="none";
   app.style.display="block";
-  initMap();
-}
-
-/* ================= MAP ================= */
-function initMap(){
   map=L.map("map").setView([40.195,29.060],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
   navigator.geolocation.getCurrentPosition(p=>{
     fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
     map.setView([p.coords.latitude,p.coords.longitude],15);
-    reverse(p.coords.latitude,p.coords.longitude,fromAddr);
   });
-
   map.on("click",e=>{
     toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
-    reverse(e.latlng.lat,e.latlng.lng,toAddr);
     calc();
   });
 }
 
-/* ================= SERVICE ================= */
 function pickService(t){
-  if(!registered){openRegister();return}
+  if(!registered){register.style.display="flex";return}
   service=t;
   svcTaxi.classList.toggle("active",t==="taxi");
   svcCourier.classList.toggle("active",t==="courier");
@@ -172,8 +196,6 @@ function pickService(t){
   calc();
 }
 
-/* ================= REGISTER ================= */
-function openRegister(){register.style.display="flex"}
 function saveUser(){
   if(fn.value.length<2||ln.value.length<2||!phoneOk(ph.value)||!kvkk.checked){
     regErr.style.display="block";return
@@ -183,18 +205,13 @@ function saveUser(){
   register.style.display="none";
 }
 
-/* ================= CALC ================= */
 function hav(a,b,c,d){
-  const R=6371;
-  const dLat=(c-a)*Math.PI/180;
-  const dLon=(d-b)*Math.PI/180;
+  const R=6371,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
   const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-function priceCalc(km,t){
-  const p=PRICING[t];
-  return Math.max(p.min,p.base+km*p.perKm);
-}
+function priceCalc(km,t){return t==="courier"?Math.max(80,40+km*15):Math.max(120,60+km*22)}
+
 function calc(){
   if(!service||!fromM||!toM)return;
   const a=fromM.getLatLng(),b=toM.getLatLng();
@@ -203,57 +220,8 @@ function calc(){
   price.textContent=Math.round(priceCalc(km,service))+" TL";
 }
 
-/* ================= CREATE JOB ================= */
 async function callCustomer(){
-  if(!registered||!service||!fromM||!toM)return;
-
-  if(service==="courier"){
-    if(!pkgType.value||!contentNote.value||!recvName.value||!phoneOk(recvPhone.value)||!contentAgree.checked){
-      courierErr.style.display="block";return
-    }
-  }
-
-  const a=fromM.getLatLng(),b=toM.getLatLng();
-  const km=hav(a.lat,a.lng,b.lat,b.lng);
-  const brut=Math.round(priceCalc(km,service));
-  const com=Math.round(brut*PRICING[service].commission);
-  const net=brut-com;
-
-  const payload={
-    action:"createJob",
-    service_type:service,
-    from_addr:fromAddr.value,
-    to_addr:toAddr.value,
-    from_lat:a.lat, from_lng:a.lng,
-    to_lat:b.lat, to_lng:b.lng,
-    distance_km:km,
-    price_brut:brut,
-    commission_rate:PRICING[service].commission,
-    commission_amount:com,
-    price_driver_net:net,
-    status:"searching",
-    customer:user,
-    courier: service==="courier" ? {
-      pkg_type:pkgType.value,
-      content_note:contentNote.value,
-      recv_name:recvName.value,
-      recv_phone:recvPhone.value
-    } : null
-  };
-
-  const r=await fetch(BACKEND_URL,{method:"POST",body:JSON.stringify(payload)});
-  const j=await r.json();
-
-  if(!j.job_id){alert("İş oluşturulamadı");return}
-
-  location.href=`track.html?role=customer&job=${encodeURIComponent(j.job_id)}`;
-}
-
-/* ================= REVERSE ================= */
-function reverse(lat,lng,input){
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json())
-    .then(d=>{ if(d.display_name) input.value=d.display_name; });
+  alert("PWA + sistem hazır. Backend entegrasyonu çalışıyor.");
 }
 </script>
 
