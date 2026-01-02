@@ -14,30 +14,28 @@ html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background
 :root{--y:#f5c400;--line:#222}
 
 /* LANDING */
-#landing{position:fixed;inset:0;background:#000 url("assets/landing.png") center/cover no-repeat;z-index:1000}
-#landing .overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#landing{position:fixed;inset:0;background:#000;z-index:1000}
+#landing .overlay{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center}
 #landing h1{font-size:40px;margin-bottom:18px}
 #landing span{color:var(--y)}
 #landing button{background:var(--y);color:#000;border:0;border-radius:28px;padding:14px 46px;font-size:17px;font-weight:900}
 
 /* APP */
 #app{display:none;height:100%}
-header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;border-bottom:1px solid var(--line);position:relative}
+header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;border-bottom:1px solid var(--line)}
 header span{color:var(--y)}
-#hamburger{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:10px;background:#0f0f0f;border:1px solid #222;display:flex;align-items:center;justify-content:center;cursor:pointer}
 
-/* MAP + PANEL */
 #map{height:32vh}
-#panel{height:calc(68vh - 56px);padding:10px;display:flex;flex-direction:column;gap:8px;padding-bottom:160px;overflow:auto}
-.card{background:#111;border:1px solid #1f1f1f;border-radius:14px;padding:10px}
+#panel{height:calc(68vh - 56px);padding:10px;display:flex;flex-direction:column;gap:8px;padding-bottom:150px;overflow:auto}
+.card{background:#111;border:1px solid #222;border-radius:14px;padding:10px}
 
 /* SERVICE */
 .service-row{display:flex;gap:8px}
-.service{flex:1;padding:10px;border-radius:12px;text-align:center;font-size:13px;border:1px solid #222;color:#aaa}
+.service{flex:1;padding:10px;border-radius:12px;text-align:center;font-size:13px;border:1px solid #222;color:#aaa;cursor:pointer}
 .service.active{border-color:var(--y);color:#fff}
 
 /* INPUT */
-.input,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid #1f1f1f;background:#000;color:#fff;font-size:13px}
+.input,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid #222;background:#000;color:#fff;font-size:13px}
 textarea{resize:none}
 
 /* STATS */
@@ -48,29 +46,18 @@ textarea{resize:none}
 
 /* CTA */
 #stickyBar{position:fixed;bottom:0;left:0;right:0;background:#000;padding:10px;border-top:1px solid #111;z-index:200}
-#ctaBtn{background:var(--y);color:#000;border-radius:30px;padding:16px;text-align:center;font-weight:900}
+#ctaBtn{background:var(--y);color:#000;border-radius:30px;padding:16px;text-align:center;font-weight:900;cursor:pointer}
 
 /* REGISTER */
 #register{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:500}
 #register .box{width:90%;max-width:360px;background:#0f0f0f;border-radius:16px;padding:14px;border:1px solid #222}
 .err{color:#ff5c5c;font-size:12px;display:none}
-
-/* TRACK */
-#trackOverlay{position:fixed;inset:0;background:#000;z-index:600;display:none}
-#trackMap{height:52vh}
-#trackPanel{padding:10px}
-.pill{background:#0f0f0f;border:1px solid #222;border-radius:12px;padding:10px;margin-bottom:8px}
-.pill .t{font-size:11px;color:#aaa}
-.pill .v{font-size:15px;font-weight:900}
-
-/* DRIVER COURIER DETAILS */
-#courierDetails{display:none}
-.phone{color:#4da6ff;text-decoration:none;font-weight:900}
 </style>
 </head>
 
 <body>
 
+<!-- LANDING -->
 <div id="landing">
   <div class="overlay">
     <h1>Sepet<span>Taxi</span></h1>
@@ -78,18 +65,16 @@ textarea{resize:none}
   </div>
 </div>
 
+<!-- APP -->
 <div id="app">
-  <header>
-    <div id="hamburger">☰</div>
-    Sepet<span>Taxi</span>
-  </header>
+  <header>Sepet<span>Taxi</span></header>
 
   <div id="map"></div>
 
   <div id="panel">
     <div class="card">
       <b>Hizmet Seç</b>
-      <div class="service-row">
+      <div class="service-row" style="margin-top:8px">
         <div id="svcTaxi" class="service" onclick="pickService('taxi')">🚕 Taksi</div>
         <div id="svcCourier" class="service" onclick="pickService('courier')">📦 Kurye</div>
       </div>
@@ -98,13 +83,15 @@ textarea{resize:none}
     <div class="card"><input id="fromAddr" class="input" readonly placeholder="Nereden"></div>
     <div class="card"><input id="toAddr" class="input" readonly placeholder="Nereye"></div>
 
+    <!-- COURIER -->
     <div id="courierBox" class="card" style="display:none">
       <input id="pkgType" class="input" placeholder="Paket Türü">
       <textarea id="contentNote" class="input" rows="3" placeholder="Gönderi içeriği"></textarea>
       <input id="recvName" class="input" placeholder="Alıcı Adı Soyadı">
       <input id="recvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
       <label style="font-size:12px;color:#aaa">
-        <input type="checkbox" id="contentAgree"> Gönderi yasal
+        <input type="checkbox" id="contentAgree">
+        Gönderinin yasal olduğunu ve tüm sorumluluğun bana ait olduğunu kabul ederim
       </label>
       <div id="courierErr" class="err">Kurye bilgileri eksik</div>
     </div>
@@ -116,65 +103,68 @@ textarea{resize:none}
   </div>
 </div>
 
+<!-- CTA -->
 <div id="stickyBar">
   <div id="ctaBtn" onclick="callCustomer()">ÇAĞIR</div>
 </div>
 
-<div id="trackOverlay">
-  <div id="trackMap"></div>
-  <div id="trackPanel">
-
-    <div class="pill">
-      <div class="t">Durum</div>
-      <div class="v" id="trackStatus">—</div>
-    </div>
-
-    <!-- SADECE SÜRÜCÜ + COURIER -->
-    <div id="courierDetails">
-      <div class="pill">
-        <div class="t">Paket Türü</div>
-        <div class="v" id="dPkg">—</div>
-      </div>
-      <div class="pill">
-        <div class="t">Gönderi Notu</div>
-        <div class="v" id="dNote">—</div>
-      </div>
-      <div class="pill">
-        <div class="t">Alıcı</div>
-        <div class="v" id="dRecv">—</div>
-      </div>
-      <div class="pill">
-        <div class="t">Alıcı Telefon</div>
-        <div class="v"><a id="dPhone" class="phone" href="#">—</a></div>
-      </div>
-    </div>
-
+<!-- REGISTER -->
+<div id="register">
+  <div class="box">
+    <input id="fn" class="input" placeholder="Ad">
+    <input id="ln" class="input" placeholder="Soyad">
+    <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
+    <label style="font-size:12px;color:#aaa"><input type="checkbox" id="kvkk"> KVKK kabul</label>
+    <div id="regErr" class="err">Bilgiler hatalı</div>
+    <div id="ctaBtn" style="margin-top:10px" onclick="saveUser()">KAYDI TAMAMLA</div>
   </div>
 </div>
 
 <script>
-const BACKEND_URL="https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec";
-let map,fromM,toM,service=null,registered=true;
-let currentJob=null;
+/* ================= CONFIG ================= */
+const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
+const PRICING={
+  taxi:{min:120,base:60,perKm:22,commission:0.12},
+  courier:{min:80,base:40,perKm:15,commission:0.15}
+};
 
-/* MAP */
+/* ================= STATE ================= */
+let map,fromM,toM,service=null;
+let registered=false;
+let user={};
+
+/* ================= HELPERS ================= */
+const $=id=>document.getElementById(id);
+const phoneOk=s=>/^05\d{9}$/.test((s||"").trim());
+
+/* ================= START ================= */
 function start(){
   landing.style.display="none";
   app.style.display="block";
-  map=L.map("map").setView([41,29],13);
+  initMap();
+}
+
+/* ================= MAP ================= */
+function initMap(){
+  map=L.map("map").setView([40.195,29.060],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
   navigator.geolocation.getCurrentPosition(p=>{
     fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
     map.setView([p.coords.latitude,p.coords.longitude],15);
+    reverse(p.coords.latitude,p.coords.longitude,fromAddr);
   });
+
   map.on("click",e=>{
     toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
+    reverse(e.latlng.lat,e.latlng.lng,toAddr);
     calc();
   });
 }
 
-/* SERVICE */
+/* ================= SERVICE ================= */
 function pickService(t){
+  if(!registered){openRegister();return}
   service=t;
   svcTaxi.classList.toggle("active",t==="taxi");
   svcCourier.classList.toggle("active",t==="courier");
@@ -182,9 +172,29 @@ function pickService(t){
   calc();
 }
 
-/* CALC */
-function hav(a,b,c,d){const R=6371;const dLat=(c-a)*Math.PI/180;const dLon=(d-b)*Math.PI/180;const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))}
-function priceCalc(km,t){return t==="courier"?Math.max(80,40+km*15):Math.max(120,60+km*22)}
+/* ================= REGISTER ================= */
+function openRegister(){register.style.display="flex"}
+function saveUser(){
+  if(fn.value.length<2||ln.value.length<2||!phoneOk(ph.value)||!kvkk.checked){
+    regErr.style.display="block";return
+  }
+  user={first:fn.value,last:ln.value,phone:ph.value};
+  registered=true;
+  register.style.display="none";
+}
+
+/* ================= CALC ================= */
+function hav(a,b,c,d){
+  const R=6371;
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function priceCalc(km,t){
+  const p=PRICING[t];
+  return Math.max(p.min,p.base+km*p.perKm);
+}
 function calc(){
   if(!service||!fromM||!toM)return;
   const a=fromM.getLatLng(),b=toM.getLatLng();
@@ -193,37 +203,57 @@ function calc(){
   price.textContent=Math.round(priceCalc(km,service))+" TL";
 }
 
-/* CREATE JOB */
+/* ================= CREATE JOB ================= */
 async function callCustomer(){
-  if(service!=="courier")return alert("Bu sürümde demo: kurye");
+  if(!registered||!service||!fromM||!toM)return;
+
+  if(service==="courier"){
+    if(!pkgType.value||!contentNote.value||!recvName.value||!phoneOk(recvPhone.value)||!contentAgree.checked){
+      courierErr.style.display="block";return
+    }
+  }
+
+  const a=fromM.getLatLng(),b=toM.getLatLng();
+  const km=hav(a.lat,a.lng,b.lat,b.lng);
+  const brut=Math.round(priceCalc(km,service));
+  const com=Math.round(brut*PRICING[service].commission);
+  const net=brut-com;
+
   const payload={
     action:"createJob",
-    service_type:"courier",
-    courier:{
+    service_type:service,
+    from_addr:fromAddr.value,
+    to_addr:toAddr.value,
+    from_lat:a.lat, from_lng:a.lng,
+    to_lat:b.lat, to_lng:b.lng,
+    distance_km:km,
+    price_brut:brut,
+    commission_rate:PRICING[service].commission,
+    commission_amount:com,
+    price_driver_net:net,
+    status:"searching",
+    customer:user,
+    courier: service==="courier" ? {
       pkg_type:pkgType.value,
       content_note:contentNote.value,
       recv_name:recvName.value,
       recv_phone:recvPhone.value
-    }
+    } : null
   };
+
   const r=await fetch(BACKEND_URL,{method:"POST",body:JSON.stringify(payload)});
   const j=await r.json();
-  currentJob=j;
-  openTrackAsDriver();
+
+  if(!j.job_id){alert("İş oluşturulamadı");return}
+
+  location.href=`track.html?role=customer&job=${encodeURIComponent(j.job_id)}`;
 }
 
-/* DRIVER VIEW */
-function openTrackAsDriver(){
-  trackOverlay.style.display="block";
-  courierDetails.style.display="block";
-
-  dPkg.textContent=currentJob.courier.pkg_type;
-  dNote.textContent=currentJob.courier.content_note;
-  dRecv.textContent=currentJob.courier.recv_name;
-  dPhone.textContent=currentJob.courier.recv_phone;
-  dPhone.href="tel:"+currentJob.courier.recv_phone;
-
-  trackStatus.textContent="Kurye teslimata gidiyor";
+/* ================= REVERSE ================= */
+function reverse(lat,lng,input){
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    .then(r=>r.json())
+    .then(d=>{ if(d.display_name) input.value=d.display_name; });
 }
 </script>
 
