@@ -1,221 +1,76 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Takip</title>
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
-header{
-  height:56px;display:flex;align-items:center;justify-content:center;
-  font-weight:900;border-bottom:1px solid #222
-}
-header span{color:#f5c400}
-
-#map{height:56vh}
-
-.panel{padding:10px}
-.card{
-  background:#111;border:1px solid #222;border-radius:14px;
-  padding:12px;margin-bottom:10px
-}
-.row{display:flex;gap:8px}
-.pill{
-  flex:1;background:#0f0f0f;border:1px solid #222;
-  border-radius:12px;padding:10px
-}
-.pill .t{font-size:11px;color:#aaa}
-.pill .v{font-size:16px;font-weight:900;margin-top:3px}
-
-.btn{
-  background:#f5c400;color:#000;border-radius:16px;
-  padding:14px;text-align:center;font-weight:900;cursor:pointer
-}
-.btn.secondary{background:#333;color:#fff}
-
-.small{font-size:12px;color:#aaa}
-a.phone{color:#4da6ff;text-decoration:none;font-weight:900}
-</style>
+<style>/* … minimal styling … */</style>
 </head>
-
 <body>
 
 <header>Sepet<span>Taxi</span> – Takip</header>
-<div id="map"></div>
+<div id="map" style="height:50vh"></div>
 
-<div class="panel">
+<div>
+  <div>Durum: <span id="status">—</span></div>
+  <div>Brüt: <span id="brut">—</span></div>
+</div>
 
-  <div class="row">
-    <div class="pill">
-      <div class="t">Brüt</div>
-      <div class="v" id="brut">—</div>
-    </div>
-    <div class="pill" id="pCom">
-      <div class="t">Komisyon</div>
-      <div class="v" id="com">—</div>
-    </div>
-    <div class="pill" id="pNet">
-      <div class="t">Net</div>
-      <div class="v" id="net">—</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="small">Durum</div>
-    <div style="font-weight:900;font-size:16px" id="status">—</div>
-  </div>
-
-  <!-- COURIER (driver only) -->
-  <div class="card" id="courierBox" style="display:none">
-    <div style="font-weight:900;margin-bottom:8px">Kurye Detayları</div>
-    <div class="small">Paket</div><div id="pkg" style="font-weight:900">—</div>
-    <div class="small" style="margin-top:6px">Alıcı</div><div id="recv" style="font-weight:900">—</div>
-    <div class="small" style="margin-top:6px">Telefon</div>
-    <div><a class="phone" id="rphone" href="#">—</a></div>
-  </div>
-
-  <!-- DRIVER ACTIONS -->
-  <div class="card" id="driverActions" style="display:none">
-    <div class="btn" onclick="setStatus('arrived')">GELDİM</div>
-    <div style="height:8px"></div>
-    <div class="btn" onclick="setStatus('picked')">ALDIM</div>
-    <div style="height:8px"></div>
-    <div class="btn secondary" onclick="setStatus('completed')">TAMAMLANDI</div>
-    <div class="small" style="margin-top:8px">
-      Tahsilat sahada sürücü tarafından yapılır.
-    </div>
-  </div>
-
+<div id="driverActions" style="display:none">
+  <button onclick="setStatus('arrived')">GELDİM</button>
+  <button onclick="setStatus('picked')">ALDIM</button>
+  <button onclick="setStatus('completed')">TAMAMLANDI</button>
 </div>
 
 <script>
 const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
-
-const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
+const jobId=params.get("job_id");
+const role=params.get("role")||"customer";
+const driverId=params.get("driver_id")||"";
 
-const jobId = params.get("job_id");
-const role = (params.get("role") || "customer").toLowerCase();
-let driverId = params.get("driver_id") || localStorage.getItem("SEPET_DRIVER_ID") || "";
-
-let map, startMarker, endMarker, driverMarker, route;
-
-/* INIT */
-if(!jobId){
-  alert("job_id parametresi yok");
-}else{
-  init();
-}
+let map, markers={};
 
 function init(){
-  map = L.map("map").setView([41,29],13);
+  map=L.map("map").setView([41,29],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
-  const isDriver = role === "driver";
-  $("driverActions").style.display = isDriver ? "block" : "none";
-  $("pCom").style.display = isDriver ? "" : "none";
-  $("pNet").style.display = isDriver ? "" : "none";
-
-  if(isDriver){
-    if(!driverId){
-      driverId = prompt("Driver ID") || "";
-      if(driverId) localStorage.setItem("SEPET_DRIVER_ID",driverId);
-    }
-    if(driverId){
-      navigator.geolocation.watchPosition(p=>{
-        post({
-          action:"updateLocation",
-          job_id:jobId,
-          who:"driver",
-          driver_id:driverId,
-          lat:p.coords.latitude,
-          lng:p.coords.longitude
-        });
-      },()=>{}, {enableHighAccuracy:true,maximumAge:5000});
-    }
-  }
-
   poll();
-  setInterval(poll, 4000);
+  setInterval(poll,4000);
 }
 
-/* POLL JOB */
 async function poll(){
-  const j = await post({ action:"getJob", job_id:jobId });
-  if(!j) return;
+  const url=new URL(BACKEND_URL);
+  url.searchParams.set("action","getJob");
+  url.searchParams.set("job_id",jobId);
+  const r=await fetch(url.toString());
+  const j=await r.json();
+  if(!j.ok) return;
 
-  $("status").textContent = j.status || "—";
-  $("brut").textContent = j.price_brut!=null ? Math.round(j.price_brut)+" TL" : "—";
-  $("com").textContent  = j.commission_amount!=null ? Math.round(j.commission_amount)+" TL" : "—";
-  $("net").textContent  = j.price_driver_net!=null ? Math.round(j.price_driver_net)+" TL" : "—";
+  document.getElementById("status").textContent=j.status;
+  document.getElementById("brut").textContent=j.price_brut;
 
-  const a = [Number(j.from_lat), Number(j.from_lng)];
-  const b = [Number(j.to_lat), Number(j.to_lng)];
-
-  if(a[0] && a[1]){
-    if(!startMarker) startMarker=L.marker(a).addTo(map).bindPopup("Başlangıç");
-    else startMarker.setLatLng(a);
-  }
-  if(b[0] && b[1]){
-    if(!endMarker) endMarker=L.marker(b).addTo(map).bindPopup("Varış");
-    else endMarker.setLatLng(b);
-  }
-  if(a[0] && b[0]){
-    if(!route){
-      route=L.polyline([a,b]).addTo(map);
-      map.fitBounds(route.getBounds(),{padding:[20,20]});
-    }
-  }
+  const a=[j.from_lat,j.from_lng];
+  const b=[j.to_lat,j.to_lng];
+  if(!markers.start) markers.start=L.marker(a).addTo(map);
+  if(!markers.end) markers.end=L.marker(b).addTo(map);
 
   if(j.driver_lat && j.driver_lng){
-    const d=[Number(j.driver_lat), Number(j.driver_lng)];
-    if(!driverMarker) driverMarker=L.marker(d).addTo(map).bindPopup("Sürücü");
-    else driverMarker.setLatLng(d);
+    if(!markers.driver) markers.driver=L.marker([j.driver_lat,j.driver_lng]).addTo(map);
+    else markers.driver.setLatLng([j.driver_lat,j.driver_lng]);
   }
 
-  if(role==="driver" && j.service_type==="courier"){
-    $("courierBox").style.display="block";
-    $("pkg").textContent=j.pkg_type||"—";
-    $("recv").textContent=j.recv_name||"—";
-    $("rphone").textContent=j.recv_phone||"—";
-    $("rphone").href=j.recv_phone?("tel:"+j.recv_phone):"#";
-  }else{
-    $("courierBox").style.display="none";
-  }
+  if(role==="driver") document.getElementById("driverActions").style.display="block";
 }
 
-/* STATUS UPDATE */
 function setStatus(st){
-  if(!driverId){
-    driverId = prompt("Driver ID") || "";
-    if(driverId) localStorage.setItem("SEPET_DRIVER_ID",driverId);
-  }
-  post({
-    action:"updateStatus",
-    job_id:jobId,
-    status:st,
-    driver_id:driverId
+  fetch(BACKEND_URL,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action:"updateStatus",job_id:jobId,status:st,driver_id:driverId})
   });
 }
 
-/* POST HELPER */
-async function post(payload){
-  try{
-    const r = await fetch(BACKEND_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify(payload)
-    });
-    return await r.json();
-  }catch(e){
-    return null;
-  }
-}
+window.onload=init;
 </script>
 
 </body>
