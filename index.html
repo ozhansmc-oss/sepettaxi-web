@@ -266,7 +266,10 @@ async function callDriver(){
     body:JSON.stringify(payload)
   });
   const d=await r.json();
-  if(d.ok) alert("İş oluşturuldu: "+d.job_id);
+  if(d.ok && d.job_id){
+  window.location.href =
+    "track.html?job_id=" + encodeURIComponent(d.job_id);
+  return;
 }
 
 /* HELPERS */
