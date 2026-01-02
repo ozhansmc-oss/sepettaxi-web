@@ -6,7 +6,7 @@
 
 window.SEPT = {
   // === BACKEND ===
-  BACKEND_URL: "https://script.google.com/macros/s/AKfycbzzwdIUkPheKBoJS3U13pvrFMi9VutO-M0gM-LRfDnUnrk6JwrBAevMKp9a4Ecy6Dcy/exec",
+  BACKEND_URL: "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec",
 
   // === ECONOMY ===
   COMMISSION: 0.15,
