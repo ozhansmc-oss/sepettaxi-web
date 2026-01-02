@@ -238,7 +238,60 @@ function calc(){
 }
 
 async function callCustomer(){
-  alert("PWA + sistem hazır. Backend entegrasyonu çalışıyor.");
+
+  if(!registered){
+    register.style.display="flex";
+    return;
+  }
+
+  if(!service){
+    alert("Lütfen hizmet seçin");
+    return;
+  }
+
+  if(!fromM || !toM){
+    alert("Nereden ve Nereye seçilmeli");
+    return;
+  }
+
+  const a = fromM.getLatLng();
+  const b = toM.getLatLng();
+
+  const payload = {
+    action: "createJob",
+    service_type: service,
+    customer: user,
+    from: {
+      lat: a.lat,
+      lng: a.lng,
+      address: fromAddr.value
+    },
+    to: {
+      lat: b.lat,
+      lng: b.lng,
+      address: toAddr.value
+    },
+    distance_km: dist.textContent,
+    price: price.textContent
+  };
+
+  try{
+    const res = await fetch(BACKEND_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if(data.ok && data.job_id){
+      window.location.href = `track.html?job_id=${data.job_id}`;
+    }else{
+      alert("İş oluşturulamadı");
+    }
+  }catch(e){
+    console.error(e);
+    alert("Bağlantı hatası");
+  }
 }
 </script>
   async function reverseGeocode(lat, lng, inputEl){
