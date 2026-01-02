@@ -5,62 +5,127 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
 
-<!-- ================= PWA META ================= -->
-<meta name="theme-color" content="#f5c400">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SepetTaxi">
-
-<!-- INLINE MANIFEST -->
-<link id="manifestPlaceholder" rel="manifest">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-:root{--y:#f5c400;--line:#222}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff}
+
+/* COLORS */
+:root{
+  --y:#f5c400;
+  --card:#141414;
+  --line:#222;
+}
 
 /* LANDING */
-#landing{position:fixed;inset:0;background:#000;z-index:1000}
-#landing .overlay{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center}
-#landing h1{font-size:40px;margin-bottom:18px}
-#landing span{color:var(--y)}
-#landing button{background:var(--y);color:#000;border:0;border-radius:28px;padding:14px 46px;font-size:17px;font-weight:900}
+#landing{
+  position:fixed;inset:0;
+  background:#000 url("assets/landing.png") center/cover no-repeat;
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:40px;
+  z-index:9999;
+}
+#landing button{
+  width:100%;max-width:360px;
+  padding:18px;border-radius:999px;
+  background:var(--y);border:none;
+  font-size:18px;font-weight:900;
+  cursor:pointer;
+}
 
-/* APP */
-#app{display:none;height:100%}
-header{height:56px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;border-bottom:1px solid var(--line)}
+/* HEADER */
+header{
+  height:56px;
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
 header span{color:var(--y)}
+#burger{
+  position:absolute;left:16px;
+  font-size:24px;cursor:pointer;
+}
 
-#map{height:32vh}
-#panel{height:calc(68vh - 56px);padding:10px;display:flex;flex-direction:column;gap:8px;padding-bottom:150px;overflow:auto}
-.card{background:#111;border:1px solid #222;border-radius:14px;padding:10px}
+/* MENU */
+#menu{
+  position:fixed;top:0;left:-260px;
+  width:260px;height:100%;
+  background:#000;border-right:1px solid var(--line);
+  padding:20px;transition:.3s;
+  z-index:3000;
+}
+#menu.active{left:0}
+#menu a{
+  display:block;padding:12px 0;
+  color:#fff;text-decoration:none;
+}
 
-/* SERVICE */
-.service-row{display:flex;gap:8px}
-.service{flex:1;padding:10px;border-radius:12px;text-align:center;font-size:13px;border:1px solid #222;color:#aaa;cursor:pointer}
-.service.active{border-color:var(--y);color:#fff}
+/* MAP */
+#map{height:45vh}
 
-/* INPUT */
-.input,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid #222;background:#000;color:#fff;font-size:13px}
-textarea{resize:none}
+/* SERVICES */
+.cards{
+  display:flex;gap:12px;
+  padding:12px;
+}
+.card{
+  flex:1;background:var(--card);
+  border-radius:16px;padding:16px;
+  text-align:center;cursor:pointer;
+  border:2px solid transparent;
+}
+.card.active{border-color:var(--y)}
 
-/* STATS */
-.stats{display:flex;gap:8px}
-.stat{flex:1;background:#111;border-radius:14px;padding:12px;text-align:center}
-.stat .lbl{font-size:11px;color:#aaa}
-.stat .val{font-size:18px;font-weight:900}
+/* CALL */
+#call{
+  margin:12px;
+  padding:18px;
+  border-radius:999px;
+  background:var(--y);
+  color:#000;
+  text-align:center;
+  font-weight:900;
+  cursor:pointer;
+}
 
-/* CTA */
-#stickyBar{position:fixed;bottom:0;left:0;right:0;background:#000;padding:10px;border-top:1px solid #111;z-index:200}
-#ctaBtn{background:var(--y);color:#000;border-radius:30px;padding:16px;text-align:center;font-weight:900;cursor:pointer}
-
-/* REGISTER */
-#register{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:500}
-#register .box{width:90%;max-width:360px;background:#0f0f0f;border-radius:16px;padding:14px;border:1px solid #222}
-.err{color:#ff5c5c;font-size:12px;display:none}
+/* MODAL */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:4000;
+}
+.modal.active{display:flex}
+.modal .box{
+  width:90%;max-width:360px;
+  background:#111;
+  border-radius:18px;
+  padding:16px;
+}
+.modal input{
+  width:100%;
+  padding:12px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:none;
+}
+.modal button{
+  width:100%;
+  padding:14px;
+  border-radius:999px;
+  background:var(--y);
+  border:none;
+  font-weight:900;
+}
+.error{
+  color:#ff5252;
+  font-size:13px;
+  margin-bottom:8px;
+}
 </style>
 </head>
 
@@ -68,160 +133,108 @@ textarea{resize:none}
 
 <!-- LANDING -->
 <div id="landing">
-  <div class="overlay">
-    <h1>Sepet<span>Taxi</span></h1>
-    <button onclick="start()">BAŞLA</button>
-  </div>
+  <button onclick="startApp()">BAŞLA</button>
 </div>
 
-<!-- APP -->
-<div id="app">
-  <header>Sepet<span>Taxi</span></header>
-
-  <div id="map"></div>
-
-  <div id="panel">
-    <div class="card">
-      <b>Hizmet Seç</b>
-      <div class="service-row" style="margin-top:8px">
-        <div id="svcTaxi" class="service" onclick="pickService('taxi')">🚕 Taksi</div>
-        <div id="svcCourier" class="service" onclick="pickService('courier')">📦 Kurye</div>
-      </div>
-    </div>
-
-    <div class="card"><input id="fromAddr" class="input" readonly placeholder="Nereden"></div>
-    <div class="card"><input id="toAddr" class="input" readonly placeholder="Nereye"></div>
-
-    <div id="courierBox" class="card" style="display:none">
-      <input id="pkgType" class="input" placeholder="Paket Türü">
-      <textarea id="contentNote" class="input" rows="3" placeholder="Gönderi içeriği"></textarea>
-      <input id="recvName" class="input" placeholder="Alıcı Adı Soyadı">
-      <input id="recvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-      <label style="font-size:12px;color:#aaa">
-        <input type="checkbox" id="contentAgree">
-        Gönderinin yasal olduğunu kabul ederim
-      </label>
-      <div id="courierErr" class="err">Kurye bilgileri eksik</div>
-    </div>
-
-    <div class="stats">
-      <div class="stat"><div class="lbl">Mesafe</div><div id="dist" class="val">—</div></div>
-      <div class="stat"><div class="lbl">Ücret</div><div id="price" class="val">—</div></div>
-    </div>
-  </div>
+<!-- MENU -->
+<div id="menu">
+  <a href="#" onclick="closeMenu()">Ana Sayfa</a>
+  <a href="#" onclick="alert('Sürücü kayıt ekranı (sonraki adım)')">Sürücü Ol</a>
+  <a href="#" onclick="alert('Bilgi sayfası')">Hakkımızda</a>
 </div>
 
-<div id="stickyBar">
-  <div id="ctaBtn" onclick="callCustomer()">ÇAĞIR</div>
+<!-- HEADER -->
+<header>
+  <div id="burger" onclick="toggleMenu()">☰</div>
+  <div><span>Sepet</span>Taxi</div>
+</header>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- SERVICES -->
+<div class="cards">
+  <div class="card" onclick="selectService('taksi',this)">🚕 Taksi</div>
+  <div class="card" onclick="selectService('kurye',this)">📦 Kurye</div>
 </div>
 
-<div id="register">
+<!-- CALL -->
+<div id="call" onclick="openRegister()">ÇAĞIR</div>
+
+<!-- REGISTER -->
+<div id="register" class="modal">
   <div class="box">
-    <input id="fn" class="input" placeholder="Ad">
-    <input id="ln" class="input" placeholder="Soyad">
-    <input id="ph" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <label style="font-size:12px;color:#aaa"><input type="checkbox" id="kvkk"> KVKK kabul</label>
-    <div id="regErr" class="err">Bilgiler hatalı</div>
-    <div id="ctaBtn" style="margin-top:10px" onclick="saveUser()">KAYDI TAMAMLA</div>
+    <div id="regError" class="error"></div>
+    <input id="regName" placeholder="Ad">
+    <input id="regSurname" placeholder="Soyad">
+    <input id="regPhone" placeholder="05XXXXXXXXX">
+    <label>
+      <input type="checkbox" id="regKvkk"> KVKK kabul
+    </label>
+    <br><br>
+    <button onclick="submitRegister()">KAYDI TAMAMLA</button>
   </div>
 </div>
 
 <script>
-/* ================= PWA INLINE ================= */
-(function(){
-  const manifest={
-    name:"SepetTaxi",
-    short_name:"SepetTaxi",
-    description:"SepetTaxi – Taksi ve Kurye Platformu",
-    start_url:"./index.html",
-    display:"standalone",
-    background_color:"#000000",
-    theme_color:"#f5c400",
-    orientation:"portrait",
-    icons:[
-      {src:"data:image/png;base64,iVBORw0KGgo=",sizes:"192x192",type:"image/png"},
-      {src:"data:image/png;base64,iVBORw0KGgo=",sizes:"512x512",type:"image/png"}
-    ]
-  };
-  const blob=new Blob([JSON.stringify(manifest)],{type:"application/json"});
-  document.getElementById("manifestPlaceholder").href=URL.createObjectURL(blob);
-})();
+let map;
+let selectedService = null;
 
-if("serviceWorker" in navigator){
-  const swCode=`
-    const CACHE="sepettaxi-inline-v1";
-    self.addEventListener("install",e=>{
-      e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["./","./index.html"])));
-      self.skipWaiting();
-    });
-    self.addEventListener("activate",e=>{
-      e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));
-      self.clients.claim();
-    });
-    self.addEventListener("fetch",e=>{
-      e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
-    });
-  `;
-  const swBlob=new Blob([swCode],{type:"text/javascript"});
-  navigator.serviceWorker.register(URL.createObjectURL(swBlob));
-}
-
-/* ================= APP LOGIC ================= */
-const BACKEND_URL="https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec";
-let map,fromM,toM,service=null,registered=false,user={};
-const $=id=>document.getElementById(id);
-const phoneOk=s=>/^05\\d{9}$/.test(s||"");
-
-function start(){
-  landing.style.display="none";
-  app.style.display="block";
-  map=L.map("map").setView([40.195,29.060],13);
+function startApp(){
+  document.getElementById("landing").style.display="none";
+  map = L.map("map").setView([40.195,29.060],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  navigator.geolocation.getCurrentPosition(p=>{
-    fromM=L.marker([p.coords.latitude,p.coords.longitude]).addTo(map);
-    map.setView([p.coords.latitude,p.coords.longitude],15);
-  });
-  map.on("click",e=>{
-    toM?toM.setLatLng(e.latlng):toM=L.marker(e.latlng).addTo(map);
-    calc();
-  });
 }
 
-function pickService(t){
-  if(!registered){register.style.display="flex";return}
-  service=t;
-  svcTaxi.classList.toggle("active",t==="taxi");
-  svcCourier.classList.toggle("active",t==="courier");
-  courierBox.style.display=t==="courier"?"block":"none";
-  calc();
+function toggleMenu(){
+  document.getElementById("menu").classList.toggle("active");
+}
+function closeMenu(){
+  document.getElementById("menu").classList.remove("active");
 }
 
-function saveUser(){
-  if(fn.value.length<2||ln.value.length<2||!phoneOk(ph.value)||!kvkk.checked){
-    regErr.style.display="block";return
+function selectService(type,el){
+  selectedService = type;
+  document.querySelectorAll(".card").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+}
+
+function openRegister(){
+  if(!selectedService){
+    alert("Önce hizmet seç");
+    return;
   }
-  user={first:fn.value,last:ln.value,phone:ph.value};
-  registered=true;
-  register.style.display="none";
+  document.getElementById("register").classList.add("active");
 }
 
-function hav(a,b,c,d){
-  const R=6371,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
-function priceCalc(km,t){return t==="courier"?Math.max(80,40+km*15):Math.max(120,60+km*22)}
+function submitRegister(){
+  const name = document.getElementById("regName").value.trim();
+  const surname = document.getElementById("regSurname").value.trim();
+  const phone = document.getElementById("regPhone").value.trim();
+  const kvkk = document.getElementById("regKvkk").checked;
+  const err = document.getElementById("regError");
 
-function calc(){
-  if(!service||!fromM||!toM)return;
-  const a=fromM.getLatLng(),b=toM.getLatLng();
-  const km=hav(a.lat,a.lng,b.lat,b.lng);
-  dist.textContent=km.toFixed(2)+" km";
-  price.textContent=Math.round(priceCalc(km,service))+" TL";
-}
+  err.innerText = "";
 
-async function callCustomer(){
-  alert("PWA + sistem hazır. Backend entegrasyonu çalışıyor.");
+  if(name.length < 2 || surname.length < 2){
+    err.innerText = "Ad ve soyad hatalı";
+    return;
+  }
+  if(!/^05\d{9}$/.test(phone)){
+    err.innerText = "Telefon 05XXXXXXXXX formatında olmalı";
+    return;
+  }
+  if(!kvkk){
+    err.innerText = "KVKK kabul edilmelidir";
+    return;
+  }
+
+  console.log("REGISTER OK", {
+    name, surname, phone, selectedService
+  });
+
+  document.getElementById("register").classList.remove("active");
+  alert("Kayıt tamamlandı");
 }
 </script>
 
