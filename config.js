@@ -1,44 +1,30 @@
 <script>
 /**
- * SepetTaxi – Global Config (LOCKED)
- * Backend v2.4.4 ile uyumlu
+ * SepetTaxi – Global Config (LOCKED) v3.3
  */
-
 window.SEPT = {
-  // === BACKEND ===
   BACKEND_URL: "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwWWrCwbhUOMWKqm84izCod51H7yqo679U9pH0rujL1PpxEYehfhg/exec",
-
-  // === ECONOMY ===
-  COMMISSION: 0.15,
-
-  // === TIMING ===
-  POLL_MS: 3000,        // track polling
-  DRIVER_PING_MS: 5000, // driver heartbeat (ileride)
-
-  // === ACTION MAP (KİLİTLİ) ===
+  COMMISSION: { taxi: 0.12, courier: 0.15 },
+  POLL_MS: 3000,
   ACTIONS: {
     // customer
     CREATE_JOB: "createJob",
-    CHECK_JOB: "checkJob",
-    GET_LIVE: "getLive",
+    GET_JOB: "getJob",
+    UPDATE_LOCATION: "updateLocation",
+    UPDATE_STATUS: "updateStatus",
 
     // driver
-    REGISTER_DRIVER: "registerDriver",
-    SET_DRIVER_STATUS: "setDriverStatus",
-    HEARTBEAT: "heartbeatDriver",
-    UPDATE_LIVE: "updateLive",
-    DRIVER_GET_JOB: "driverGetJob",
-    START_JOB: "startJob",
-    COMPLETE_JOB: "completeJob",
-    CANCEL_JOB: "cancelJob",
+    GET_OPEN_JOB: "getOpenJob",
+    ASSIGN_JOB: "assignJob",
+    UPSERT_DRIVER: "upsertDriver",
 
     // admin
-    ADMIN_LIST_JOBS: "adminListJobs",
-    ADMIN_LIST_DRIVERS: "adminListDrivers",
-    ADMIN_ASSIGN_DRIVER: "adminAssignDriver"
+    ADMIN_AUTH: "adminAuth",
+    ADMIN_CHECK: "adminCheck",
+    LIST_JOBS: "listJobs",
+    LIST_DRIVERS: "listDrivers",
+    GET_FINANCE: "getFinance"
   },
-
-  // === FLAGS ===
   DEBUG: false
 };
 </script>
