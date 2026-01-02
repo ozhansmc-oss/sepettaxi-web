@@ -10,8 +10,8 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
 :root{--y:#f5c400;--line:#222;--card:#101010;--card2:#141414;--mut:#9a9a9a}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
 
 /* ===== LANDING ===== */
 #landing{position:fixed;inset:0;background:#000 url("assets/landing.png") center/cover no-repeat;z-index:1000}
@@ -42,26 +42,25 @@ header span{color:var(--y)}
 #panel{
   height:calc(68vh - 56px);
   padding:10px;
-  display:flex;flex-direction:column;gap:10px;
-  padding-bottom:86px; /* CTA alanı */
+  display:flex;
+  flex-direction:column;
+  gap:10px;
   overflow:auto;
+  padding-bottom:120px; /* sticky CTA alanı */
 }
+#panel::-webkit-scrollbar{width:8px}
+#panel::-webkit-scrollbar-thumb{background:#151515;border-radius:8px}
 
 /* ===== CARDS ===== */
-.card{
-  background:linear-gradient(180deg,var(--card2),var(--card));
-  border-radius:14px;padding:12px;
-  box-shadow:0 8px 20px rgba(0,0,0,.6);
-  border:1px solid #111
-}
-.row{display:flex;gap:8px}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border-radius:14px;padding:12px;box-shadow:0 8px 20px rgba(0,0,0,.6);border:1px solid #111}
+.row{display:flex;gap:10px;flex-wrap:wrap}
 
 /* ===== SERVICE ===== */
 .service-row{display:flex;gap:10px;margin-top:10px}
 .service{
-  flex:1;padding:12px;border-radius:14px;text-align:center;font-size:13px;
-  border:1px solid #222;color:#aaa;transition:.18s;cursor:pointer;background:#0a0a0a;
-  user-select:none
+  flex:1;padding:12px;border-radius:12px;text-align:center;font-size:13px;
+  border:1px solid #222;color:#aaa;transition:.2s;cursor:pointer;background:#0a0a0a;
+  user-select:none;
 }
 .service.active{
   border-color:var(--y);color:#fff;
@@ -69,84 +68,78 @@ header span{color:var(--y)}
 }
 .service.disabled{
   opacity:.35;
-  pointer-events:none;
+  filter:saturate(.5);
 }
 
 /* ===== INPUT ===== */
 .input{
-  width:100%;
-  padding:11px 12px;border-radius:12px;border:1px solid #1f1f1f;
+  width:100%;padding:11px 12px;border-radius:12px;border:1px solid #1f1f1f;
   background:#000;color:#fff;font-size:13px
 }
 .input::placeholder{color:#666}
 .label{font-size:11px;color:#aaa;margin:0 0 6px 2px}
-.small{font-size:11px;color:#888}
 
 /* ===== STATS ===== */
 .stats{display:flex;gap:10px}
-.stat{
-  flex:1;background:#111;border-radius:14px;padding:12px;text-align:center;border:1px solid #141414
-}
+.stat{flex:1;background:#0d0d0d;border-radius:14px;padding:12px;text-align:center;border:1px solid #141414}
 .stat .lbl{font-size:11px;color:#aaa}
 .stat .val{font-size:18px;font-weight:900}
 
 /* ===== STICKY CTA ===== */
 #stickyBar{
   position:fixed;bottom:0;left:0;right:0;
-  background:linear-gradient(180deg,rgba(0,0,0,.5),#000);
+  background:linear-gradient(180deg,rgba(0,0,0,.25),#000);
   padding:10px;z-index:200;border-top:1px solid #111
 }
 #callBtn{
-  height:56px;
-  display:flex;align-items:center;justify-content:center;
+  width:100%;
+  max-width:520px;
+  margin:0 auto;
   background:var(--y);color:#000;border-radius:18px;
-  font-weight:900;
-  box-shadow:0 10px 26px rgba(245,196,0,.25);
-  transition:transform .12s;
+  padding:14px 14px;text-align:center;
+  font-weight:900;box-shadow:0 10px 22px rgba(245,196,0,.28);
   cursor:pointer;
-  user-select:none
 }
-#callBtn:active{transform:scale(.98)}
+#callBtn:active{transform:scale(.99)}
 #callHint{margin-top:6px;font-size:11px;color:#8a8a8a;text-align:center}
 
-/* ===== RIGHT DRIVER CTA ===== */
+/* ===== RIGHT DRIVER CTA (desktop) ===== */
 #driverSide{
-  position:fixed;right:12px;top:92px;z-index:210;
-  width:170px;border-radius:16px;border:1px solid #222;background:#0b0b0b;
+  position:fixed;right:10px;top:86px;z-index:210;
+  width:180px;border-radius:16px;border:1px solid #222;background:#0b0b0b;
   padding:10px;box-shadow:0 10px 24px rgba(0,0,0,.55)
 }
 #driverSide .t{font-size:12px;font-weight:900;margin-bottom:8px}
 #driverSide .btn{
   width:100%;padding:10px;border-radius:12px;border:1px solid #222;background:#121212;color:#fff;
-  cursor:pointer;font-weight:900;font-size:12px;margin-bottom:8px
+  cursor:pointer;font-weight:800;font-size:12px;margin-bottom:8px
 }
 #driverSide .btn:last-child{margin-bottom:0}
 #driverSide .btn.primary{border-color:rgba(245,196,0,.35)}
-
-/* Mobilde sağ kartlar alta alınsın */
-@media (max-width: 560px){
-  #driverSide{
-    right:10px; top:auto; bottom:86px;
-    width:160px;
-  }
+#driverSide .btn:hover{filter:brightness(1.08)}
+@media(max-width:900px){
+  #driverSide{display:none}
 }
 
 /* ===== MODALS ===== */
 .modal{
   position:fixed;inset:0;background:rgba(0,0,0,.86);
-  display:none;align-items:center;justify-content:center;z-index:600
+  display:none;align-items:center;justify-content:center;z-index:600;
+  padding:16px;
 }
 .modal .box{
-  width:90%;max-width:380px;background:#0f0f0f;border:1px solid #222;
-  border-radius:16px;padding:14px 14px 16px;box-shadow:0 20px 50px rgba(0,0,0,.8);
-  position:relative
+  width:92%;max-width:380px;background:#0f0f0f;border:1px solid #222;
+  border-radius:16px;padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.8);
+  position:relative;
 }
-.modal .x{
+.modal h3{margin:0 0 12px;font-size:16px}
+.modal .close{
   position:absolute;right:10px;top:10px;
-  width:34px;height:34px;border-radius:12px;border:1px solid #222;background:#111;color:#fff;cursor:pointer
+  width:34px;height:34px;border-radius:12px;border:1px solid #222;background:#111;color:#fff;
+  cursor:pointer;
 }
-.modal h3{margin:0 0 10px;font-size:16px}
-.err{color:#ff5c5c;font-size:12px;display:none;margin-top:8px}
+.err{color:#ff5c5c;font-size:12px;display:none;margin-top:10px;line-height:1.3}
+.small{font-size:11px;color:#aaa;line-height:1.35}
 
 /* ===== HAMBURGER DRAWER ===== */
 #drawer{
@@ -155,11 +148,11 @@ header span{color:var(--y)}
   transition:right .2s;box-shadow:-20px 0 60px rgba(0,0,0,.6)
 }
 #drawer.open{right:0}
-#drawer .top{
+#drawer .dHead{
   height:56px;display:flex;align-items:center;justify-content:space-between;
   padding:0 12px;border-bottom:1px solid #111;background:#0b0b0b
 }
-#drawer .top b{font-size:14px}
+#drawer .dHead b{font-size:14px}
 #drawerClose{
   width:40px;height:34px;border-radius:12px;border:1px solid #222;background:#111;color:#fff;cursor:pointer
 }
@@ -171,7 +164,8 @@ header span{color:var(--y)}
 .drawerBtn span{color:var(--y)}
 .drawerBtn:last-child{margin-bottom:0}
 
-.app-locked{filter:blur(3px) brightness(.7);pointer-events:none;transition:.2s}
+/* ===== LOCK EFFECT ===== */
+.app-locked{filter:blur(4px) brightness(.6);pointer-events:none;transition:.2s}
 </style>
 </head>
 
@@ -187,7 +181,7 @@ header span{color:var(--y)}
 
 <!-- DRAWER -->
 <div id="drawer" aria-hidden="true">
-  <div class="top">
+  <div class="dHead">
     <b>Menü</b>
     <button id="drawerClose">✕</button>
   </div>
@@ -213,32 +207,36 @@ header span{color:var(--y)}
         <div id="svcTaxi" class="service">🚕 Taksi</div>
         <div id="svcCourier" class="service">📦 Kurye</div>
       </div>
-      <div class="small" style="margin-top:10px">Hizmeti seçmeden önce kayıt zorunludur.</div>
+      <div class="small" id="svcHint" style="margin-top:10px;color:#777">
+        Hizmet seçmeden önce kayıt zorunludur.
+      </div>
     </div>
 
     <div class="card">
       <div class="label">Nereden</div>
       <input id="fromAddr" class="input" readonly placeholder="Konum alınıyor...">
+      <div class="small" style="margin-top:8px;color:#666">
+        Konum alınamazsa haritaya tıklayıp “Nereden”i elle seçebilirsin.
+      </div>
     </div>
 
     <div class="card">
       <div class="label">Nereye</div>
       <input id="toAddr" class="input" readonly placeholder="Haritadan seç">
-      <div class="small" style="margin-top:8px">Haritaya tıklayıp “Nereye” seçebilirsin.</div>
     </div>
 
     <div id="courierBox" class="card" style="display:none">
       <div class="label">Kurye Detayları (Zorunlu)</div>
       <div class="row">
-        <input id="pkgType" class="input" placeholder="Paket Türü">
+        <input id="pkgType" class="input" placeholder="Paket Türü (örn: Evrak, Koli)">
       </div>
-      <div class="row" style="margin-top:8px">
-        <input id="recvName" class="input" placeholder="Alıcı Adı">
+      <div class="row" style="margin-top:10px">
+        <input id="recvName" class="input" placeholder="Alıcı Adı Soyadı">
       </div>
-      <div class="row" style="margin-top:8px">
-        <input id="recvPhone" class="input" placeholder="Alıcı Telefon (05...)" maxlength="11">
+      <div class="row" style="margin-top:10px">
+        <input id="recvPhone" class="input" placeholder="Alıcı Telefon (05XXXXXXXXX)" maxlength="11">
       </div>
-      <div class="row" style="margin-top:8px">
+      <div class="row" style="margin-top:10px">
         <input id="contentNote" class="input" placeholder="İçerik Notu (opsiyonel)">
       </div>
     </div>
@@ -246,11 +244,11 @@ header span{color:var(--y)}
     <div class="stats">
       <div class="stat">
         <div class="lbl">Mesafe</div>
-        <div id="dist" class="val">—</div>
+        <div id="distVal" class="val">—</div>
       </div>
       <div class="stat">
         <div class="lbl">Ücret</div>
-        <div id="price" class="val">—</div>
+        <div id="priceVal" class="val">—</div>
       </div>
     </div>
   </div>
@@ -269,52 +267,58 @@ header span{color:var(--y)}
   <div id="callHint">Haritadan “Nereye” seçmeden çağrı oluşturulmaz.</div>
 </div>
 
-<!-- REGISTER (CUSTOMER) -->
+<!-- CUSTOMER REGISTER -->
 <div id="regModal" class="modal">
   <div class="box">
-    <button class="x" id="regClose">✕</button>
+    <button class="close" id="regClose" title="Kapat">✕</button>
     <h3>Zorunlu Kayıt</h3>
     <input id="cFirst" class="input" placeholder="Ad">
-    <div style="height:8px"></div>
-    <input id="cLast" class="input" placeholder="Soyad">
-    <div style="height:8px"></div>
-    <input id="cPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
     <div style="height:10px"></div>
+    <input id="cLast" class="input" placeholder="Soyad">
+    <div style="height:10px"></div>
+    <input id="cPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
+    <div style="height:12px"></div>
     <label class="small"><input type="checkbox" id="kvkk"> KVKK kabul</label>
     <div id="regErr" class="err">Bilgiler hatalı. (Ad/Soyad min 2, telefon 05 ile başlayıp 11 hane, KVKK zorunlu)</div>
     <div style="height:12px"></div>
-    <div id="regOkBtn" style="background:var(--y);color:#000;border-radius:14px;padding:12px;text-align:center;font-weight:900;cursor:pointer">KAYDI TAMAMLA</div>
+    <div id="regOkBtn" style="background:var(--y);color:#000;border-radius:14px;padding:12px;text-align:center;font-weight:900;cursor:pointer">
+      KAYDI TAMAMLA
+    </div>
   </div>
 </div>
 
 <!-- DRIVER APPLY MODAL -->
 <div id="drvApplyModal" class="modal">
   <div class="box">
-    <button class="x" id="drvApplyClose">✕</button>
+    <button class="close" id="drvApplyClose" title="Kapat">✕</button>
     <h3>Sürücü Ol (Aday)</h3>
     <input id="dName" class="input" placeholder="Ad Soyad">
-    <div style="height:8px"></div>
+    <div style="height:10px"></div>
     <input id="dPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <div style="height:8px"></div>
+    <div style="height:10px"></div>
     <input id="dVehicle" class="input" placeholder="Araç Bilgisi (Plaka/Model)">
-    <div id="drvApplyErr" class="err">Bilgiler hatalı.</div>
+    <div id="drvApplyErr" class="err">Bilgiler hatalı. (Ad Soyad min 3, telefon 05… 11 hane, araç zorunlu)</div>
     <div style="height:12px"></div>
-    <div id="drvApplyBtn" style="background:#121212;border:1px solid #222;color:#fff;border-radius:14px;padding:12px;text-align:center;font-weight:900;cursor:pointer">BAŞVUR</div>
-    <div class="small" id="drvApplyDone" style="display:none;margin-top:10px;color:#9be69b"></div>
+    <div id="drvApplyBtn" style="background:#121212;border:1px solid #222;color:#fff;border-radius:14px;padding:12px;text-align:center;font-weight:900;cursor:pointer">
+      BAŞVUR
+    </div>
+    <div id="drvApplyDone" class="small" style="display:none;margin-top:12px;color:#9be69b"></div>
   </div>
 </div>
 
 <!-- DRIVER LOGIN MODAL -->
 <div id="drvLoginModal" class="modal">
   <div class="box">
-    <button class="x" id="drvLoginClose">✕</button>
+    <button class="close" id="drvLoginClose" title="Kapat">✕</button>
     <h3>Sürücü Girişi</h3>
-    <input id="dLoginId" class="input" placeholder="Driver ID (örn: DRV-ABC1234)">
+    <input id="dLoginId" class="input" placeholder="Driver ID (örn: DRV-ABC123)">
     <div id="drvLoginErr" class="err">Driver ID zorunlu.</div>
     <div style="height:12px"></div>
-    <div id="drvLoginBtn" style="background:var(--y);color:#000;border-radius:14px;padding:12px;text-align:center;font-weight:900;cursor:pointer">GİRİŞ YAP</div>
+    <div id="drvLoginBtn" style="background:var(--y);color:#000;border-radius:14px;padding:12px;text-align:center;font-weight:900;cursor:pointer">
+      GİRİŞ YAP
+    </div>
     <div style="height:10px"></div>
-    <div class="small">Giriş sonrası driver ekranına yönlendirilirsin.</div>
+    <div class="small">Giriş sonrası driver.html ekranına yönlendirilirsin.</div>
   </div>
 </div>
 
@@ -324,13 +328,14 @@ const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzTe03o0iBuNcXI2EwW
 
 /* ============ STATE ============ */
 let map, fromM=null, toM=null;
-let service=null;
+let service=null;              // "taxi" | "courier"
 let registered=false;
-let customer=null;
+let customer=null;             // {first,last,phone}
 let pendingService=null;
 let lastKM=0;
 let lastPrice=0;
 
+/* ============ DOM ============ */
 const $ = (id)=>document.getElementById(id);
 
 /* ============ INIT ============ */
@@ -342,240 +347,225 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
   $("callBtn").addEventListener("click", callDriver);
 
-  // drawer
+  // Drawer
   $("burgerBtn").addEventListener("click", openDrawer);
   $("drawerClose").addEventListener("click", closeDrawer);
   $("menuDriverApply").addEventListener("click", ()=>{ closeDrawer(); openDriverApply(); });
   $("menuDriverLogin").addEventListener("click", ()=>{ closeDrawer(); openDriverLogin(); });
 
-  // side driver
+  // Side CTA
   $("sideDriverApply").addEventListener("click", openDriverApply);
   $("sideDriverLogin").addEventListener("click", openDriverLogin);
 
-  // modals close
-  $("regClose").addEventListener("click", ()=>showModal("regModal", false));
-  $("drvApplyClose").addEventListener("click", ()=>showModal("drvApplyModal", false));
-  $("drvLoginClose").addEventListener("click", ()=>showModal("drvLoginModal", false));
-
-  // register
+  // Customer register
   $("regOkBtn").addEventListener("click", saveCustomer);
+  $("regClose").addEventListener("click", ()=>{ closeRegister(); }); // kullanıcı isterse kapatabilir; hizmet seçmeye çalışınca tekrar açılır
 
-  // driver apply/login
+  // Driver apply/login
   $("drvApplyBtn").addEventListener("click", submitDriverApply);
+  $("drvApplyClose").addEventListener("click", closeDriverApply);
   $("drvLoginBtn").addEventListener("click", submitDriverLogin);
+  $("drvLoginClose").addEventListener("click", closeDriverLogin);
 
-  // load stored customer
+  // Load customer from storage
   const cRaw = localStorage.getItem("st_customer");
   if(cRaw){
     try{
       const c = JSON.parse(cRaw);
       if(c && c.first && c.last && /^05\\d{9}$/.test(c.phone)){
-        customer = c; registered = true;
+        customer=c; registered=true;
+        $("svcHint").textContent = "Kayıt tamam. Hizmet seçebilirsin.";
       }
     }catch(_){}
   }
 
-  syncCTA();
+  updateCallBtnLabel();
 });
 
-/* ============ UI ============ */
-function start(){
-  $("landing").style.display="none";
-  $("app").style.display="block";
-  initMap();
-  syncCTA();
+/* ============ UI HELPERS ============ */
+function toast(msg){
+  $("callHint").textContent = msg;
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer=setTimeout(()=>{
+    $("callHint").textContent = "Haritadan “Nereye” seçmeden çağrı oluşturulmaz.";
+  }, 2600);
 }
 
 function lockApp(on){
   if(on) $("app").classList.add("app-locked");
   else $("app").classList.remove("app-locked");
 }
-
-function showModal(id, on){
+function showModal(id,on){
   $(id).style.display = on ? "flex" : "none";
   lockApp(on);
 }
 
-function openRegister(){
-  $("regErr").style.display="none";
-  showModal("regModal", true);
-}
 function openDrawer(){ $("drawer").classList.add("open"); }
 function closeDrawer(){ $("drawer").classList.remove("open"); }
 
-/* CTA text/hint */
-function syncCTA(){
-  let text = "HİZMET SEÇ";
-  if(service==="taxi") text = "TAKSİ ÇAĞIR";
-  if(service==="courier") text = "KURYE ÇAĞIR";
-  $("callBtn").textContent = text;
-
-  if(!registered){
-    $("callHint").textContent = "Hizmet seçmek için kayıt zorunludur.";
-    return;
-  }
-  if(!service){
-    $("callHint").textContent = "Önce hizmet seç.";
-    return;
-  }
-  if(!toM){
-    $("callHint").textContent = "Haritadan “Nereye” seçmeden çağrı oluşturulmaz.";
-    return;
-  }
-  $("callHint").textContent = "Hazır. Çağrı oluşturabilirsin.";
+/* ============ START / MAP ============ */
+function start(){
+  $("landing").style.display="none";
+  $("app").style.display="block";
+  initMap();
 }
 
-function setServiceUI(){
-  const taxi = $("svcTaxi");
-  const cr = $("svcCourier");
-  taxi.classList.toggle("active", service==="taxi");
-  cr.classList.toggle("active", service==="courier");
-
-  // diğerini pasif yap
-  taxi.classList.toggle("disabled", service==="courier");
-  cr.classList.toggle("disabled", service==="taxi");
-
-  $("courierBox").style.display = (service==="courier") ? "block" : "none";
-}
-
-/* ============ MAP ============ */
 function initMap(){
-  map = L.map("map").setView([40.99,29.02], 13);
+  map = L.map("map").setView([41,29], 13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
+  // Geolocation -> from
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(p=>{
       const lat=p.coords.latitude, lng=p.coords.longitude;
       fromM = L.marker([lat,lng]).addTo(map);
       map.setView([lat,lng], 15);
-      reverse(lat,lng,$("fromAddr"));
-      calc(); // from geldi, eğer to+service yoksa zaten hesaplamaz
+      reverse(lat,lng, $("fromAddr"));
     }, _=>{
-      $("fromAddr").placeholder="Konum alınamadı";
+      $("fromAddr").placeholder="Konum alınamadı (haritaya tıklayıp seçebilirsin)";
     }, { enableHighAccuracy:true, timeout:12000 });
   }else{
     $("fromAddr").placeholder="Konum desteklenmiyor";
   }
 
+  // Click: if from missing -> set from, else set to
   map.on("click", e=>{
-    // to marker
+    if(!fromM){
+      fromM = L.marker(e.latlng).addTo(map);
+      reverse(e.latlng.lat, e.latlng.lng, $("fromAddr"));
+      toast("“Nereden” seçildi. Şimdi “Nereye” seç.");
+      return;
+    }
     if(!toM) toM = L.marker(e.latlng).addTo(map);
     else toM.setLatLng(e.latlng);
 
     reverse(e.latlng.lat, e.latlng.lng, $("toAddr"));
     calc();
-    syncCTA();
   });
 }
 
-/* ============ REGISTER ============ */
+/* ============ REGISTER (CUSTOMER) ============ */
+function openRegister(){
+  $("regErr").style.display="none";
+  showModal("regModal", true);
+}
+function closeRegister(){ showModal("regModal", false); }
+
 function saveCustomer(){
   const first = $("cFirst").value.trim();
   const last  = $("cLast").value.trim();
-  const phone = $("cPhone").value
-    .replace(/\s+/g,"")
-    .replace(/[^\d]/g,"")
-    .trim();
+  const phone = $("cPhone").value.replace(/\D/g,"");
   const kvkk  = $("kvkk").checked;
 
   const ok =
     first.length >= 2 &&
     last.length  >= 2 &&
-    phone.length === 11 &&
-    phone.startsWith("05") &&
+    /^05\d{9}$/.test(phone) &&
     kvkk;
 
   if(!ok){
-    $("regErr").style.display = "block";
+    $("regErr").style.display="block";
     return;
   }
 
   customer = { first, last, phone };
   registered = true;
   localStorage.setItem("st_customer", JSON.stringify(customer));
+  $("svcHint").textContent = "Kayıt tamam. Hizmet seçebilirsin.";
+  $("regErr").style.display="none";
+  closeRegister();
 
-  $("regErr").style.display = "none";
-  showModal("regModal", false);
-
+  // kayıt tamamlandıysa bekleyen hizmeti uygula
   if(pendingService){
-    const s = pendingService;
-    pendingService = null;
+    const s=pendingService;
+    pendingService=null;
     pickService(s, true);
-  }else{
-    syncCTA();
   }
 }
-
 
 /* ============ SERVICE ============ */
 function pickService(t, skipRegisterCheck=false){
   if(!registered && !skipRegisterCheck){
-    pendingService = t;
+    pendingService=t;
     openRegister();
     return;
   }
 
-  service = t;
-  setServiceUI();
+  service=t;
 
-  // servis değişince hesap değerleri tazelensin
+  // aktif/pasif görseli
+  $("svcTaxi").classList.toggle("active", t==="taxi");
+  $("svcCourier").classList.toggle("active", t==="courier");
+
+  // diğerini pasif göster (seçilmişken)
+  $("svcTaxi").classList.toggle("disabled", t==="courier");
+  $("svcCourier").classList.toggle("disabled", t==="taxi");
+
+  // kurye kutusu
+  $("courierBox").style.display = (t==="courier") ? "block" : "none";
+
+  updateCallBtnLabel();
   calc();
-  syncCTA();
 }
 
-/* ============ CALC ============ */
+function updateCallBtnLabel(){
+  if(service==="taxi") $("callBtn").textContent="TAKSİ ÇAĞIR";
+  else if(service==="courier") $("callBtn").textContent="KURYE ÇAĞIR";
+  else $("callBtn").textContent="HİZMET SEÇ";
+}
+
+/* ============ CALC (KM / PRICE) ============ */
 function calc(){
   if(!service || !fromM || !toM){
-    $("dist").textContent="—";
-    $("price").textContent="—";
+    $("distVal").textContent = "—";
+    $("priceVal").textContent = "—";
     lastKM=0; lastPrice=0;
     return;
   }
 
   const a = fromM.getLatLng();
   const b = toM.getLatLng();
-  const km = haversine(a.lat, a.lng, b.lat, b.lng);
 
+  const km = haversine(a.lat, a.lng, b.lat, b.lng);
   lastKM = Number(km.toFixed(2));
 
-  let price;
-  if(service==="taxi"){
-    price = Math.round(Math.max(120, 60 + km*22));
-  }else{
-    price = Math.round(Math.max(80, 40 + km*15));
-  }
+  // fiyat modeli (senin kilitli kuralına yakın)
+  const price =
+    (service==="taxi")
+      ? Math.round(Math.max(120, 60 + km * 22))
+      : Math.round(Math.max(80,  40 + km * 15));
+
   lastPrice = price;
 
-  $("dist").textContent = lastKM.toFixed(2) + " km";
-  $("price").textContent = price + " TL";
+  $("distVal").textContent = lastKM.toFixed(2) + " km";
+  $("priceVal").textContent = price + " TL";
 }
 
 /* ============ CALL DRIVER (createJob -> track) ============ */
 async function callDriver(){
+  // kayıt + seçim zorunlu
   if(!registered){ openRegister(); return; }
   if(!service){ toast("Önce hizmet seç."); return; }
-  if(!fromM){ toast("Konum alınamadı."); return; }
+  if(!fromM){ toast("Konum alınamadı / ‘Nereden’ seç."); return; }
   if(!toM){ toast("Haritadan ‘Nereye’ seç."); return; }
 
+  // kurye doğrulama
   if(service==="courier"){
     const pkg = $("pkgType").value.trim();
     const rn  = $("recvName").value.trim();
-    const rp  = $("recvPhone").value.replace(/\\D/g,"");
-    if(pkg.length<2 || rn.length<2 || !/^05\\d{9}$/.test(rp)){
+    const rp  = $("recvPhone").value.replace(/\D/g,"");
+    if(pkg.length<2 || rn.length<2 || !/^05\d{9}$/.test(rp)){
       toast("Kurye için paket/alıcı bilgileri zorunlu.");
       return;
     }
   }
 
+  // payload backend v3.3 ile uyumlu (createJob_)
   const a = fromM.getLatLng();
   const b = toM.getLatLng();
 
-  // CORS workaround: client job_id üretir
-  const job_id = genJobId();
-
   const payload = {
     action: "createJob",
-    job_id,
     service_type: service,
     from_addr: $("fromAddr").value || "",
     to_addr: $("toAddr").value || "",
@@ -591,102 +581,54 @@ async function callDriver(){
     courier: (service==="courier") ? {
       pkg_type: $("pkgType").value.trim(),
       recv_name: $("recvName").value.trim(),
-      recv_phone: $("recvPhone").value.replace(/\\D/g,""),
+      recv_phone: $("recvPhone").value.replace(/\D/g,""),
       content_note: $("contentNote").value.trim()
     } : {}
   };
 
+  // UI disable
+  const oldLabel = $("callBtn").textContent;
   $("callBtn").textContent = "GÖNDERİLİYOR...";
   $("callBtn").style.pointerEvents = "none";
 
   try{
-    // no-cors => response okunmaz, ama request gider
-    await fetch(BACKEND_URL, {
+    const res = await fetch(BACKEND_URL, {
       method:"POST",
-      mode:"no-cors",
-      headers:{ "Content-Type":"text/plain;charset=UTF-8" },
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify(payload)
     });
 
-    // Track’e geç (job_id bizde)
-    window.location.href = `track.html?job_id=${encodeURIComponent(job_id)}`;
+    // bazı durumlarda res.json() CORS nedeniyle patlar; o yüzden try/catch
+    let data=null;
+    try{ data = await res.json(); }catch(_){}
+
+    if(!data || !data.ok || !data.job_id){
+      // burada CORS blok da olabilir
+      throw new Error("createJob failed / CORS blocked");
+    }
+
+    // Track’e geç
+    window.location.href = `track.html?job_id=${encodeURIComponent(data.job_id)}`;
   }catch(e){
     console.error(e);
-    toast("Backend erişimi başarısız. Deploy ayarını kontrol et.");
+    toast("İş oluşturulamadı. (Backend Deploy / CORS) Console’u kontrol et.");
   }finally{
+    $("callBtn").textContent = oldLabel;
     $("callBtn").style.pointerEvents = "auto";
-    syncCTA();
   }
 }
 
-/* ============ DRIVER APPLY / LOGIN ============ */
-function openDriverApply(){
-  $("drvApplyErr").style.display="none";
-  $("drvApplyDone").style.display="none";
-  showModal("drvApplyModal", true);
-}
-function openDriverLogin(){
-  $("drvLoginErr").style.display="none";
-  showModal("drvLoginModal", true);
-}
-function genDriverId(){
-  const s = Math.random().toString(36).toUpperCase().slice(2,8);
-  return "DRV-" + s;
-}
-async function submitDriverApply(){
-  const name = $("dName").value.trim();
-  const phone = $("dPhone").value.replace(/\\D/g,"");
-  const vehicle = $("dVehicle").value.trim();
-
-  if(name.length<3 || !/^05\\d{9}$/.test(phone) || vehicle.length<2){
-    $("drvApplyErr").style.display="block";
-    return;
-  }
-
-  $("drvApplyErr").style.display="none";
-  const driver_id = genDriverId();
-
-  try{
-    await fetch(BACKEND_URL, {
-      method:"POST",
-      mode:"no-cors",
-      headers:{ "Content-Type":"text/plain;charset=UTF-8" },
-      body: JSON.stringify({
-        action:"upsertDriver",
-        driver_id,
-        name,
-        phone,
-        vehicle,
-        approved:"true"
-      })
-    });
-
-    localStorage.setItem("st_driver_id", driver_id);
-    $("drvApplyDone").style.display="block";
-    $("drvApplyDone").textContent = `Başvuru alındı. Driver ID: ${driver_id}`;
-  }catch(e){
-    console.error(e);
-    $("drvApplyErr").style.display="block";
-  }
+/* ============ REVERSE GEOCODE ============ */
+function reverse(lat,lng,inputEl){
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(d && d.display_name) inputEl.value = d.display_name;
+    })
+    .catch(_=>{});
 }
 
-function submitDriverLogin(){
-  const id = $("dLoginId").value.trim().toUpperCase();
-  if(!id || !/^DRV-/.test(id)){
-    $("drvLoginErr").style.display="block";
-    return;
-  }
-  localStorage.setItem("st_driver_id", id);
-  showModal("drvLoginModal", false);
-  window.location.href = "driver.html";
-}
-
-/* ============ HELPERS ============ */
-function genJobId(){
-  const s = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,10);
-  return "JOB-" + s.padEnd(10,"X");
-}
-
+/* ============ DISTANCE ============ */
 function haversine(a,b,c,d){
   const R=6371;
   const dLat=(c-a)*Math.PI/180;
@@ -697,16 +639,76 @@ function haversine(a,b,c,d){
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-function reverse(lat,lng,input){
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`)
-    .then(r=>r.json())
-    .then(d=>{ if(d && d.display_name) input.value = d.display_name; })
-    .catch(_=>{});
+/* ============ DRIVER APPLY / LOGIN ============ */
+function openDriverApply(){
+  $("drvApplyErr").style.display="none";
+  $("drvApplyDone").style.display="none";
+  showModal("drvApplyModal", true);
+}
+function closeDriverApply(){ showModal("drvApplyModal", false); }
+
+function openDriverLogin(){
+  $("drvLoginErr").style.display="none";
+  showModal("drvLoginModal", true);
+}
+function closeDriverLogin(){ showModal("drvLoginModal", false); }
+
+function genDriverId(){
+  const s = Math.random().toString(36).toUpperCase().slice(2,8);
+  return "DRV-" + s;
 }
 
-function toast(msg){
-  $("callHint").textContent = msg;
-  setTimeout(()=>{ syncCTA(); }, 2400);
+async function submitDriverApply(){
+  const name = $("dName").value.trim();
+  const phone = $("dPhone").value.replace(/\D/g,"");
+  const vehicle = $("dVehicle").value.trim();
+
+  if(name.length<3 || !/^05\d{9}$/.test(phone) || vehicle.length<2){
+    $("drvApplyErr").style.display="block";
+    return;
+  }
+
+  $("drvApplyErr").style.display="none";
+  const driver_id = genDriverId();
+
+  try{
+    const res = await fetch(BACKEND_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        action:"upsertDriver",
+        driver_id,
+        name,
+        phone,
+        vehicle,
+        approved:"true"
+      })
+    });
+
+    let data=null;
+    try{ data=await res.json(); }catch(_){}
+
+    if(!data || !data.ok) throw new Error("upsertDriver failed / CORS");
+
+    localStorage.setItem("st_driver_id", driver_id);
+    $("drvApplyDone").style.display="block";
+    $("drvApplyDone").textContent = `Başvuru alındı. Driver ID: ${driver_id}`;
+  }catch(e){
+    console.error(e);
+    $("drvApplyErr").style.display="block";
+    $("drvApplyErr").textContent = "Başvuru kaydedilemedi. (Backend Deploy / CORS) Console’u kontrol et.";
+  }
+}
+
+function submitDriverLogin(){
+  const id = $("dLoginId").value.trim().toUpperCase();
+  if(!id || !/^DRV-/.test(id)){
+    $("drvLoginErr").style.display="block";
+    return;
+  }
+  localStorage.setItem("st_driver_id", id);
+  closeDriverLogin();
+  window.location.href = "driver.html";
 }
 </script>
 
