@@ -395,13 +395,22 @@ function initMap(){
     $("fromAddr").placeholder="Konum desteklenmiyor";
   }
 
-  map.on("click", e=>{
-    if(!toM) toM = L.marker(e.latlng).addTo(map);
-    else toM.setLatLng(e.latlng);
-    reverse(e.latlng.lat, e.latlng.lng, $("toAddr"));
-    calc();
-  });
-}
+  mmap.on("click", e=>{
+  // Eğer from yoksa ilk tıklamayı from kabul et
+  if(!fromM){
+    fromM = L.marker(e.latlng).addTo(map);
+    reverse(e.latlng.lat, e.latlng.lng, fromAddr);
+    return;
+  }
+
+  // to marker
+  if(!toM) toM = L.marker(e.latlng).addTo(map);
+  else toM.setLatLng(e.latlng);
+
+  reverse(e.latlng.lat, e.latlng.lng, toAddr);
+  calc();
+});
+
 
 /* ============ CUSTOMER REGISTER ============ */
 function saveCustomer(){
@@ -452,20 +461,22 @@ function pickService(t, skipRegisterCheck=false){
 
 /* ============ CALC ============ */
 function calc(){
+  console.log("calc", service, fromM, toM);
+
   if(!service || !fromM || !toM) return;
-  const a=fromM.getLatLng(), b=toM.getLatLng();
-  const km = haversine(a.lat,a.lng,b.lat,b.lng);
-  lastKM = km;
 
-  $("dist").textContent = km.toFixed(2)+" km";
+  const a = fromM.getLatLng(),
+        b = toM.getLatLng();
 
-  // Basit MVP fiyatlama
-  const price = (service==="taxi")
-    ? Math.round(Math.max(120, 60 + km*22))
-    : Math.round(Math.max(80,  40 + km*15));
+  const km = h(a.lat, a.lng, b.lat, b.lng);
 
-  lastPrice = price;
-  $("price").textContent = price + " TL";
+  dist.textContent = km.toFixed(2) + " km";
+  price.textContent =
+    Math.round(
+      service === "taxi"
+        ? Math.max(120, 60 + km * 22)
+        : Math.max(80, 40 + km * 15)
+    ) + " TL";
 }
 
 /* ============ CALL DRIVER (createJob -> track) ============ */
