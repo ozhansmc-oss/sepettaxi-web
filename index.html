@@ -10,14 +10,10 @@ const API = "https://script.google.com/macros/s/AKfycbxv2oWIgjckH09LB3tKOGIKox32
 const POLL_MS = 3000;
 </script>
 
-<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#f5c400">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script src="config.js"></script>
-<script src="log.js"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -540,7 +536,6 @@ hr.sep{border:0;border-top:1px solid rgba(255,255,255,.08);margin:12px 0}
 
 <script>
 /* ================== CONFIG ================== */
-const API = (window.SEPT && SEPT.BACKEND_URL) ? SEPT.BACKEND_URL : "";
 const POLL_MS = (window.SEPT && SEPT.POLL_MS) ? Number(SEPT.POLL_MS) : 3000;
 
 /* ================== STATE ================== */
