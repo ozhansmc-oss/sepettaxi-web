@@ -2,126 +2,51 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport"
-      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Sürücü</title>
 
 <meta name="theme-color" content="#f5c400">
-
 <script src="config.js"></script>
 <script src="log.js"></script>
 
 <style>
 *{box-sizing:border-box}
-html,body{
-  margin:0;height:100%;
-  font-family:Arial,Helvetica,sans-serif;
-  background:#000;color:#fff;overflow:hidden
-}
-:root{
-  --y:#f5c400;
-  --panel:#0f0f0f;
-  --line:#222;
-}
-
-/* HEADER */
-header{
-  height:56px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:900;
-  border-bottom:1px solid var(--line)
-}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
+:root{--y:#f5c400;--panel:#0f0f0f;--line:#222}
+header{height:56px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;border-bottom:1px solid var(--line)}
 header span{color:var(--y)}
-
-/* LAYOUT */
-#wrap{
-  height:calc(100% - 56px);
-  display:flex;
-  flex-direction:column;
-  padding:12px;
-  gap:12px
-}
-
-/* CARDS */
-.card{
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:18px;
-  padding:14px
-}
-.card b{
-  display:block;
-  margin-bottom:8px;
-  font-size:14px
-}
-.big{
-  font-size:26px;
-  font-weight:900;
-  text-align:center
-}
+#wrap{height:calc(100% - 56px);display:flex;flex-direction:column;padding:12px;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px}
+.card b{display:block;margin-bottom:8px;font-size:14px}
+.big{font-size:26px;font-weight:900;text-align:center}
 .small{font-size:12px;color:#aaa}
-
-/* BUTTONS */
-.btn{
-  width:100%;
-  padding:16px;
-  border-radius:18px;
-  font-weight:900;
-  text-align:center;
-  cursor:pointer;
-  border:1px solid var(--line)
-}
-.btn.primary{
-  background:var(--y);
-  color:#000;
-  border-color:transparent
-}
-.btn.dark{
-  background:#111;
-  color:#fff
-}
+.btn{width:100%;padding:16px;border-radius:18px;font-weight:900;text-align:center;cursor:pointer;border:1px solid var(--line)}
+.btn.primary{background:var(--y);color:#000;border-color:transparent}
+.btn.dark{background:#111;color:#fff}
 .btn:active{transform:scale(.98)}
-
-/* INPUT */
-.input{
-  width:100%;
-  padding:14px;
-  background:#000;
-  border:1px solid var(--line);
-  border-radius:16px;
-  color:#fff
-}
-
-/* HIDDEN */
+.input{width:100%;padding:14px;background:#000;border:1px solid var(--line);border-radius:16px;color:#fff}
 .hidden{display:none}
 </style>
 </head>
 
 <body>
-
 <header>Sepet<span>Taxi</span> Sürücü</header>
 
 <div id="wrap">
-
-  <!-- LOGIN -->
   <div id="loginCard" class="card hidden">
     <b>Sürücü Girişi</b>
     <input id="drvId" class="input" placeholder="Driver ID (DRV-XXXX)">
     <div style="height:10px"></div>
     <div class="btn primary" id="loginBtn">GİRİŞ YAP</div>
-    <div class="small" style="margin-top:8px">
-      Driver ID, “Sürücü Ol” başvurusu sonrası verilir.
-    </div>
+    <div class="small" style="margin-top:8px">Driver ID, “Sürücü Ol” başvurusu sonrası verilir.</div>
   </div>
 
-  <!-- STATUS -->
   <div id="statusCard" class="card hidden">
     <b>Durum</b>
     <div class="big" id="statusText">HAZIR</div>
     <div class="small" id="statusHint">Yeni iş bekleniyor</div>
   </div>
 
-  <!-- JOB -->
   <div id="jobCard" class="card hidden">
     <b>Yeni İş</b>
     <div class="small" id="jobInfo">Yükleniyor…</div>
@@ -129,31 +54,45 @@ header span{color:var(--y)}
     <div class="btn primary" id="acceptBtn">İŞİ KABUL ET</div>
   </div>
 
-  <!-- EMPTY -->
   <div id="emptyCard" class="card hidden">
     <b>Açık İş Yok</b>
     <div class="small">Şu an bölgede iş bulunmuyor.</div>
     <div style="height:12px"></div>
     <div class="btn dark" id="refreshBtn">YENİLE</div>
   </div>
-
 </div>
 
 <script>
-/* ========== STATE ========== */
-let driverId = localStorage.getItem("st_driver_id") || "";
+let driverId = (localStorage.getItem("st_driver_id")||"").trim();
 let currentJob = null;
 
-/* ========== DOM ========== */
 const $=id=>document.getElementById(id);
-
 const loginCard=$("loginCard");
 const statusCard=$("statusCard");
 const jobCard=$("jobCard");
 const emptyCard=$("emptyCard");
 
-/* ========== INIT ========== */
-document.addEventListener("DOMContentLoaded",()=>{
+async function apiGet(params){
+  const url = SEPT.BACKEND_URL + "?" + new URLSearchParams(params);
+  const r = await fetch(url);
+  const d = await r.json();
+  if(window.Log) Log.api(params.action, params, d);
+  return d;
+}
+async function apiPost(bodyObj){
+  const payload = JSON.stringify(bodyObj || {});
+  const r = await fetch(SEPT.BACKEND_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body: payload
+  });
+  let d=null;
+  try{ d = await r.json(); }catch(_){}
+  if(window.Log) Log.api(bodyObj.action, bodyObj, d);
+  return d;
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
   if(!driverId){
     loginCard.classList.remove("hidden");
   }else{
@@ -162,41 +101,35 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 });
 
-/* ========== LOGIN ========== */
 $("loginBtn").onclick=()=>{
   const id=$("drvId").value.trim().toUpperCase();
-  if(!/^DRV-/.test(id)){
-    alert("Geçerli Driver ID giriniz");
-    return;
-  }
-  localStorage.setItem("st_driver_id",id);
+  if(!/^DRV-/.test(id)){ alert("Geçerli Driver ID giriniz"); return; }
+  localStorage.setItem("st_driver_id", id);
   driverId=id;
   loginCard.classList.add("hidden");
   statusCard.classList.remove("hidden");
   loadJob();
 };
 
-/* ========== LOAD JOB ========== */
 async function loadJob(){
   jobCard.classList.add("hidden");
   emptyCard.classList.add("hidden");
+  $("statusText").textContent="HAZIR";
+  $("statusHint").textContent="Yeni iş bekleniyor";
 
   try{
-    const r=await fetch(
-      SEPT.BACKEND_URL+"?action=getOpenJob"
-    );
-    const d=await r.json();
-
-    if(d&&d.ok&&d.job_id){
-      currentJob=d;
-      $("jobInfo").innerHTML=`
-        <b>Mesafe:</b> ${Number(d.distance_km).toFixed(1)} km<br>
-        <b>Kazanç:</b> ${d.price_driver_net} TL<br>
-        <b>Nereden:</b> ${d.from_addr}<br>
-        <b>Nereye:</b> ${d.to_addr}
+    const d = await apiGet({action:"getOpenJob"});
+    if(d && d.ok && d.job_id){
+      currentJob = d;
+      $("jobInfo").innerHTML = `
+        <b>Mesafe:</b> ${Number(d.distance_km||0).toFixed(1)} km<br>
+        <b>Kazanç:</b> ${d.price_driver_net || "—"} TL<br>
+        <b>Nereden:</b> ${d.from_addr || "—"}<br>
+        <b>Nereye:</b> ${d.to_addr || "—"}
       `;
       jobCard.classList.remove("hidden");
     }else{
+      currentJob=null;
       emptyCard.classList.remove("hidden");
     }
   }catch(e){
@@ -204,49 +137,35 @@ async function loadJob(){
     emptyCard.classList.remove("hidden");
   }
 }
-
 $("refreshBtn").onclick=loadJob;
 
-/* ========== ACCEPT JOB ========== */
 $("acceptBtn").onclick=async()=>{
-  if(!currentJob)return;
+  if(!currentJob) return;
 
   $("acceptBtn").textContent="Alınıyor…";
   $("acceptBtn").style.pointerEvents="none";
 
   try{
-    const r=await fetch(SEPT.BACKEND_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        action:"assignJob",
-        job_id:currentJob.job_id,
-        driver_id:driverId
-      })
-    });
-    const d=await r.json();
-    if(d&&d.ok){
-      location.href=
-        "track.html?job_id="+
-        encodeURIComponent(currentJob.job_id)+"&driver=1";
-    }else{
-      alert("İş alınamadı");
-      loadJob();
+    const d = await apiPost({action:"assignJob", job_id: currentJob.job_id, driver_id: driverId});
+    if(d && d.ok){
+      location.href = "track.html?job_id="+encodeURIComponent(currentJob.job_id)+"&driver=1";
+      return;
     }
+    alert("İş alınamadı (başkası almış olabilir).");
+    await loadJob();
   }catch(e){
+    console.error(e);
     alert("Bağlantı hatası");
-    loadJob();
+    await loadJob();
   }finally{
     $("acceptBtn").textContent="İŞİ KABUL ET";
     $("acceptBtn").style.pointerEvents="auto";
   }
 };
 
-/* PWA */
-if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("/service-worker.js");
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("service-worker.js").catch(()=>{});
 }
 </script>
-
 </body>
 </html>
