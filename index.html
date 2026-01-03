@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport"
-      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
 <title>SepetTaxi</title>
 <meta name="theme-color" content="#000000">
 
 <link rel="manifest" href="manifest.json">
+
 <link rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script src="config.js"></script>
@@ -19,237 +20,238 @@
 <style>
 *{box-sizing:border-box}
 html,body{
-  margin:0;height:100%;
-  font-family:Arial,Helvetica,sans-serif;
-  background:#000;color:#fff;overflow:hidden
+margin:0;height:100%;
+font-family:Arial,Helvetica,sans-serif;
+background:#000;color:#fff;overflow:hidden
 }
 :root{
-  --y:#f5c400;
-  --panel:#0f0f0f;
-  --line:#222;
+--y:#f5c400;
+--panel:#0f0f0f;
+--line:#222;
 }
 
-/* ===== LAYOUT ===== */
-#app{
-  height:100%;
-  display:flex;
-  flex-direction:column;
-}
-
-/* ===== MAP ===== */
+/* MAP */
 #map{
-  height:50%;
-  position:relative;
-  z-index:1;
+position:fixed;
+inset:0;
+z-index:1;
 }
 
-/* ===== HAMBURGER ===== */
-#hamburger{
-  position:fixed;
-  top:12px;right:12px;
-  width:44px;height:44px;
-  background:#000;
-  border:1px solid var(--line);
-  border-radius:14px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:22px;
-  z-index:1000;
+/* TOP OVERLAYS */
+.topbar{
+position:fixed;
+top:env(safe-area-inset-top,10px);
+left:0;right:0;
+display:flex;
+justify-content:space-between;
+padding:10px;
+z-index:1000;
+pointer-events:none;
 }
-#menu{
-  position:fixed;
-  top:0;right:0;
-  width:260px;height:100%;
-  background:#000;
-  border-left:1px solid var(--line);
-  padding:20px;
-  transform:translateX(100%);
-  transition:.25s;
-  z-index:999;
-}
-#menu.open{transform:translateX(0)}
-#menu a{
-  display:block;
-  padding:14px 0;
-  color:#fff;
-  text-decoration:none;
-  border-bottom:1px solid var(--line);
+.topbar > *{pointer-events:auto}
+
+.iconBtn{
+width:44px;height:44px;
+border-radius:14px;
+background:#000;
+border:1px solid var(--line);
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:20px;
 }
 
-/* ===== DRIVER MINI CARD ===== */
+/* DRIVER MINI */
 #driverMini{
-  position:fixed;
-  top:12px;left:12px;
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:8px 12px;
-  font-size:13px;
-  z-index:1000;
+background:var(--panel);
+padding:6px 12px;
+border-radius:14px;
+border:1px solid var(--line);
+font-size:13px;
 }
 
-/* ===== BOTTOM SHEET ===== */
+/* NOTIFY */
+#notify{
+position:relative;
+}
+#badge{
+position:absolute;
+top:6px;right:6px;
+width:8px;height:8px;
+background:red;border-radius:50%;
+}
+
+/* DRAWER */
+#drawer{
+position:fixed;
+top:0;right:-280px;
+width:280px;height:100%;
+background:#000;
+border-left:1px solid var(--line);
+z-index:1200;
+padding:20px;
+transition:.25s;
+}
+#drawer.open{right:0}
+#drawer a{
+display:block;
+padding:14px 0;
+border-bottom:1px solid var(--line);
+color:#fff;text-decoration:none;
+}
+
+/* BOTTOM SHEET */
 #sheet{
-  height:50%;
-  background:var(--panel);
-  border-top:1px solid var(--line);
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
+position:fixed;
+left:0;right:0;bottom:0;
+height:42%;
+background:var(--panel);
+border-top:1px solid var(--line);
+border-radius:20px 20px 0 0;
+padding:14px;
+z-index:900;
+display:flex;
+flex-direction:column;
+gap:12px;
 }
 
-/* ===== CARDS ===== */
-.cards{
-  display:flex;
-  gap:10px;
-}
+/* CARDS */
+.cards{display:flex;gap:10px}
 .card{
-  flex:1;
-  background:#000;
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:14px;
-  text-align:center;
-  font-weight:900;
+flex:1;
+border:1px solid var(--line);
+border-radius:16px;
+padding:14px;
+text-align:center;
+font-weight:900;
+background:#000;
 }
 .card.active{
-  border-color:var(--y);
-  color:var(--y);
+border-color:var(--y);
+color:var(--y);
 }
 
-/* ===== INFO BAR ===== */
+/* INFO */
 #info{
-  display:flex;
-  justify-content:space-between;
-  font-size:14px;
-  padding:10px;
-  border:1px solid var(--line);
-  border-radius:14px;
+display:flex;
+justify-content:space-between;
+padding:10px;
+border:1px solid var(--line);
+border-radius:14px;
 }
 
-/* ===== CTA ===== */
+/* CTA */
 #cta{
-  padding:16px;
-  border-radius:18px;
-  background:var(--y);
-  color:#000;
-  text-align:center;
-  font-weight:900;
+padding:16px;
+background:var(--y);
+color:#000;
+border-radius:18px;
+text-align:center;
+font-weight:900;
 }
 
-/* ===== ICONS ===== */
-.taxiIcon, .motoIcon{
-  width:28px;height:28px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:16px;
+/* VEHICLE ICONS */
+.taxiIcon,.motoIcon{
+width:32px;height:32px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:18px;
+border-radius:50%;
 }
 .taxiIcon{background:#f5c400;color:#000}
 .motoIcon{background:#fff;color:#000}
-
 </style>
 </head>
 
 <body>
 
-<div id="app">
+<div id="map"></div>
 
-  <div id="map"></div>
-
-  <div id="hamburger">☰</div>
-
-  <div id="driverMini">Sürücü Ol</div>
-
-  <div id="menu">
-    <a href="#">Hesabım</a>
-    <a href="driver-register.html">Sürücü Ol</a>
-    <a href="driver.html">Sürücü Girişi</a>
-    <a href="#">Destek</a>
+<div class="topbar">
+  <div id="driverMini" onclick="location.href='driver-register.html'">
+    🚗 Sürücü Ol
   </div>
 
-  <div id="sheet">
-    <div class="cards">
-      <div id="cardTaxi" class="card active">🚕 Taksi</div>
-      <div id="cardCourier" class="card">🏍 Kurye</div>
-    </div>
+  <div style="display:flex;gap:10px">
+    <div id="notify" class="iconBtn">🔔<div id="badge"></div></div>
+    <div id="hamburger" class="iconBtn">☰</div>
+  </div>
+</div>
 
-    <div id="info">
-      <div>Mesafe: — km</div>
-      <div>Ücret: — TL</div>
-    </div>
+<div id="drawer">
+  <a href="#">Hesabım</a>
+  <a href="#">Önceki Hizmetler</a>
+  <a href="driver-register.html">Sürücü Ol</a>
+  <a href="driver.html">Sürücü Girişi</a>
+  <a href="#">Destek</a>
+  <a href="#">Ayarlar / KVKK</a>
+</div>
 
-    <div id="cta">Taksi Çağır</div>
+<div id="sheet">
+  <div class="cards">
+    <div id="taxiCard" class="card active">🚕 Taksi</div>
+    <div id="courierCard" class="card">🏍 Kurye</div>
   </div>
 
+  <div id="info">
+    <div>Mesafe: <b id="km">—</b></div>
+    <div>Ücret: <b id="price">—</b></div>
+  </div>
+
+  <div id="cta">Taksi Çağır</div>
 </div>
 
 <script>
-/* ===== MENU ===== */
-const menu=document.getElementById("menu");
-document.getElementById("hamburger").onclick=()=>{
-  menu.classList.toggle("open");
-};
+/* DRAWER */
+hamburger.onclick=()=>drawer.classList.toggle("open");
 
-/* ===== MAP ===== */
-const map=L.map("map",{
-  zoomControl:false
-}).setView([39,35],6);
-
+/* MAP */
+const map=L.map("map",{zoomControl:false});
 L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-  {maxZoom:19}
+"https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+{maxZoom:19}
 ).addTo(map);
 
-/* ===== USER LOCATION ===== */
-navigator.geolocation.getCurrentPosition(pos=>{
-  const lat=pos.coords.latitude;
-  const lng=pos.coords.longitude;
-  map.setView([lat,lng],15);
+/* LOCATION – USER ACTION */
+map.on("click",()=>{
+navigator.geolocation.getCurrentPosition(p=>{
+const lat=p.coords.latitude,lng=p.coords.longitude;
+map.setView([lat,lng],15);
+spawnVehicles(lat,lng);
+},{
+enableHighAccuracy:true
+});
+});
 
-  L.circleMarker([lat,lng],{
-    radius:8,color:"#f5c400",fillOpacity:.9
-  }).addTo(map);
-
-  spawnVehicles(lat,lng);
-},{enableHighAccuracy:true});
-
-/* ===== VEHICLE SIMULATION ===== */
+/* VEHICLES */
 function spawnVehicles(lat,lng){
-  for(let i=0;i<4;i++){
-    L.marker(
-      [lat+(Math.random()-.5)/200,lng+(Math.random()-.5)/200],
-      {icon:L.divIcon({className:"taxiIcon",html:"🚕"})}
-    ).addTo(map);
-    L.marker(
-      [lat+(Math.random()-.5)/200,lng+(Math.random()-.5)/200],
-      {icon:L.divIcon({className:"motoIcon",html:"🏍"})}
-    ).addTo(map);
-  }
+for(let i=0;i<3;i++){
+L.marker(
+[lat+(Math.random()-.5)/200,lng+(Math.random()-.5)/200],
+{icon:L.divIcon({className:"taxiIcon",html:"🚕"})}
+).addTo(map);
+
+L.marker(
+[lat+(Math.random()-.5)/200,lng+(Math.random()-.5)/200],
+{icon:L.divIcon({className:"motoIcon",html:"🏍"})}
+).addTo(map);
+}
 }
 
-/* ===== CARD TOGGLE ===== */
-const taxi=document.getElementById("cardTaxi");
-const courier=document.getElementById("cardCourier");
-const cta=document.getElementById("cta");
-
-taxi.onclick=()=>{
-  taxi.classList.add("active");
-  courier.classList.remove("active");
-  cta.textContent="Taksi Çağır";
+/* CARD TOGGLE */
+taxiCard.onclick=()=>{
+taxiCard.classList.add("active");
+courierCard.classList.remove("active");
+cta.textContent="Taksi Çağır";
 };
-courier.onclick=()=>{
-  courier.classList.add("active");
-  taxi.classList.remove("active");
-  cta.textContent="Kurye Çağır";
+courierCard.onclick=()=>{
+location.href="courier.html";
 };
 
-/* ===== PWA ===== */
+/* PWA */
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("/service-worker.js");
+navigator.serviceWorker.register("service-worker.js");
 }
 </script>
 
