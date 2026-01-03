@@ -605,13 +605,8 @@ async function apiGet(params){
 }
 
 /* ===== Reverse geocode ===== */
-async function reverse(lat,lng){
-  try{
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
-    const r = await fetch(url, { headers: { "Accept":"application/json" } });
-    const d = await r.json();
-    return (d && d.display_name) ? d.display_name : "";
-  }catch(_){ return ""; }
+function reverse(lat,lng){
+  return Promise.resolve("");
 }
 
 /* ===== Distance ===== */
