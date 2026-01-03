@@ -4,267 +4,250 @@
 <meta charset="utf-8">
 <meta name="viewport"
       content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
 <title>SepetTaxi</title>
+<meta name="theme-color" content="#000000">
 
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#f5c400">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script src="config.js"></script>
 <script src="log.js"></script>
 
 <style>
-/* ========== BASE ========== */
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
+html,body{
+  margin:0;height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#000;color:#fff;overflow:hidden
+}
 :root{
   --y:#f5c400;
-  --bg:#000;
   --panel:#0f0f0f;
   --line:#222;
 }
 
-/* ========== MAP ========== */
-#mapWrap{position:relative;height:60vh}
-#map{height:100%}
-
-/* Header overlay */
-#topBar{
-  position:absolute;top:0;left:0;right:0;
-  height:56px;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 12px;
-  z-index:500;
-  background:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.3),transparent);
-}
-#topBar .logo{font-weight:900;font-size:18px}
-#topBar .logo span{color:var(--y)}
-#topBar .actions{display:flex;gap:8px}
-.iconBtn{
-  width:36px;height:36px;border-radius:12px;
-  background:#111;border:1px solid var(--line);
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer
-}
-
-/* Driver quick card */
-#driverQuick{
-  position:absolute;top:62px;right:12px;
-  background:#111;border:1px solid rgba(245,196,0,.4);
-  color:#fff;border-radius:999px;
-  padding:6px 12px;font-size:12px;
-  z-index:500;cursor:pointer
-}
-
-/* ========== BOTTOM SHEET ========== */
-#sheet{
-  position:fixed;left:0;right:0;bottom:0;
-  height:40vh;
-  background:var(--panel);
-  border-top-left-radius:18px;
-  border-top-right-radius:18px;
-  border-top:1px solid var(--line);
-  z-index:600;
+/* ===== LAYOUT ===== */
+#app{
+  height:100%;
   display:flex;
   flex-direction:column;
 }
-#sheetHeader{
-  padding:10px 14px;
-  border-bottom:1px solid var(--line);
-  display:flex;align-items:center;justify-content:space-between;
+
+/* ===== MAP ===== */
+#map{
+  height:50%;
+  position:relative;
+  z-index:1;
 }
-#sheetHeader .stats{
-  display:flex;gap:16px;font-weight:900
-}
-#cta{
-  background:var(--y);color:#000;
-  padding:10px 16px;border-radius:14px;
-  font-weight:900;cursor:pointer
-}
-#sheetBody{
-  padding:12px;
+
+/* ===== HAMBURGER ===== */
+#hamburger{
+  position:fixed;
+  top:12px;right:12px;
+  width:44px;height:44px;
+  background:#000;
+  border:1px solid var(--line);
+  border-radius:14px;
   display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-/* Service cards */
-.services{display:flex;gap:10px}
-.service{
-  flex:1;
-  background:#111;border:1px solid var(--line);
-  border-radius:14px;padding:12px;text-align:center;
-  cursor:pointer;font-weight:900
-}
-.service.active{border-color:var(--y);color:var(--y)}
-
-/* Inputs */
-.input{
-  width:100%;padding:12px;
-  background:#000;border:1px solid var(--line);
-  border-radius:14px;color:#fff
-}
-.small{font-size:11px;color:#aaa}
-
-/* ========== LANDING ========== */
-#landing{
-  position:fixed;inset:0;
-  background:#000 url("assets/landing.png") center/cover no-repeat;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
   z-index:1000;
 }
-#landingOverlay{
-  position:absolute;inset:0;
-  background:rgba(0,0,0,.6);
-  display:flex;align-items:center;justify-content:center;
+#menu{
+  position:fixed;
+  top:0;right:0;
+  width:260px;height:100%;
+  background:#000;
+  border-left:1px solid var(--line);
+  padding:20px;
+  transform:translateX(100%);
+  transition:.25s;
+  z-index:999;
 }
-#startBtn{
-  background:var(--y);color:#000;
-  border-radius:28px;padding:14px 40px;
-  font-weight:900;font-size:18px;cursor:pointer
+#menu.open{transform:translateX(0)}
+#menu a{
+  display:block;
+  padding:14px 0;
+  color:#fff;
+  text-decoration:none;
+  border-bottom:1px solid var(--line);
 }
+
+/* ===== DRIVER MINI CARD ===== */
+#driverMini{
+  position:fixed;
+  top:12px;left:12px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:8px 12px;
+  font-size:13px;
+  z-index:1000;
+}
+
+/* ===== BOTTOM SHEET ===== */
+#sheet{
+  height:50%;
+  background:var(--panel);
+  border-top:1px solid var(--line);
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* ===== CARDS ===== */
+.cards{
+  display:flex;
+  gap:10px;
+}
+.card{
+  flex:1;
+  background:#000;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px;
+  text-align:center;
+  font-weight:900;
+}
+.card.active{
+  border-color:var(--y);
+  color:var(--y);
+}
+
+/* ===== INFO BAR ===== */
+#info{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+}
+
+/* ===== CTA ===== */
+#cta{
+  padding:16px;
+  border-radius:18px;
+  background:var(--y);
+  color:#000;
+  text-align:center;
+  font-weight:900;
+}
+
+/* ===== ICONS ===== */
+.taxiIcon, .motoIcon{
+  width:28px;height:28px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+}
+.taxiIcon{background:#f5c400;color:#000}
+.motoIcon{background:#fff;color:#000}
+
 </style>
 </head>
 
 <body>
 
-<!-- LANDING -->
-<div id="landing">
-  <div id="landingOverlay">
-    <button id="startBtn">BAŞLA</button>
-  </div>
-</div>
+<div id="app">
 
-<!-- MAP -->
-<div id="mapWrap">
   <div id="map"></div>
 
-  <div id="topBar">
-    <div class="iconBtn" id="burger">☰</div>
-    <div class="logo">Sepet<span>Taxi</span></div>
-    <div class="iconBtn">🔔</div>
+  <div id="hamburger">☰</div>
+
+  <div id="driverMini">Sürücü Ol</div>
+
+  <div id="menu">
+    <a href="#">Hesabım</a>
+    <a href="driver-register.html">Sürücü Ol</a>
+    <a href="driver.html">Sürücü Girişi</a>
+    <a href="#">Destek</a>
   </div>
 
-  <div id="driverQuick">🚗 Sürücü Ol</div>
-</div>
-
-<!-- BOTTOM SHEET -->
-<div id="sheet">
-  <div id="sheetHeader">
-    <div class="stats">
-      <div><span id="km">—</span> km</div>
-      <div><span id="price">—</span> TL</div>
-    </div>
-    <div id="cta">Hizmet Seç</div>
-  </div>
-
-  <div id="sheetBody">
-    <div class="services">
-      <div class="service" id="svcTaxi">🚕 Taksi</div>
-      <div class="service" id="svcCourier">📦 Kurye</div>
+  <div id="sheet">
+    <div class="cards">
+      <div id="cardTaxi" class="card active">🚕 Taksi</div>
+      <div id="cardCourier" class="card">🏍 Kurye</div>
     </div>
 
-    <input id="fromAddr" class="input" readonly placeholder="Konum alınıyor...">
-    <input id="toAddr" class="input" placeholder="Gideceğiniz yeri seçin">
-    <div class="small">Haritadan da seçebilirsiniz</div>
+    <div id="info">
+      <div>Mesafe: — km</div>
+      <div>Ücret: — TL</div>
+    </div>
+
+    <div id="cta">Taksi Çağır</div>
   </div>
+
 </div>
 
 <script>
-/* ========== STATE ========== */
-let map, fromMarker, toMarker;
-let service = null;
-let lastKM = 0, lastPrice = 0;
-
-/* ========== INIT ========== */
-const $ = id => document.getElementById(id);
-
-$("startBtn").onclick = () => {
-  $("landing").style.display="none";
-  initMap();
+/* ===== MENU ===== */
+const menu=document.getElementById("menu");
+document.getElementById("hamburger").onclick=()=>{
+  menu.classList.toggle("open");
 };
 
-function initMap(){
-  map = L.map("map").setView([41,29],13);
-  L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    {maxZoom:19}
-  ).addTo(map);
+/* ===== MAP ===== */
+const map=L.map("map",{
+  zoomControl:false
+}).setView([39,35],6);
 
-  navigator.geolocation.getCurrentPosition(p=>{
-    const lat=p.coords.latitude,lng=p.coords.longitude;
-    fromMarker=L.marker([lat,lng]).addTo(map);
-    map.setView([lat,lng],15);
-    $("fromAddr").value="Mevcut Konum";
-    spawnFakeVehicles(lat,lng);
-  });
+L.tileLayer(
+  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  {maxZoom:19}
+).addTo(map);
 
-  map.on("click",e=>{
-    if(!toMarker) toMarker=L.marker(e.latlng).addTo(map);
-    else toMarker.setLatLng(e.latlng);
-    $("toAddr").value="Seçilen Konum";
-    calc();
-  });
-}
+/* ===== USER LOCATION ===== */
+navigator.geolocation.getCurrentPosition(pos=>{
+  const lat=pos.coords.latitude;
+  const lng=pos.coords.longitude;
+  map.setView([lat,lng],15);
 
-/* ========== SERVICES ========== */
-$("svcTaxi").onclick=()=>selectService("taxi");
-$("svcCourier").onclick=()=>{
-  localStorage.setItem("st_temp_route",JSON.stringify({
-    from:fromMarker?.getLatLng(),
-    to:toMarker?.getLatLng(),
-    km:lastKM,price:lastPrice
-  }));
-  location.href="courier.html";
-};
+  L.circleMarker([lat,lng],{
+    radius:8,color:"#f5c400",fillOpacity:.9
+  }).addTo(map);
 
-function selectService(t){
-  service=t;
-  $("svcTaxi").classList.toggle("active",t==="taxi");
-  $("svcCourier").classList.toggle("active",t==="courier");
-  $("cta").textContent = t==="taxi"?"Taksi Çağır":"Kurye";
-  calc();
-}
+  spawnVehicles(lat,lng);
+},{enableHighAccuracy:true});
 
-/* ========== CALC ========== */
-function calc(){
-  if(!service||!fromMarker||!toMarker)return;
-  const a=fromMarker.getLatLng(),b=toMarker.getLatLng();
-  const km=haversine(a.lat,a.lng,b.lat,b.lng);
-  lastKM=km.toFixed(1);
-  lastPrice=Math.round(60+km*22);
-  $("km").textContent=lastKM;
-  $("price").textContent=lastPrice;
-}
-
-/* ========== FAKE VEHICLES ========== */
-let fakeMarkers=[];
-function spawnFakeVehicles(lat,lng){
-  for(let i=0;i<6;i++){
-    const d=(Math.random()-0.5)/300;
-    const m=L.marker([lat+d,lng+d]).addTo(map);
-    fakeMarkers.push(m);
+/* ===== VEHICLE SIMULATION ===== */
+function spawnVehicles(lat,lng){
+  for(let i=0;i<4;i++){
+    L.marker(
+      [lat+(Math.random()-.5)/200,lng+(Math.random()-.5)/200],
+      {icon:L.divIcon({className:"taxiIcon",html:"🚕"})}
+    ).addTo(map);
+    L.marker(
+      [lat+(Math.random()-.5)/200,lng+(Math.random()-.5)/200],
+      {icon:L.divIcon({className:"motoIcon",html:"🏍"})}
+    ).addTo(map);
   }
-  setInterval(()=>{
-    fakeMarkers.forEach(m=>{
-      const p=m.getLatLng();
-      m.setLatLng([p.lat+(Math.random()-0.5)/500,p.lng+(Math.random()-0.5)/500]);
-    });
-  },2500);
 }
 
-/* ========== UTIL ========== */
-function haversine(a,b,c,d){
-  const R=6371;
-  const dLat=(c-a)*Math.PI/180;
-  const dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2 +
-    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
+/* ===== CARD TOGGLE ===== */
+const taxi=document.getElementById("cardTaxi");
+const courier=document.getElementById("cardCourier");
+const cta=document.getElementById("cta");
 
-/* ========== PWA ========== */
+taxi.onclick=()=>{
+  taxi.classList.add("active");
+  courier.classList.remove("active");
+  cta.textContent="Taksi Çağır";
+};
+courier.onclick=()=>{
+  courier.classList.add("active");
+  taxi.classList.remove("active");
+  cta.textContent="Kurye Çağır";
+};
+
+/* ===== PWA ===== */
 if("serviceWorker"in navigator){
   navigator.serviceWorker.register("/service-worker.js");
 }
