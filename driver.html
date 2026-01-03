@@ -11,8 +11,6 @@ const POLL_MS = 3000;
 </script>
 
 <meta name="theme-color" content="#f5c400">
-<script src="config.js"></script>
-<script src="log.js"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -78,7 +76,6 @@ const jobCard=$("jobCard");
 const emptyCard=$("emptyCard");
 
 async function apiGet(params){
-  const url = SEPT.BACKEND_URL + "?" + new URLSearchParams(params);
   const r = await fetch(url);
   const d = await r.json();
   if(window.Log) Log.api(params.action, params, d);
