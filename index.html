@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
 
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#f5c400">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -15,167 +16,356 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-:root{--y:#f5c400;--panel:#0f0f0f;--line:#222}
-
-/* HEADER */
-header{
-  height:56px;display:flex;align-items:center;justify-content:space-between;
-  padding:0 12px;border-bottom:1px solid var(--line)
+:root{
+  --y:#f5c400;
+  --bg:#000;
+  --panel:#0f0f10;
+  --line:rgba(255,255,255,.12);
+  --mut:rgba(255,255,255,.6);
+  --r:18px;
 }
-header b span{color:var(--y)}
-.icon{font-size:18px;cursor:pointer}
+html,body{
+  margin:0;height:100%;
+  background:#000;color:#fff;
+  font-family:Arial,Helvetica,sans-serif;
+  overflow:hidden
+}
 
-/* MAP */
-#map{height:45vh}
+/* LANDING */
+#landing{
+  position:fixed;inset:0;z-index:9999;
+  background:#000 url("assets/landing.png") center/cover no-repeat;
+}
+#landingTap{
+  position:absolute;inset:0;
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:24px;
+}
+#landingTap div{
+  width:64px;height:64px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.3);
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45)
+}
+#landingTap div:after{
+  content:"";
+  border-left:14px solid var(--y);
+  border-top:10px solid transparent;
+  border-bottom:10px solid transparent;
+  margin-left:4px;
+}
+
+/* APP */
+#app{display:none;height:100%}
+#mapWrap{height:50vh;position:relative}
+#map{height:100%;width:100%}
+
+/* TOPBAR */
+#topbar{
+  position:absolute;top:0;left:0;right:0;height:60px;
+  display:flex;align-items:center;
+  padding:0 14px;
+  background:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.15));
+  z-index:500
+}
+#burger{
+  width:44px;height:44px;border-radius:14px;
+  background:rgba(255,255,255,.08);
+  border:1px solid var(--line);
+  color:#fff;font-size:20px
+}
+#logo{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-weight:900;font-size:22px
+}
+#logo span{color:var(--y)}
+#miniDriver{
+  margin-left:auto;
+  padding:0 12px;height:44px;border-radius:14px;
+  border:1px solid rgba(245,196,0,.3);
+  display:flex;align-items:center;gap:8px;
+  cursor:pointer
+}
+#miniDriver b{font-size:13px}
+
+/* MAP CONTROLS */
+#mapControls{
+  position:absolute;right:12px;top:80px;
+  display:flex;flex-direction:column;gap:12px;
+  z-index:400
+}
+.mapCtl{
+  width:52px;height:52px;border-radius:16px;
+  background:rgba(0,0,0,.55);
+  border:1px solid var(--line);
+  color:#fff;font-size:20px
+}
+.mapCtl.on{border-color:var(--y)}
 
 /* PANEL */
 #panel{
-  height:calc(55vh - 56px);
-  background:#000;
-  border-top:1px solid var(--line);
-  padding:10px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+  height:50vh;
+  padding:14px;
+  background:#050506;
   overflow:auto
 }
 
-.cards{display:flex;gap:8px}
-.card{
+/* SERVICES */
+#svcRow{display:flex;gap:12px}
+.svc{
   flex:1;
-  background:var(--panel);
+  min-height:76px;
+  border-radius:18px;
   border:1px solid var(--line);
-  border-radius:14px;
-  padding:10px;
-  text-align:center;
-  font-weight:700;
-  font-size:14px;
+  display:flex;align-items:center;gap:12px;
+  padding:12px;
   cursor:pointer
 }
-.card.active{border-color:var(--y)}
+.svc.active{border-color:var(--y)}
+.svc img{width:48px;height:48px}
+.svc b{font-size:18px}
+.svc small{display:block;color:var(--mut);font-size:12px}
 
-.input{
-  width:100%;
-  padding:10px;
-  border-radius:12px;
+/* ADDRESS */
+.addrBox{
+  margin-top:12px;
+  border-radius:18px;
   border:1px solid var(--line);
-  background:#000;color:#fff
 }
-.small{font-size:11px;color:#aaa}
+.addrRow{
+  display:flex;align-items:center;gap:10px;
+  padding:12px
+}
+.addrRow + .addrRow{border-top:1px solid var(--line)}
+.addrRow span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* STATS */
+#stats{display:flex;gap:12px;margin-top:12px}
+.stat{
+  flex:1;border-radius:18px;
+  border:1px solid var(--line);
+  padding:12px
+}
+.stat small{color:var(--mut)}
+.stat b{display:block;font-size:24px;margin-top:6px}
 
 /* CTA */
 #cta{
-  margin-top:auto;
-  padding:14px;
-  border-radius:16px;
-  background:var(--y);
-  color:#000;
-  text-align:center;
-  font-weight:900;
-  display:none;
+  margin-top:14px;
+  height:64px;border-radius:999px;
+  background:linear-gradient(180deg,#ffdf6a,var(--y));
+  color:#000;font-size:24px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
   cursor:pointer
 }
+#cta.disabled{
+  background:rgba(255,255,255,.12);
+  color:rgba(255,255,255,.5);
+  cursor:not-allowed
+}
+
+/* MODALS */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.75);
+  display:none;align-items:center;justify-content:center;
+  z-index:1000
+}
+.box{
+  width:100%;max-width:420px;
+  background:#111;border-radius:18px;
+  padding:16px
+}
+.box h3{margin:0 0 10px}
+.box input{
+  width:100%;padding:12px;
+  border-radius:14px;border:1px solid var(--line);
+  background:#000;color:#fff;margin-top:8px
+}
+.box button{
+  width:100%;margin-top:12px;
+  padding:14px;border-radius:14px;
+  background:var(--y);color:#000;font-weight:900
+}
+.err{display:none;color:#ff6b6b;font-size:12px;margin-top:8px}
 </style>
 </head>
 
 <body>
 
-<header>
-  <div class="icon">☰</div>
-  <b>Sepet<span>Taxi</span></b>
-  <div class="icon" id="driverBtn">🚗</div>
-</header>
+<!-- LANDING -->
+<div id="landing">
+  <div id="landingTap"><div></div></div>
+</div>
 
-<div id="map"></div>
+<!-- APP -->
+<div id="app">
+  <div id="mapWrap">
+    <div id="map"></div>
 
-<div id="panel">
+    <div id="topbar">
+      <button id="burger">☰</button>
+      <div id="logo">Sepet<span>Taxi</span></div>
+      <div id="miniDriver"><b>Sürücü Ol</b></div>
+    </div>
 
-  <div class="cards">
-    <div class="card active" id="svcTaxi">🚕 Taksi</div>
-    <div class="card" id="svcCourier">🛵 Kurye</div>
+    <div id="mapControls">
+      <button id="btnLocate" class="mapCtl">⌖</button>
+      <button id="btnPick" class="mapCtl">✎</button>
+    </div>
   </div>
 
-  <!-- KAYIT -->
-  <div id="registerCard">
-    <input id="custName" class="input" placeholder="Ad Soyad">
-    <div style="height:6px"></div>
-    <input id="custPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <div class="small">Yeni müşteriler için zorunlu</div>
+  <div id="panel">
+    <div id="svcRow">
+      <div class="svc active" id="svcTaxi">
+        <img src="https://maps.gstatic.com/mapfiles/ms2/micons/yellow-dot.png">
+        <div><b>Taksi</b><small>Hızlı ulaşım</small></div>
+      </div>
+      <div class="svc" id="svcCourier">
+        <img src="https://maps.gstatic.com/mapfiles/ms2/micons/motorcycling.png">
+        <div><b>Kurye</b><small>Hızlı teslimat</small></div>
+      </div>
+    </div>
+
+    <div class="addrBox">
+      <div class="addrRow"><span id="fromTxt">Konum alınıyor…</span></div>
+      <div class="addrRow"><span id="toTxt">Gideceğiniz yeri seçin</span></div>
+    </div>
+
+    <div id="stats">
+      <div class="stat"><small>Mesafe</small><b id="kmVal">—</b></div>
+      <div class="stat"><small>Ücret</small><b id="priceVal">—</b></div>
+    </div>
+
+    <div id="cta" class="disabled">Gideceğiniz yeri seçin</div>
   </div>
+</div>
 
-  <input id="fromAddr" class="input" placeholder="Nereden">
-  <input id="toAddr" class="input" placeholder="Nereye">
-
-  <div class="small">
-    <span id="km">—</span> km · <span id="price">—</span> TL
+<!-- REGISTER -->
+<div class="modal" id="regModal">
+  <div class="box">
+    <h3>Zorunlu Kayıt</h3>
+    <input id="rName" placeholder="Ad Soyad">
+    <input id="rPhone" placeholder="05XXXXXXXXX" maxlength="11">
+    <div class="err" id="regErr">Bilgiler hatalı</div>
+    <button id="regOk">Kaydı Tamamla</button>
   </div>
-
-  <div id="cta">Taksi Çağır</div>
 </div>
 
 <script>
-/* STATE */
+/* ===== STATE ===== */
+let map, fromLL=null, toLL=null;
 let service="taxi";
-let from=null,to=null,km=0,price=0;
+let registered=false, customer=null;
+let km=0, price=0, pickMode=false;
 
-/* MAP */
-const map=L.map("map",{zoomControl:false});
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(map);
-navigator.geolocation.getCurrentPosition(p=>{
-  map.setView([p.coords.latitude,p.coords.longitude],15);
-});
+/* ===== DOM ===== */
+const $=i=>document.getElementById(i);
 
-/* UI */
-const $=id=>document.getElementById(id);
+/* ===== INIT ===== */
+$("landingTap").onclick=()=>{
+  $("landing").style.display="none";
+  $("app").style.display="block";
+  initMap();
+};
 
-$("svcTaxi").onclick=()=>selectSvc("taxi");
-$("svcCourier").onclick=()=>selectSvc("courier");
+/* ===== MAP ===== */
+function initMap(){
+  map=L.map("map",{zoomControl:false});
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(map);
 
-function selectSvc(s){
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(p=>{
+      fromLL={lat:p.coords.latitude,lng:p.coords.longitude};
+      L.marker(fromLL).addTo(map);
+      map.setView(fromLL,16);
+      $("fromTxt").textContent="Mevcut Konum";
+    });
+  }
+
+  map.on("click",e=>{
+    if(!pickMode)return;
+    toLL={lat:e.latlng.lat,lng:e.latlng.lng};
+    L.marker(toLL).addTo(map);
+    $("toTxt").textContent="Seçilen Konum";
+    pickMode=false;
+    calc();
+    renderCTA();
+  });
+}
+
+/* ===== SERVICE ===== */
+$("svcTaxi").onclick=()=>setService("taxi");
+$("svcCourier").onclick=()=>setService("courier");
+
+function setService(s){
   service=s;
   $("svcTaxi").classList.toggle("active",s==="taxi");
   $("svcCourier").classList.toggle("active",s==="courier");
-  if(s==="courier"){
-    if(!from||!to){alert("Önce rota seçiniz");return;}
-    localStorage.setItem("st_temp_route",JSON.stringify({from,to,km,price}));
+  renderCTA();
+}
+
+/* ===== CONTROLS ===== */
+$("btnLocate").onclick=()=>{ if(fromLL) map.setView(fromLL,16); };
+$("btnPick").onclick=()=>{ pickMode=!pickMode; };
+
+/* ===== CALC ===== */
+function hav(a,b,c,d){
+  const R=6371;
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function calc(){
+  if(!fromLL||!toLL){km=price=0;return;}
+  km=hav(fromLL.lat,fromLL.lng,toLL.lat,toLL.lng);
+  price=service==="taxi"
+    ? Math.max(120,60+km*22)
+    : Math.max(80,40+km*15);
+  $("kmVal").textContent=km.toFixed(1)+" km";
+  $("priceVal").textContent=Math.round(price)+" TL";
+}
+
+/* ===== CTA ===== */
+function renderCTA(){
+  const c=$("cta");
+  if(!registered){
+    c.textContent="Kayıt Ol";
+    c.classList.remove("disabled");
+    return;
+  }
+  if(!toLL){
+    c.textContent="Gideceğiniz yeri seçin";
+    c.classList.add("disabled");
+    return;
+  }
+  c.textContent=service==="taxi"?"Taksi Çağır":"Kurye Detayları";
+  c.classList.remove("disabled");
+}
+
+$("cta").onclick=()=>{
+  if($("cta").classList.contains("disabled"))return;
+  if(!registered){ $("regModal").style.display="flex"; return; }
+  if(service==="courier"){
+    localStorage.setItem("st_temp_route",JSON.stringify({from:fromLL,to:toLL,km,price}));
     location.href="courier.html";
+    return;
   }
-}
+  alert("Taksi çağrıldı (backend bağlantılı)");
+};
 
-/* CTA GUARD */
-function checkReady(){
-  const name=$("custName").value.trim();
-  const phone=$("custPhone").value.replace(/\D/g,"");
-  const ok = service==="taxi" && from && to && km>0 && price>0
-    && name.length>2 && /^05\d{9}$/.test(phone);
-  $("cta").style.display = ok ? "block" : "none";
-}
-
-/* CTA */
-$("cta").onclick=async()=>{
-  const payload={
-    action:"createJob",
-    service_type:"taxi",
-    customer_first:$("custName").value.trim(),
-    customer_phone:$("custPhone").value.replace(/\D/g,""),
-    from_lat:from.lat,from_lng:from.lng,
-    to_lat:to.lat,to_lng:to.lng,
-    distance_km:km,
-    price_brut:price
-  };
-  $("cta").textContent="Gönderiliyor...";
-  const r=await fetch(SEPT.BACKEND_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body:JSON.stringify(payload)
-  });
-  const d=await r.json();
-  if(d&&d.ok&&d.job_id){
-    location.href="track.html?job_id="+d.job_id;
-  }else{
-    alert("Çağrı başarısız");
+/* ===== REGISTER ===== */
+$("regOk").onclick=()=>{
+  const n=$("rName").value.trim();
+  const p=$("rPhone").value.trim();
+  if(n.length<3||!/^05\d{9}$/.test(p)){
+    $("regErr").style.display="block";return;
   }
+  customer={n,p};
+  registered=true;
+  $("regModal").style.display="none";
+  renderCTA();
 };
 </script>
 </body>
