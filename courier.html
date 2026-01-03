@@ -5,209 +5,93 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Kurye</title>
 
-<meta name="theme-color" content="#f5c400">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script src="config.js"></script>
-<script src="log.js"></script>
 
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-:root{--y:#f5c400;--panel:#0f0f0f;--line:#222}
-header{
-  height:56px;display:flex;align-items:center;justify-content:space-between;
-  padding:0 12px;border-bottom:1px solid var(--line)
-}
-header b span{color:var(--y)}
-header .back{cursor:pointer;font-size:18px}
-#map{height:30vh}
-#content{
-  height:calc(70vh - 90px);
-  overflow:auto;
-  padding:12px;
-  display:flex;flex-direction:column;gap:10px;
-}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
-.input,select,textarea{
-  width:100%;
-  background:#000;border:1px solid var(--line);
-  border-radius:14px;padding:12px;color:#fff;font-size:14px
-}
-textarea{resize:none;min-height:70px}
-.label{font-size:12px;color:#aaa;margin-bottom:6px}
-#bottomBar{
-  position:fixed;left:0;right:0;bottom:0;
-  background:#000;border-top:1px solid var(--line);
-  padding:10px 12px;
-}
-#summary{display:flex;justify-content:space-between;font-weight:900;margin-bottom:8px}
-#callBtn{
-  width:100%;
-  background:var(--y);color:#000;
-  border-radius:16px;padding:14px;font-weight:900;text-align:center;cursor:pointer
-}
-.small{font-size:11px;color:#aaa;margin-top:6px}
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+.card{padding:14px;border-bottom:1px solid #222}
+.input,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid #222;background:#000;color:#fff}
+.btn{margin:14px;background:#f5c400;color:#000;padding:14px;text-align:center;font-weight:900;border-radius:16px}
+.small{font-size:12px;color:#aaa}
 </style>
 </head>
+
 <body>
 
-<header>
-  <div class="back" onclick="history.back()">←</div>
-  <b>Sepet<span>Taxi</span> Kurye</b>
-  <div style="width:20px"></div>
-</header>
-
-<div id="map"></div>
-
-<div id="content">
-  <div class="card">
-    <div class="label">Gönderi Türü</div>
-    <select id="pkgType">
-      <option value="">Seçiniz</option>
-      <option>Zarf</option>
-      <option>Paket</option>
-      <option>Koli</option>
-      <option>Diğer</option>
-    </select>
-  </div>
-
-  <div class="card">
-    <div class="label">Gönderi İçeriği (Zorunlu)</div>
-    <textarea id="contentNote" placeholder="Gönderinin içeriğini kısaca yazın"></textarea>
-  </div>
-
-  <div class="card">
-    <div class="label">Alıcı Bilgileri</div>
-    <input id="recvName" class="input" placeholder="Ad Soyad">
-    <div style="height:8px"></div>
-    <input id="recvPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
-    <div style="height:8px"></div>
-    <textarea id="recvAddr" placeholder="Açık adres"></textarea>
-  </div>
+<div class="card">
+  <select id="pkg" class="input">
+    <option value="">Paket Türü</option>
+    <option>Zarf</option>
+    <option>Paket</option>
+    <option>Koli</option>
+  </select>
 </div>
 
-<div id="bottomBar">
-  <div id="summary">
-    <div><span id="km">—</span> km</div>
-    <div><span id="price">—</span> TL</div>
-  </div>
-  <div id="callBtn">Kurye Çağır</div>
-  <div class="small">Gönderi alındığında alıcıya bilgilendirme yapılır.</div>
+<div class="card">
+  <textarea id="content" placeholder="Paket içeriği (zorunlu)"></textarea>
 </div>
+
+<div class="card">
+  <input id="rName" class="input" placeholder="Alıcı Ad Soyad">
+  <input id="rPhone" class="input" placeholder="05XXXXXXXXX" maxlength="11">
+</div>
+
+<div class="card">
+  <label>
+    <input type="checkbox" id="agree">
+    İçerik taahhütnamesini kabul ediyorum
+  </label>
+</div>
+
+<div class="btn" id="call">Kurye Çağır</div>
 
 <script>
-const ROUTE_KEY="st_temp_route";
-const route = JSON.parse(localStorage.getItem(ROUTE_KEY)||"{}");
+const route=JSON.parse(localStorage.getItem("st_temp_route")||"{}");
+if(!route.from) location.href="index.html";
 
 const $=id=>document.getElementById(id);
 
-function safeDigitsPhone(v){ return (v||"").replace(/\D/g,""); }
-
-// API helpers (tek standart)
-async function apiPost(bodyObj){
-  const payload = JSON.stringify(bodyObj || {});
-  const r = await fetch(SEPT.BACKEND_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body: payload
-  });
-  let data=null;
-  try{ data = await r.json(); }catch(_){}
-  if(window.Log) Log.api(bodyObj.action, bodyObj, data);
-  return data;
-}
-
-if(!route.from || !route.to || !route.km || !route.price){
-  alert("Rota bilgisi bulunamadı. Kurye için önce index ekranından rota seç.");
-  location.href="index.html";
-}
-
-$("km").textContent = Number(route.km).toFixed(1);
-$("price").textContent = Math.round(Number(route.price));
-
-/* MAP */
-const map=L.map("map",{zoomControl:false, attributionControl:false});
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(map);
-
-const from=L.marker([route.from.lat,route.from.lng]).addTo(map);
-const to=L.marker([route.to.lat,route.to.lng]).addTo(map);
-const line=L.polyline([[route.from.lat,route.from.lng],[route.to.lat,route.to.lng]],{color:"#f5c400",weight:4,opacity:.9,dashArray:"10 10"}).addTo(map);
-map.fitBounds(line.getBounds(),{padding:[40,40]});
-
-/* CALL */
-$("callBtn").onclick=async()=>{
-  const pkg = ($("pkgType").value||"").trim();
-  const note= ($("contentNote").value||"").trim();
-  const rn  = ($("recvName").value||"").trim();
-  const rp  = safeDigitsPhone($("recvPhone").value);
-  const ra  = ($("recvAddr").value||"").trim();
-
-  if(!pkg || note.length<3 || rn.length<2 || !/^05\d{9}$/.test(rp) || ra.length<6){
-    alert("Lütfen tüm kurye alanlarını doğru doldurun.");
+$("call").onclick=async()=>{
+  if(
+    !$("pkg").value ||
+    $("content").value.trim().length<3 ||
+    $("rName").value.trim().length<3 ||
+    !/^05\d{9}$/.test($("rPhone").value) ||
+    !$("agree").checked
+  ){
+    alert("Tüm alanlar zorunludur");
     return;
   }
-
-  // Backend’de recv_addr kolonu yok -> content_note içine gömüyoruz (kilitli karar)
-  const content_note = `ALICI_ADRES: ${ra}\nICERIK: ${note}`;
 
   const payload={
     action:"createJob",
     service_type:"courier",
-    from_addr: route.from_addr || "",
-    to_addr: route.to_addr || "",
-    from_lat: route.from.lat,
-    from_lng: route.from.lng,
-    to_lat: route.to.lat,
-    to_lng: route.to.lng,
-    distance_km: Number(route.km),
-    price_brut: Number(route.price),
-    customer: route.customer || null,
+    from_lat:route.from.lat,
+    from_lng:route.from.lng,
+    to_lat:route.to.lat,
+    to_lng:route.to.lng,
+    distance_km:route.km,
+    price_brut:route.price,
     courier:{
-      pkg_type: pkg,
-      content_note,
-      recv_name: rn,
-      recv_phone: rp
+      pkg_type:$("pkg").value,
+      content_note:$("content").value.trim(),
+      recv_name:$("rName").value.trim(),
+      recv_phone:$("rPhone").value.replace(/\D/g,"")
     }
   };
 
-  $("callBtn").textContent="Gönderiliyor...";
-  $("callBtn").style.pointerEvents="none";
-
-  try{
-    const d = await apiPost(payload);
-
-    if(d && d.ok && d.job_id){
-      localStorage.removeItem(ROUTE_KEY);
-      location.href="track.html?job_id="+encodeURIComponent(d.job_id);
-      return;
-    }
-
-    // fallback job_id
-    const fallbackJobId = "JOB-"+Math.random().toString(36).toUpperCase().slice(2,10);
-    payload.job_id = fallbackJobId;
-    const d2 = await apiPost(payload);
-    if(d2 && d2.ok){
-      localStorage.removeItem(ROUTE_KEY);
-      location.href="track.html?job_id="+encodeURIComponent(fallbackJobId);
-      return;
-    }
-
-    throw new Error("createJob failed");
-  }catch(e){
-    console.error(e);
-    alert("Kurye oluşturulamadı. (Backend/CORS)");
-    $("callBtn").textContent="Kurye Çağır";
-    $("callBtn").style.pointerEvents="auto";
+  const r=await fetch(SEPT.BACKEND_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body:JSON.stringify(payload)
+  });
+  const d=await r.json();
+  if(d&&d.ok&&d.job_id){
+    location.href="track.html?job_id="+d.job_id;
+  }else{
+    alert("Kurye oluşturulamadı");
   }
 };
-
-/* PWA */
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("service-worker.js").catch(()=>{});
-}
 </script>
 </body>
 </html>
