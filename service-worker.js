@@ -1,8 +1,13 @@
 const CACHE_NAME = "sepettaxi-v1";
 const OFFLINE_URLS = [
-  "/",
-  "/index.html",
-  "/manifest.json"
+  "./",
+  "./index.html",
+  "./courier.html",
+  "./driver.html",
+  "./track.html",
+  "./config.js",
+  "./log.js",
+  "./manifest.json"
 ];
 
 self.addEventListener("install", event => {
@@ -22,7 +27,12 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+  const req = event.request;
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(req).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(req, copy)).catch(()=>{});
+      return res;
+    }).catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
   );
 });
