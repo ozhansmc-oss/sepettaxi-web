@@ -551,13 +551,6 @@ const ROUTE_KEY="st_temp_route";
 /* ================== DOM ================== */
 const $ = (id)=>document.getElementById(id);
 
-/* ================== PWA ================== */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(()=>{});
-  });
-}
-
 /* ================== Helpers ================== */
 function show(el, on){ el.style.display = on ? "flex" : "none"; }
 function openModal(id){ show($(id), true); }
