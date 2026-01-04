@@ -1,169 +1,146 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SepetTaxi – Admin İzleme</title>
-<meta name="theme-color" content="#f5c400">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>SepetTaxi – Admin</title>
+<meta name="theme-color" content="#000000" />
 <style>
-*{box-sizing:border-box}
-:root{
-  --y:#f5c400;--bg:#050506;--panel:#0f0f10;--card:#141416;
-  --line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.65);
-  --shadow:0 18px 60px rgba(0,0,0,.55);
-}
-html,body{margin:0;height:100%;background:var(--bg);color:#fff;
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
-#map{position:absolute;inset:0}
-
-/* Header */
-.header{
-  position:fixed;left:0;right:0;top:0;z-index:1200;
-  height:56px;display:flex;align-items:center;justify-content:center;
-  background:rgba(5,5,6,.75);border-bottom:1px solid var(--line);
-  backdrop-filter: blur(10px);
-}
-.header span{color:var(--y);font-weight:900}
-
-/* Panel */
-.panel{
-  position:fixed;left:12px;top:68px;z-index:1200;
-  width:min(360px,92vw);
-  background:rgba(15,15,16,.88);
-  border:1px solid var(--line);
-  border-radius:18px;
-  box-shadow:var(--shadow);
-  backdrop-filter: blur(14px);
-}
-.panel h3{
-  margin:0;padding:12px;
-  font-size:14px;font-weight:900;border-bottom:1px solid var(--line)
-}
-.list{max-height:60vh;overflow:auto}
-.item{
-  padding:12px;border-bottom:1px solid var(--line);
-}
-.item:last-child{border-bottom:0}
-.item .t{font-weight:900}
-.item .s{font-size:12px;color:var(--mut);margin-top:4px;line-height:1.25}
-.badge{
-  display:inline-block;margin-top:6px;
-  padding:4px 8px;border-radius:999px;
-  font-size:11px;font-weight:700;
-  background:rgba(255,255,255,.08);border:1px solid var(--line)
-}
-
-/* Leaflet */
-.leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
-.iconWrap{
-  width:34px;height:34px;border-radius:16px;
-  display:grid;place-items:center;
-  background:rgba(15,15,16,.90);
-  border:1px solid rgba(255,255,255,.16);
-  box-shadow:0 10px 28px rgba(0,0,0,.45);
-}
-.iconWrap.yellow{border-color:rgba(245,196,0,.35)}
+  *{box-sizing:border-box}
+  :root{--y:#f5c400; --line:rgba(255,255,255,.10); --mut:rgba(255,255,255,.65); --ok:#2bd576; --bad:#ff4d4d}
+  html,body{margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  header{height:56px; display:flex; align-items:center; justify-content:center; border-bottom:1px solid rgba(255,255,255,.08)}
+  header span{color:var(--y); font-weight:900}
+  .wrap{padding:12px; display:flex; flex-direction:column; gap:10px}
+  .card{background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:12px}
+  .inp{width:100%; padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.25); color:#fff; font-weight:800; outline:none}
+  .btn{border:0; width:100%; padding:14px; border-radius:16px; font-weight:900; cursor:pointer; background:var(--y); color:#000}
+  .btn2{border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#fff}
+  .list .item{padding:12px; border-radius:16px; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); margin-bottom:10px}
+  .row{display:flex; justify-content:space-between; gap:10px; align-items:center}
+  .tag{padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); font-weight:900; font-size:12px}
+  .tag.ok{border-color:rgba(43,213,118,.35); background:rgba(43,213,118,.10)}
+  .tag.bad{border-color:rgba(255,77,77,.35); background:rgba(255,77,77,.10)}
+  small{color:rgba(255,255,255,.55); font-weight:800}
 </style>
 </head>
-
 <body>
-<div id="map"></div>
+<header>Sepet<span>Taxi</span> – Admin</header>
 
-<div class="header">
-  Sepet<span>Taxi</span> • Admin İzleme
-</div>
+<div class="wrap">
+  <div class="card">
+    <div style="font-weight:950; margin-bottom:8px">Giriş</div>
+    <input id="pin" class="inp" placeholder="Admin PIN">
+    <div style="height:10px"></div>
+    <button id="loginBtn" class="btn">Giriş Yap</button>
+    <div style="margin-top:10px"><small>Not: PIN backend’de Script Properties ile değiştirilebilir.</small></div>
+  </div>
 
-<div class="panel">
-  <h3>Aktif / Atanmış İşler</h3>
-  <div class="list" id="jobs"></div>
+  <div class="card">
+    <div class="row">
+      <div style="font-weight:950">Sürücü Başvuruları</div>
+      <button class="btn2" style="padding:10px 12px; border-radius:14px; font-weight:900; cursor:pointer" id="refreshBtn">Yenile</button>
+    </div>
+    <div style="height:10px"></div>
+    <div id="list" class="list"></div>
+  </div>
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const API_BASE="https://script.google.com/macros/s/AKfycbxcB50-q3xv2BeSF3iJP0iKiFewvcwrKDjrCkz8-Cm5Jd7fXhl3YMt72QAWrSdfsWkNAw/exec";
-const API=(API_BASE.endsWith("/exec")?API_BASE:(API_BASE.endsWith("/")?API_BASE+"exec":API_BASE+"/exec"));
-const POLL_MS=4000;
-
-/* ===== STATE ===== */
-const $=id=>document.getElementById(id);
-let map;
-let markers={};
-
-/* ===== ICONS ===== */
-function divIcon(svg,extra=""){
-  return L.divIcon({
-    className:"",
-    html:`<div class="iconWrap ${extra}">${svg}</div>`,
-    iconSize:[34,34],iconAnchor:[17,17]
-  });
+const API = (localStorage.getItem("SEPETTAXI_API") || "").trim();
+function ensureAPI(){ if(!API){ alert("API URL tanımlı değil. SEPETTAXI_API ayarlayın."); throw new Error("API missing"); } }
+async function apiCall(action, payload){
+  ensureAPI();
+  const url = API + (API.includes("?") ? "&" : "?") + "action=" + encodeURIComponent(action);
+  const r = await fetch(url, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(payload||{}) });
+  const j = await r.json();
+  if(j && j.error) throw new Error(j.error);
+  return j;
 }
-const taxiSVG=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M7 16h10l1-5-2-4H8l-2 4 1 5Z" stroke="white" stroke-width="2"/><circle cx="8.5" cy="18.5" r="1.5" fill="white"/><circle cx="15.5" cy="18.5" r="1.5" fill="white"/></svg>`;
-const motoSVG=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M7 16h4l2-6h5l2 6" stroke="white" stroke-width="2"/><circle cx="7" cy="16" r="2" stroke="white" stroke-width="2"/><circle cx="19" cy="16" r="2" stroke="white" stroke-width="2"/></svg>`;
-
-/* ===== MAP ===== */
-function initMap(){
-  map=L.map("map",{zoomControl:false,attributionControl:false})
-    .setView([40.195,29.06],12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
+async function apiGet(action, params){
+  ensureAPI();
+  const u = new URL(API);
+  u.searchParams.set("action", action);
+  Object.keys(params||{}).forEach(k=> u.searchParams.set(k, params[k]));
+  const r = await fetch(u.toString());
+  const j = await r.json();
+  if(j && j.error) throw new Error(j.error);
+  return j;
 }
 
-/* ===== API ===== */
-async function api(action){
+let adminPin = localStorage.getItem("stx_admin_pin") || "";
+
+document.getElementById("pin").value = adminPin;
+
+document.getElementById("loginBtn").addEventListener("click", async ()=>{
   try{
-    const r=await fetch(API,{
-      method:"POST",
-      headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({action:"adminList"})
-    });
-    const t=await r.text();
-    return JSON.parse(t);
-  }catch(e){return {error:"NET"}}
+    adminPin = document.getElementById("pin").value.trim();
+    if(adminPin.length<2) return alert("PIN girin.");
+    // ping auth
+    const res = await apiGet("adminPing", { pin: adminPin });
+    localStorage.setItem("stx_admin_pin", adminPin);
+    alert("Giriş OK");
+    await loadDrivers();
+  }catch(e){
+    alert("Hata: "+e.message);
+  }
+});
+
+document.getElementById("refreshBtn").addEventListener("click", loadDrivers);
+
+function itemCard(d){
+  const approved = d.approved==1;
+  const contract = d.contract_accepted==1;
+  return `
+    <div class="item">
+      <div class="row">
+        <div style="font-weight:950">${esc(d.first)} ${esc(d.last)}</div>
+        <div class="tag ${approved?'ok':'bad'}">${approved?'Aktif':'Bekliyor'}</div>
+      </div>
+      <div style="height:6px"></div>
+      <small>${esc(d.phone)} • ${esc(d.city)} • ${esc(d.vehicle)}</small>
+      <div style="height:6px"></div>
+      <small>Plaka: ${esc(d.plate||'-')} • Sözleşme: ${contract?'Onaylı':'Yok'}</small>
+      <div style="height:10px"></div>
+      <div class="row" style="gap:10px">
+        <button class="btn" onclick="approve('${d.driver_id}')">Aktive Et</button>
+        <button class="btn btn2" onclick="reject('${d.driver_id}')">Reddet</button>
+      </div>
+    </div>
+  `;
 }
+function esc(s){return (s||"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));}
 
-/* ===== RENDER ===== */
-function render(res){
-  const box=$("jobs"); box.innerHTML="";
-  (res.jobs||[]).forEach(j=>{
-    const div=document.createElement("div");
-    div.className="item";
-    div.innerHTML=`
-      <div class="t">${j.service_type==="taxi"?"Taksi":"Kurye"} • ${j.price} ₺</div>
-      <div class="s">${j.from_address} → ${j.to_address}</div>
-      <div class="s">Sürücü: ${j.driver_name||"—"} (${j.driver_plate||""})</div>
-      <span class="badge">${j.status}</span>
-    `;
-    box.appendChild(div);
-
-    // marker
-    if(j.driver_lat && j.driver_lng){
-      const id=j.job_id;
-      if(!markers[id]){
-        markers[id]=L.marker(
-          [j.driver_lat,j.driver_lng],
-          {icon:divIcon(j.service_type==="taxi"?taxiSVG:motoSVG,"yellow")}
-        ).addTo(map);
-      }else{
-        markers[id].setLatLng([j.driver_lat,j.driver_lng]);
-      }
+async function loadDrivers(){
+  try{
+    if(!adminPin) return;
+    const res = await apiGet("adminListDrivers", { pin: adminPin });
+    const list = document.getElementById("list");
+    if(!res.drivers || res.drivers.length===0){
+      list.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.60);font-weight:900">Kayıt yok</div>`;
+      return;
     }
-  });
+    list.innerHTML = res.drivers.map(itemCard).join("");
+  }catch(e){
+    alert("Hata: "+e.message);
+  }
 }
 
-/* ===== POLL ===== */
-async function poll(){
-  const res=await api("adminList");
-  if(res?.error) return;
-  render(res);
-}
-
-/* ===== START ===== */
-initMap();
-setInterval(poll,POLL_MS);
-poll();
+window.approve = async (driver_id)=>{
+  try{
+    const res = await apiCall("adminApproveDriver", { pin: adminPin, driver_id });
+    alert("Sürücü aktive edildi.");
+    await loadDrivers();
+  }catch(e){ alert("Hata: "+e.message); }
+};
+window.reject = async (driver_id)=>{
+  try{
+    const reason = prompt("Red sebebi (opsiyonel)", "") || "";
+    const res = await apiCall("adminRejectDriver", { pin: adminPin, driver_id, reason });
+    alert("Sürücü reddedildi.");
+    await loadDrivers();
+  }catch(e){ alert("Hata: "+e.message); }
+};
 </script>
 </body>
 </html>
