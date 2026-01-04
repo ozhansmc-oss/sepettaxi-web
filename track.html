@@ -3,251 +3,288 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>SepetTaxi – Canlı Takip</title>
-<meta name="theme-color" content="#000000" />
+<title>SepetTaxi – Takip</title>
+<meta name="theme-color" content="#050506" />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-  *{box-sizing:border-box}
-  :root{--y:#f5c400; --line:rgba(255,255,255,.10); --mut:rgba(255,255,255,.65); --ok:#2bd576}
-  html,body{height:100%; margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; overflow:hidden}
-  header{
-    height:56px; display:flex; align-items:center; justify-content:center;
-    border-bottom:1px solid rgba(255,255,255,.08);
-    position:relative;
-  }
-  header .t{font-weight:900}
-  header .t span{color:var(--y)}
-  #map{height:calc(100vh - 56px); width:100%}
-  .pill{
-    position:fixed; left:50%; transform:translateX(-50%);
-    top:70px; z-index:1200;
-    padding:10px 14px; border-radius:999px;
-    background:rgba(0,0,0,.55);
-    border:1px solid rgba(255,255,255,.14);
-    backdrop-filter:blur(10px);
-    font-weight:900;
-    display:flex; align-items:center; gap:10px;
-  }
-  .dot{width:10px; height:10px; border-radius:5px; background:rgba(255,255,255,.35)}
-  .dot.ok{background:var(--ok)}
-  .dot.y{background:var(--y)}
-  .sub{
-    position:fixed; left:50%; transform:translateX(-50%);
-    top:114px; z-index:1200;
-    padding:8px 12px; border-radius:999px;
-    background:rgba(0,0,0,.45);
-    border:1px solid rgba(255,255,255,.12);
-    color:rgba(255,255,255,.75);
-    font-weight:800;
-  }
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#050506;color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+:root{
+  --y:#f5c400; --line:rgba(255,255,255,.10);
+  --mut:rgba(255,255,255,.62); --mut2:rgba(255,255,255,.42);
+}
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+#topbar{
+  height:56px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#0b0b0c,#070708);
+}
+.logo{font-weight:950;font-size:18px}
+.logo span{color:var(--y)}
+.iconBtn{
+  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);opacity:.92;
+  user-select:none;
+}
+#stage{position:relative;flex:1}
+#map{width:100%;height:100%}
+#mapVignette{
+  position:absolute;inset:0;pointer-events:none;z-index:3;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,.55), rgba(0,0,0,.08) 55%, rgba(0,0,0,.45)),
+    linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0) 55%);
+}
+.overlay{
+  position:absolute;left:50%;transform:translateX(-50%);
+  z-index:5;
+  background:rgba(15,15,16,.80);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:999px;padding:8px 12px;
+  backdrop-filter:blur(14px);
+  box-shadow:0 20px 60px rgba(0,0,0,.55);
+  font-size:13px;color:#fff;font-weight:900;
+  display:flex;align-items:center;gap:8px;
+}
+.badge{width:10px;height:10px;border-radius:50%;background:var(--y);
+  box-shadow:0 0 0 0 rgba(245,196,0,.35);animation:pulse 1.25s ease infinite}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(245,196,0,.35)}
+  70%{box-shadow:0 0 0 18px rgba(245,196,0,0)}
+  100%{box-shadow:0 0 0 0 rgba(245,196,0,0)}
+}
+#status{top:16px}
+#eta{top:60px;opacity:.9;font-weight:800;color:rgba(255,255,255,.9)}
+#eta b{color:#fff}
 
-  /* vehicle marker container for rotation */
-  .vehWrap{
-    width:44px; height:44px;
-    transform-origin:50% 50%;
-    filter:drop-shadow(0 10px 14px rgba(0,0,0,.55));
-  }
+#bottom{
+  position:absolute;left:12px;right:12px;bottom:12px;z-index:6;
+  background:rgba(15,15,16,.86);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;padding:12px;
+  backdrop-filter:blur(16px);
+  box-shadow:0 24px 80px rgba(0,0,0,.65);
+}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.k{font-size:12px;color:var(--mut2)}
+.v{font-weight:950}
+.small{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.35}
 </style>
 </head>
+
 <body>
-<header><div class="t">Sepet<span>Taxi</span> Takip</div></header>
-<div id="map"></div>
-<div class="pill"><span id="dot" class="dot y"></span><span id="status">Yükleniyor…</span></div>
-<div class="sub" id="sub">Lütfen bekleyin</div>
+<div id="app">
+  <div id="topbar">
+    <div class="iconBtn" id="backBtn">←</div>
+    <div class="logo">Sepet<span>Taxi</span></div>
+    <div class="iconBtn" id="helpBtn">?</div>
+  </div>
+
+  <div id="stage">
+    <div id="map"></div>
+    <div id="mapVignette"></div>
+
+    <div class="overlay" id="status"><div class="badge"></div><span id="statusTxt">Takip başlatılıyor…</span></div>
+    <div class="overlay" id="eta"><span id="etaTxt">ETA: <b>—</b></span></div>
+
+    <div id="bottom">
+      <div class="row">
+        <div>
+          <div class="k">İş No</div>
+          <div class="v" id="jobId">—</div>
+        </div>
+        <div style="text-align:right">
+          <div class="k">Hizmet</div>
+          <div class="v" id="svc">—</div>
+        </div>
+      </div>
+      <div class="small" id="hint">Konum güncelleniyor…</div>
+    </div>
+  </div>
+</div>
 
 <script>
-const API = (localStorage.getItem("SEPETTAXI_API") || "https://script.google.com/macros/s/AKfycbxoeXl9XfxWtsqqCfftNV578KD_woNSKfT3KmSYwZuCv8iPSPd8-cZXNoYMh6Qx-yrlWA/exec").trim();
+const API =
+  "https://script.google.com/macros/s/AKfycbxoeXl9XfxWtsqqCfftNV578KD_woNSKfT3KmSYwZuCv8iPSPd8-cZXNoYMh6Qx-yrlWA/exec";
 
-function qs(name){
-  const u = new URL(location.href);
-  return u.searchParams.get(name) || "";
+const qs = new URLSearchParams(location.search);
+const job_id = qs.get("job_id") || "";
+const service = (qs.get("service") || "taxi").toLowerCase();
+
+document.getElementById("jobId").textContent = job_id || "—";
+document.getElementById("svc").textContent = (service==="courier") ? "Kurye" : "Taksi";
+
+document.getElementById("backBtn").onclick = ()=>history.back();
+
+async function apiGet(action, params={}){
+  const q = new URLSearchParams({action, ...params}).toString();
+  const r = await fetch(API + "?" + q, { method:"GET" });
+  return await r.json().catch(()=> ({}));
 }
-const jobId = qs("job_id");
-
-function ensureAPI(){
-  if(!API){
-    alert("API URL tanımlı değil. SEPETTAXI_API ayarlayın.");
-    throw new Error("API missing");
+async function apiPost(action, data={}){
+  const r = await fetch(API, {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, ...data })
+  });
+  return await r.json().catch(()=> ({}));
+}
+async function api(action, data){
+  try{
+    const g = await apiGet(action, data || {});
+    if(!g || g.error) throw new Error(g?.error || "GET failed");
+    return g;
+  }catch(e){
+    const p = await apiPost(action, data || {});
+    if(p && !p.error) return p;
+    throw new Error(p?.error || e.message || "API failed");
   }
 }
-async function apiGet(action, params){
-  ensureAPI();
-  const u = new URL(API);
-  u.searchParams.set("action", action);
-  Object.keys(params||{}).forEach(k=> u.searchParams.set(k, params[k]));
-  const r = await fetch(u.toString());
-  const j = await r.json();
-  if(j && j.error) throw new Error(j.error);
-  return j;
+
+const map = L.map("map",{zoomControl:false}).setView([41.0369,28.9850],13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:""}).addTo(map);
+
+const pickupMarker = L.circleMarker([0,0], {radius:7,color:"#f5c400",weight:2,fillColor:"#f5c400",fillOpacity:1});
+const dropMarker   = L.circleMarker([0,0], {radius:7,color:"#7CFF9B",weight:2,fillColor:"#7CFF9B",fillOpacity:1});
+let routeLine = null;
+
+// Vehicle icon (taksi: 🚕, kurye: 🏍️)
+const vehicleIcon = L.divIcon({
+  className:"veh",
+  html:`<div style="
+    width:34px;height:34px;border-radius:16px;
+    display:grid;place-items:center;
+    background:rgba(15,15,16,.78);
+    border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(12px);
+    box-shadow:0 18px 50px rgba(0,0,0,.55);
+    font-size:18px
+  ">${service==="courier"?"🏍️":"🚕"}</div>`,
+  iconSize:[34,34],
+  iconAnchor:[17,17]
+});
+let vehicleMarker = L.marker([0,0], {icon:vehicleIcon});
+
+let pickup=null, drop=null;
+let driver=null;
+let animT=0;
+let lastAnimTs=0;
+
+function setStatus(txt){
+  document.getElementById("statusTxt").textContent = txt;
+}
+function setEtaMinutes(min){
+  if(min==null || !isFinite(min)) document.getElementById("etaTxt").innerHTML = `ETA: <b>—</b>`;
+  else document.getElementById("etaTxt").innerHTML = `ETA: <b>${Math.max(1, Math.round(min))} dk</b>`;
 }
 
-/* Map */
-const map = L.map("map", { zoomControl:false, attributionControl:false });
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+function drawRoute(){
+  if(routeLine){ map.removeLayer(routeLine); routeLine=null; }
+  if(!(pickup && drop)) return;
 
-let pickupMarker=null, dropMarker=null;
-let vehMarker=null;
-let lastVeh=null; // {lat,lng}
-let animReq=null;
-let currentHeading=0;
-
-function setStatus(text, kind){
-  document.getElementById("status").textContent = text;
-  const dot = document.getElementById("dot");
-  dot.classList.remove("ok","y");
-  dot.classList.add(kind==="ok" ? "ok" : "y");
-}
-function setSub(text){
-  document.getElementById("sub").textContent = text;
+  const pts = [[pickup.lat,pickup.lng],[drop.lat,drop.lng]];
+  routeLine = L.polyline(pts,{color:"#f5c400",weight:4,opacity:.95,dashArray:"10 10"}).addTo(map);
+  map.fitBounds(L.latLngBounds(pts).pad(0.25), {animate:true, duration:0.55});
 }
 
-/* Icons */
-function taxiSVG(){
-  return `
-  <div class="vehWrap" style="transform:rotate(${currentHeading}deg)">
-    <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
-      <path d="M14 28c2-8 6-14 10-15h16c4 1 8 7 10 15l2 8c.6 2.5-1 5-3.6 5H15.6C13 41 11.4 38.5 12 36l2-8z" fill="#f5c400"/>
-      <path d="M22 18h20c2 0 4 2 5 7H17c1-5 3-7 5-7z" fill="#111"/>
-      <rect x="18" y="34" width="10" height="8" rx="2" fill="#111"/>
-      <rect x="36" y="34" width="10" height="8" rx="2" fill="#111"/>
-      <circle cx="18" cy="44" r="4" fill="#000"/><circle cx="46" cy="44" r="4" fill="#000"/>
-      <rect x="28" y="12" width="8" height="6" rx="2" fill="#111"/>
-    </svg>
-  </div>`;
-}
-function motoSVG(){
-  return `
-  <div class="vehWrap" style="transform:rotate(${currentHeading}deg)">
-    <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
-      <path d="M26 10h12c2 0 4 2 5 5l2 8c.6 2.5 2.2 4.2 4.8 6.2l2.2 1.6c2 1.4 3 3.6 3 6.0V42c0 2.2-1.8 4-4 4H13c-2.2 0-4-1.8-4-4v-4.8c0-2.4 1.1-4.6 3-6.0l2.2-1.6c2.6-2 4.2-3.7 4.8-6.2l2-8c1-3 3-5 5-5z" fill="#f5c400"/>
-      <rect x="26" y="14" width="12" height="10" rx="3" fill="#111"/>
-      <rect x="22" y="26" width="20" height="10" rx="5" fill="#111"/>
-      <circle cx="18" cy="46" r="5" fill="#000"/>
-      <circle cx="46" cy="46" r="5" fill="#000"/>
-      <path d="M20 36h24" stroke="#000" stroke-width="3" opacity=".85"/>
-    </svg>
-  </div>`;
-}
+function lerp(a,b,t){ return a + (b-a)*t; }
+function animateVehicle(ts){
+  if(!(pickup && drop)) return requestAnimationFrame(animateVehicle);
+  if(!lastAnimTs) lastAnimTs = ts;
+  const dt = (ts - lastAnimTs)/1000;
+  lastAnimTs = ts;
 
-function makeVehIcon(service_type){
-  const html = (service_type==="courier_moto") ? motoSVG() : taxiSVG();
-  return L.divIcon({ className:"", html, iconSize:[44,44], iconAnchor:[22,22] });
-}
-
-/* Smooth move + heading */
-function bearingDeg(a,b){
-  const y = Math.sin((b.lng-a.lng)*Math.PI/180) * Math.cos(b.lat*Math.PI/180);
-  const x = Math.cos(a.lat*Math.PI/180)*Math.sin(b.lat*Math.PI/180) -
-            Math.sin(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.cos((b.lng-a.lng)*Math.PI/180);
-  const brng = Math.atan2(y, x) * 180/Math.PI;
-  return (brng + 360) % 360;
-}
-
-function animateVehicle(fromLL, toLL, service_type){
-  if(animReq) cancelAnimationFrame(animReq);
-  const start = performance.now();
-  const dur = (service_type==="courier_moto") ? 900 : 1200; // moto slightly snappier
-  const startHeading = currentHeading;
-  const targetHeading = bearingDeg(fromLL, toLL);
-
-  function easeOut(t){ return 1 - Math.pow(1-t, 2); }
-
-  function step(now){
-    const t = Math.min(1, (now-start)/dur);
-    const k = easeOut(t);
-
-    const lat = fromLL.lat + (toLL.lat - fromLL.lat)*k;
-    const lng = fromLL.lng + (toLL.lng - fromLL.lng)*k;
-
-    // interpolate heading shortest path
-    let dh = ((targetHeading - startHeading + 540) % 360) - 180;
-    currentHeading = (startHeading + dh*k + 360) % 360;
-
-    if(vehMarker){
-      vehMarker.setLatLng([lat,lng]);
-      vehMarker.setIcon(makeVehIcon(service_type)); // update rotation via html
-    }
-    if(t < 1){
-      animReq = requestAnimationFrame(step);
-    }
+  // Eğer driver konumu geliyorsa onu kullan (direct)
+  if(driver && isFinite(driver.lat) && isFinite(driver.lng)){
+    vehicleMarker.setLatLng([driver.lat, driver.lng]);
+    requestAnimationFrame(animateVehicle);
+    return;
   }
-  animReq = requestAnimationFrame(step);
+
+  // Yoksa demo animasyon: pickup->drop boyunca yavaş hareket
+  animT += dt * 0.04; // hız
+  if(animT > 1) animT = 1;
+
+  const lat = lerp(pickup.lat, drop.lat, animT);
+  const lng = lerp(pickup.lng, drop.lng, animT);
+  vehicleMarker.setLatLng([lat,lng]);
+
+  requestAnimationFrame(animateVehicle);
 }
 
-/* Polling */
-let lastService="taxi";
-async function tick(){
-  if(!jobId){
-    setStatus("Job bulunamadı", "y");
-    setSub("Geçersiz bağlantı");
+async function refresh(){
+  if(!job_id){
+    setStatus("job_id bulunamadı");
     return;
   }
   try{
-    const j = await apiGet("getJob", { job_id: jobId });
+    const j = await api("getJob", { job_id });
+    const job = j.job || j.data || j;
 
-    // markers
-    const pu = {lat: Number(j.pickup_lat), lng: Number(j.pickup_lng)};
-    const dr = {lat: Number(j.dropoff_lat), lng: Number(j.dropoff_lng)};
-    if(!pickupMarker){
-      pickupMarker = L.marker([pu.lat, pu.lng]).addTo(map).bindPopup("Alım");
-      dropMarker = L.marker([dr.lat, dr.lng]).addTo(map).bindPopup("Varış");
-      const b = L.latLngBounds([pu.lat,pu.lng],[dr.lat,dr.lng]);
-      map.fitBounds(b.pad(0.35));
-    }
+    const st = (job.status || "searching").toLowerCase();
+    const hint =
+      st==="searching" ? "Sürücü aranıyor…" :
+      st==="assigned" ? "Sürücü atandı." :
+      st==="on_the_way" ? "Sürücü yolda." :
+      st==="arrived" ? "Sürücü geldi." :
+      st==="completed" ? "İş tamamlandı." :
+      "Durum güncelleniyor…";
+    setStatus(hint);
+    document.getElementById("hint").textContent = "Durum: " + st;
 
-    // status mapping
-    const st = (j.status||"open");
-    const svc = (j.service_type||"taxi");
-    lastService = svc;
+    // pickup / drop
+    const pLat = Number(job.pickup_lat ?? job.pickupLat);
+    const pLng = Number(job.pickup_lng ?? job.pickupLng);
+    const dLat = Number(job.dropoff_lat ?? job.dropoffLat);
+    const dLng = Number(job.dropoff_lng ?? job.dropoffLng);
 
-    if(st==="open"){
-      setStatus(svc==="courier_moto" ? "Kuryeniz aranıyor" : "Sürücü aranıyor", "y");
-      setSub("Yakın sürücülerle eşleşiyoruz");
-    }else if(st==="assigned"){
-      setStatus(svc==="courier_moto" ? "Kuryeniz yolda" : "Taksiniz yolda", "ok");
-      setSub("Canlı konum güncelleniyor");
-    }else if(st==="arrived"){
-      setStatus(svc==="courier_moto" ? "Kuryeniz geldi" : "Taksiniz geldi", "ok");
-      setSub("Varış noktasında");
-    }else if(st==="completed"){
-      setStatus("Tamamlandı", "ok");
-      setSub("Teşekkürler");
-    }else{
-      setStatus("Durum güncelleniyor", "y");
-      setSub("Lütfen bekleyin");
-    }
-
-    // vehicle
-    const dlat = Number(j.driver_lat||0);
-    const dlng = Number(j.driver_lng||0);
-    if(dlat && dlng && (st==="assigned" || st==="arrived")){
-      const cur = {lat:dlat, lng:dlng};
-      if(!vehMarker){
-        vehMarker = L.marker([cur.lat, cur.lng], { icon: makeVehIcon(svc) }).addTo(map);
-        lastVeh = cur;
-      }else{
-        // smooth animate
-        if(lastVeh){
-          animateVehicle(lastVeh, cur, svc);
-        }else{
-          vehMarker.setLatLng([cur.lat, cur.lng]);
-          vehMarker.setIcon(makeVehIcon(svc));
-        }
-        lastVeh = cur;
+    if(isFinite(pLat) && isFinite(pLng) && (!pickup || pickup.lat!==pLat || pickup.lng!==pLng)){
+      pickup = {lat:pLat,lng:pLng};
+      pickupMarker.setLatLng([pLat,pLng]).addTo(map);
+      if(!vehicleMarker._map){
+        vehicleMarker.setLatLng([pLat,pLng]).addTo(map);
       }
     }
+    if(isFinite(dLat) && isFinite(dLng) && (!drop || drop.lat!==dLat || drop.lng!==dLng)){
+      drop = {lat:dLat,lng:dLng};
+      dropMarker.setLatLng([dLat,dLng]).addTo(map);
+    }
+    if(pickup && drop && !routeLine) drawRoute();
+
+    // live driver (optional)
+    // Eğer backend live endpoint sağlıyorsa: getLive(job_id) veya getDriverLocation(driver_id)
+    // Burada esnek deniyoruz:
+    try{
+      const live = await api("getLive", { job_id });
+      const lat = Number(live.lat ?? live.driver_lat ?? live.data?.lat);
+      const lng = Number(live.lng ?? live.driver_lng ?? live.data?.lng);
+      if(isFinite(lat) && isFinite(lng)){
+        driver = {lat,lng};
+        // ETA rough: distance driver->pickup / 0.4km/min (25km/h)
+        if(pickup){
+          const km = (()=>{
+            const R=6371;
+            const dLat=(pickup.lat-lat)*Math.PI/180;
+            const dLng=(pickup.lng-lng)*Math.PI/180;
+            const sa=Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(pickup.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+            return 2*R*Math.asin(Math.min(1,Math.sqrt(sa)));
+          })();
+          setEtaMinutes(km/0.4);
+        }
+      }
+    }catch(_){ /* live yoksa sorun değil */ }
+
   }catch(e){
-    setStatus("Bağlantı sorunu", "y");
-    setSub(e.message || "Tekrar deneniyor");
-  }finally{
-    setTimeout(tick, 2500);
+    setStatus("Bağlantı güncelleniyor…");
   }
 }
 
-tick();
+refresh();
+setInterval(refresh, 2500);
+requestAnimationFrame(animateVehicle);
 </script>
 </body>
 </html>
