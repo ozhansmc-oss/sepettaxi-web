@@ -1,787 +1,273 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
-<meta name="theme-color" content="#f5c400" />
+<meta name="theme-color" content="#f5c400">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-  *{box-sizing:border-box}
-  :root{
-    --y:#f5c400;
-    --bg:#050506;
-    --panel:#0f0f10;
-    --card:#141416;
-    --line:rgba(255,255,255,.12);
-    --mut:rgba(255,255,255,.65);
-    --mut2:rgba(255,255,255,.42);
-    --ok:#32d74b;
-    --bad:#ff5a5f;
-    --shadow:0 18px 60px rgba(0,0,0,.55);
-    --r:18px;
-  }
-  html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial}
-  a{color:inherit;text-decoration:none}
-  button,input{font-family:inherit}
+*{box-sizing:border-box}
+:root{
+  --y:#f5c400;
+  --bg:#050506;
+  --panel:#0f0f10;
+  --card:#141416;
+  --line:rgba(255,255,255,.12);
+  --mut:rgba(255,255,255,.65);
+}
+html,body{
+  margin:0;height:100%;
+  background:var(--bg);color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
+  overflow:hidden;
+}
 
-  /* ===== GLOBAL TOPBAR (tek) ===== */
-  #topbar{
-    position:fixed;left:0;right:0;top:0;z-index:1500;
-    height:56px;display:flex;align-items:center;justify-content:space-between;
-    padding:0 14px;
-    pointer-events:none;
-    background:linear-gradient(to bottom,rgba(0,0,0,.70),rgba(0,0,0,0));
-  }
-  #topbar .btn{
-    pointer-events:auto;
-    width:44px;height:44px;border-radius:14px;
-    background:rgba(15,15,16,.76);
-    border:1px solid rgba(255,255,255,.10);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 10px 26px rgba(0,0,0,.45);
-    user-select:none;
-  }
-  #topbar .brand{
-    pointer-events:none;
-    display:flex;align-items:center;gap:10px;
-    font-weight:900;letter-spacing:.2px;
-  }
-  #topbar .mark{
-    width:28px;height:28px;border-radius:9px;background:var(--y);color:#000;
-    display:flex;align-items:center;justify-content:center;
-    font-weight:1000;
-  }
-  #topbar .sub{
-    display:block;font-size:11px;color:var(--mut2);font-weight:700;margin-top:2px;
-  }
+/* TOPBAR */
+#topbar{
+  position:fixed;top:0;left:0;right:0;
+  height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;
+  z-index:1500;
+  background:linear-gradient(to bottom,rgba(0,0,0,.7),rgba(0,0,0,0));
+}
+#topbar .btn{
+  width:42px;height:42px;border-radius:14px;
+  background:rgba(15,15,16,.75);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+}
+#topbar .brand{
+  display:flex;align-items:center;gap:8px;
+  font-weight:900;
+}
+#topbar .mark{
+  width:26px;height:26px;border-radius:8px;
+  background:var(--y);color:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;
+}
+#topStatus{font-size:11px;color:var(--mut)}
 
-  /* ===== MAP: %50 ===== */
-  #map-wrap{height:50vh;position:relative;background:#000}
-  #map{height:100%;width:100%}
-  .leaflet-control-zoom{display:none !important;} /* + - gizle (kilitli) */
+/* MAP */
+#map-wrap{height:50vh}
+#map{height:100%;width:100%}
+.leaflet-control-zoom{display:none!important}
 
-  /* ===== BOTTOM SHEET: kontrol ===== */
-  #bottom{
-    position:fixed;left:0;right:0;bottom:0;z-index:1000;
-    height:50vh;
-    background:var(--panel);
-    border-radius:18px 18px 0 0;
-    box-shadow:var(--shadow);
-    border-top:1px solid rgba(255,255,255,.08);
-    padding:10px 12px 12px;
-    overflow:hidden;
-  }
+/* SEARCHING BADGE */
+#searchingBadge{
+  position:fixed;top:64px;left:50%;
+  transform:translateX(-50%);
+  background:rgba(15,15,16,.8);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:999px;
+  padding:8px 14px;
+  display:none;align-items:center;gap:10px;
+  backdrop-filter:blur(10px);
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+  z-index:1600;
+  font-size:13px;font-weight:800;
+}
+#searchingBadge.show{display:flex}
+.dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--y);
+  animation:pulse 1s infinite;
+}
+@keyframes pulse{
+  0%{opacity:.4}50%{opacity:1}100%{opacity:.4}
+}
 
-  .card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:var(--r);
-    padding:10px 12px;
+/* BOTTOM SHEET */
+#bottom{
+  position:fixed;bottom:0;left:0;right:0;
+  height:50vh;
+  background:var(--panel);
+  border-radius:18px 18px 0 0;
+  padding:10px 12px;
+  z-index:1000;
+  overflow:hidden;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:10px 12px;
   margin-bottom:8px;
-  }
+}
+.h1{font-size:16px;font-weight:900;margin:0 0 6px}
+.p{font-size:12px;color:var(--mut);margin:0}
+.row{display:flex;gap:8px}
+.chip{
+  flex:1;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:8px;
+  text-align:center;
+  font-size:13px;
+}
+.chip.on{border-color:var(--y)}
+.field{
+  width:100%;padding:10px 12px;
+  border-radius:12px;
+  background:#0b0b0c;
+  border:1px solid var(--line);
+  color:#fff;
+}
+.btnMain{
+  width:100%;padding:12px;
+  border-radius:14px;
+  border:none;
+  background:var(--y);color:#000;
+  font-weight:900;
+}
+.btnMain:disabled{opacity:.4}
 
-  .h1{font-size:16px;font-weight:950;margin:0 0 6px}
-  .p{font-size:12.5px;color:var(--mut);margin:0}
-  .row{display:flex;gap:10px}
-  .col{flex:1}
-
-  .chip{
-    display:inline-flex;align-items:center;gap:8px;
-    border:1px solid var(--line);
-    border-radius:999px;
-    padding:8px 10px;
-    color:#fff;
-    background:rgba(255,255,255,.03);
-    font-weight:800;
-    font-size:12px;
-    user-select:none;
-  }
-  .chip.on{border-color:rgba(245,196,0,.55);box-shadow:0 0 0 2px rgba(245,196,0,.12) inset}
-  .chip small{color:var(--mut2);font-weight:700}
-
-  .field{
-    width:100%;
-    padding:12px 12px;
-    border-radius:14px;
-    border:1px solid rgba(255,255,255,.10);
-    background:#0b0b0c;
-    color:#fff;
-    outline:none;
-  }
-  .field:focus{border-color:rgba(245,196,0,.55);box-shadow:0 0 0 3px rgba(245,196,0,.12)}
-  .hint{font-size:12px;color:var(--mut2);margin-top:8px}
-
-  .btnMain{
-    width:100%;
-    padding:14px 14px;
-    border-radius:16px;
-    border:none;
-    background:var(--y);
-    color:#000;
-    font-weight:1000;
-    font-size:15px;
-  }
-  .btnMain:disabled{opacity:.38}
-  .btnGhost{
-    width:100%;
-    padding:12px 14px;
-    border-radius:16px;
-    border:1px solid rgba(255,255,255,.12);
-    background:transparent;
-    color:#fff;
-    font-weight:900;
-  }
-
-  .split{
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
-    margin-top:10px;
-    font-size:12.5px;
-    color:var(--mut);
-  }
-  .split b{color:#fff}
-
-  /* ===== DRAWER MENU ===== */
-  #drawerBackdrop{
-    position:fixed;inset:0;z-index:1900;
-    background:rgba(0,0,0,.55);
-    backdrop-filter:blur(6px);
-    display:none;
-  }
-  #drawer{
-    position:fixed;top:0;left:0;bottom:0;z-index:2000;
-    width:min(86vw,360px);
-    background:#0b0b0c;
-    border-right:1px solid rgba(255,255,255,.10);
-    transform:translateX(-105%);
-    transition:transform .18s ease;
-    padding:14px;
-  }
-  #drawer.open{transform:translateX(0)}
-  #drawerBackdrop.show{display:block}
-  .dHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .dTitle{font-weight:1000}
-  .dItem{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:12px 12px;border-radius:14px;
-    border:1px solid rgba(255,255,255,.10);
-    background:rgba(255,255,255,.03);
-    margin-top:10px;
-  }
-  .dItem small{display:block;color:var(--mut2);font-weight:700;margin-top:2px}
-  .dItem b{font-weight:950}
-  .dClose{
-    width:40px;height:40px;border-radius:14px;
-    border:1px solid rgba(255,255,255,.10);
-    background:rgba(255,255,255,.03);
-    color:#fff;font-weight:1000;
-  }
-
-  /* ===== MODALS (overlay) ===== */
-  .overlay{
-    position:fixed;inset:0;z-index:2500;
-    background:rgba(0,0,0,.62);
-    backdrop-filter:blur(6px);
-    display:none;
-    align-items:center;
-    justify-content:center;
-    padding:16px;
-  }
-  .overlay.show{display:flex}
-  .modal{
-    width:min(92vw,520px);
-    background:#0b0b0c;
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:20px;
-    box-shadow:var(--shadow);
-    overflow:hidden;
-  }
-  .mTop{
-    padding:14px 14px;
-    border-bottom:1px solid rgba(255,255,255,.10);
-    display:flex;align-items:center;justify-content:space-between;
-  }
-  .mTop b{font-weight:1000}
-  .mBody{padding:14px}
-  .mRow{display:flex;gap:10px;margin-top:10px}
-  .mRow .col{flex:1}
-  .mActions{display:flex;gap:10px;margin-top:12px}
-  .mActions button{flex:1}
-
-  /* ===== STATUS / SEARCHING ===== */
-  #searchingBadge{
-    position:fixed;left:50%;top:66px;transform:translateX(-50%);
-    z-index:1600;
-    background:rgba(15,15,16,.82);
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:999px;
-    padding:8px 12px;
-    display:none;
-    color:#fff;
-    font-size:12px;
-    gap:10px;
-    align-items:center;
-  }
-  #searchingBadge.show{display:flex}
-  .dot{
-    width:8px;height:8px;border-radius:99px;background:var(--y);
-    animation:pulse 1s infinite;
-  }
-  @keyframes pulse{
-    0%{transform:scale(1);opacity:.6}
-    50%{transform:scale(1.25);opacity:1}
-    100%{transform:scale(1);opacity:.6}
-  }
-
-  /* small helper */
-  .mut{color:var(--mut)}
-  .mut2{color:var(--mut2)}
+/* DRAWER */
+#drawerBack{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.6);
+  backdrop-filter:blur(6px);
+  display:none;z-index:1800;
+}
+#drawer{
+  position:fixed;top:0;left:0;bottom:0;
+  width:260px;
+  background:#0b0b0c;
+  padding:14px;
+  transform:translateX(-100%);
+  transition:.2s;
+  z-index:1900;
+}
+#drawer.open{transform:translateX(0)}
+.menuItem{
+  padding:12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  margin-bottom:10px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- TOPBAR (tek) -->
 <header id="topbar">
-  <div class="btn" id="hambBtn" aria-label="Menü">☰</div>
-  <div class="brand" aria-hidden="true">
+  <div class="btn" id="hamb">☰</div>
+  <div class="brand">
     <div class="mark">S</div>
     <div>
       SepetTaxi
-      <span class="sub" id="topStatus">Konum alınıyor…</span>
+      <div id="topStatus">Konum alınıyor…</div>
     </div>
   </div>
-  <div style="width:44px;height:44px"></div>
+  <div style="width:42px"></div>
 </header>
 
 <div id="searchingBadge"><span class="dot"></span> Sürücü aranıyor…</div>
 
-<!-- MAP -->
 <div id="map-wrap"><div id="map"></div></div>
 
-<!-- BOTTOM SHEET -->
 <section id="bottom">
-
-  <div class="card" id="heroCard">
+  <div class="card">
     <div class="h1">Hizmet Seç</div>
-    <p class="p">Taksi veya kurye seç, adresleri belirle ve çağrıyı başlat.</p>
-
-    <div class="row" style="margin-top:12px">
-      <div class="col">
-        <div class="chip on" id="chipTaxi" role="button" tabindex="0">
-          🚕 <span>Taksi</span> <small>Şehir içi</small>
-        </div>
-      </div>
-      <div class="col">
-        <div class="chip" id="chipCourier" role="button" tabindex="0">
-          🏍️ <span>Kurye</span> <small>Paket</small>
-        </div>
-      </div>
+    <div class="row">
+      <div class="chip on" id="chipTaxi">🚕 Taksi</div>
+      <div class="chip" id="chipCourier">🏍️ Kurye</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="h1" style="margin-bottom:10px">Adres</div>
-
-    <input class="field" id="fromInput" placeholder="Nereden (alınacak konum)" readonly>
-    <div class="hint">Dokun → adres seç</div>
-
-    <div style="height:10px"></div>
-
-    <input class="field" id="toInput" placeholder="Nereye (teslim / varış)" readonly>
-    <div class="hint">Dokun → adres seç</div>
-
-    <div class="split">
-      <span>Mesafe</span><b id="distText">—</b>
-    </div>
-    <div class="split">
-      <span>Tahmini Ücret</span><b id="priceText">—</b>
-    </div>
-    <div class="hint mut2" id="priceHint">Mesafe ve ücret, iki adres seçilince hesaplanır.</div>
+    <input class="field" id="fromInput" placeholder="Nereden" readonly>
+    <input class="field" id="toInput" placeholder="Nereye" readonly style="margin-top:6px">
+    <div class="p" id="calcInfo" style="margin-top:6px">Mesafe ve ücret seçince görünür</div>
   </div>
 
   <button class="btnMain" id="callBtn" disabled>Çağır</button>
-
-  <div class="card">
-    <div class="row" style="align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-weight:1000">Sürücü müsün?</div>
-        <div class="mut2" style="font-size:12px;margin-top:3px">Kazancını gör, işi havuzdan kabul et.</div>
-      </div>
-      <a class="btnGhost" href="./driver.html" style="max-width:140px;text-align:center;display:inline-block">Sürücü Ol</a>
-    </div>
-  </div>
-
 </section>
 
-<!-- Drawer -->
-<div id="drawerBackdrop"></div>
-<aside id="drawer" aria-hidden="true">
-  <div class="dHead">
-    <div class="dTitle">Menü</div>
-    <button class="dClose" id="drawerClose">✕</button>
-  </div>
-
-  <a class="dItem" href="./driver.html">
-    <div>
-      <b>Sürücü Girişi</b>
-      <small>Sürücü paneline geç</small>
-    </div>
-    <div>›</div>
-  </a>
-
-  <a class="dItem" href="./driver.html">
-    <div>
-      <b>Sürücü Ol</b>
-      <small>Başvuru / kayıt sayfası</small>
-    </div>
-    <div>›</div>
-  </a>
-
-  <a class="dItem" id="supportLink" href="#" onclick="return false;">
-    <div>
-      <b>Destek</b>
-      <small>WhatsApp üzerinden destek</small>
-    </div>
-    <div>›</div>
-  </a>
-
-  <div class="mut2" style="font-size:12px;margin-top:12px">
-    Not: Admin girişi menüde yok (kilitli karar).
-  </div>
+<div id="drawerBack"></div>
+<aside id="drawer">
+  <div class="menuItem" onclick="location.href='driver.html'">Sürücü Girişi</div>
+  <div class="menuItem" onclick="location.href='driver.html'">Sürücü Ol</div>
+  <div class="menuItem" onclick="window.open('https://wa.me/90XXXXXXXXXX','_blank')">Destek</div>
 </aside>
 
-<!-- Address Modal -->
-<div class="overlay" id="addrOverlay">
-  <div class="modal">
-    <div class="mTop">
-      <b>Adres Seç</b>
-      <button class="dClose" id="addrClose">✕</button>
-    </div>
-    <div class="mBody">
-      <input class="field" id="addrQuery" placeholder="Arama (örn: Nilüfer, Bursa)">
-      <div class="mActions">
-        <button class="btnGhost" id="nearBtn">Yakınımdan Ara</button>
-        <button class="btnMain" id="searchBtn">Ara</button>
-      </div>
-      <div id="addrResults" style="margin-top:12px"></div>
-      <div class="mut2" id="addrEmpty" style="font-size:12px;margin-top:10px;display:none">Adres bulunamadı.</div>
-    </div>
-  </div>
-</div>
-
-<!-- Register Modal -->
-<div class="overlay" id="regOverlay">
-  <div class="modal">
-    <div class="mTop">
-      <b>Zorunlu Kayıt</b>
-      <button class="dClose" id="regClose">✕</button>
-    </div>
-    <div class="mBody">
-      <div class="mut2" style="font-size:12px">
-        Bilgiler çağrı işlemi için zorunludur. Sonradan düzenleyebilirsiniz.
-      </div>
-      <div class="mRow">
-        <div class="col"><input class="field" id="firstName" placeholder="Ad"></div>
-        <div class="col"><input class="field" id="lastName" placeholder="Soyad"></div>
-      </div>
-      <div class="mRow">
-        <div class="col"><input class="field" id="phone" placeholder="Telefon (05xx...)" inputmode="tel"></div>
-      </div>
-      <div class="mut2" id="regErr" style="font-size:12px;margin-top:10px;display:none;color:var(--bad)">
-        Lütfen tüm alanları doğru girin.
-      </div>
-      <div class="mActions">
-        <button class="btnGhost" id="regCancel">Vazgeç</button>
-        <button class="btnMain" id="regSave">Kaydet</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
-/* =========================
-   CONFIG (senin verdiğin)
-========================= */
-const API = "https://script.google.com/macros/s/AKfycbwXKzBcvA5xRpvGqJSWCq7vzrOGxG1KplHq1vCHTb4j5auQ1G0ySNSfn9der1um4MsMug/exec";
+const API="https://script.google.com/macros/s/AKfycbxv2oWIgjckH09LB3tKOGIKox32G_RBgp6udb-sSM4uDIrL59iA8Ctsdl1cy5AC92rFZA/exec";
+const $=id=>document.getElementById(id);
 
-/* WhatsApp destek */
-const SUPPORT_WHATSAPP = "https://wa.me/90XXXXXXXXXX?text=" + encodeURIComponent("Merhaba SepetTaxi destek: ");
+let service="taxi",picking="from";
+let from={},to={};
+let map,fromMarker,toMarker,line;
 
-/* =========================
-   STATE
-========================= */
-let serviceType = "taxi";
-let me = { lat:null, lng:null };
-let from = { addr:"", lat:null, lng:null };
-let to   = { addr:"", lat:null, lng:null };
-let picking = "from";
-let map, meMarker, fromMarker, toMarker, line;
+map=L.map("map",{zoomControl:false}).setView([40.195,29.060],13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+map.dragging.disable();
 
-/* =========================
-   HELPERS
-========================= */
-const $ = (id)=>document.getElementById(id);
-
-function fmtKm(km){
-  if(!isFinite(km)) return "—";
-  return (Math.round(km*10)/10).toFixed(1) + " km";
-}
-function fmtTL(v){
-  if(!isFinite(v)) return "—";
-  return Math.round(v) + " ₺";
-}
-function haversineKm(a,b,c,d){
-  const R=6371, toRad=(x)=>x*Math.PI/180;
-  const dLat=toRad(c-a), dLng=toRad(d-b);
-  const s1=Math.sin(dLat/2), s2=Math.sin(dLng/2);
-  const q=s1*s1 + Math.cos(toRad(a))*Math.cos(toRad(c))*s2*s2;
-  return 2*R*Math.asin(Math.min(1,Math.sqrt(q)));
-}
-function estimatePrice(st, km){
-  // MVP: sade, stabil
-  if(!isFinite(km)) return NaN;
-  if(st==="courier"){
-    const base=80, perKm=12; // kurye
-    return base + km*perKm;
-  }
-  const base=70, perKm=14; // taksi
-  return base + km*perKm;
-}
-function setService(st){
-  serviceType = st;
-  $("chipTaxi").classList.toggle("on", st==="taxi");
-  $("chipCourier").classList.toggle("on", st==="courier");
-  $("callBtn").textContent = (st==="courier") ? "Kurye Çağır" : "Taksi Çağır";
-  updateCalc();
-}
-function show(el){ el.classList.add("show"); }
-function hide(el){ el.classList.remove("show"); }
-function toastTopStatus(t){ $("topStatus").textContent = t; }
-
-function canCall(){
-  return !!(serviceType && from.lat!=null && to.lat!=null);
-}
-function updateCalc(){
-  const ok = canCall();
-  $("callBtn").disabled = !ok;
-
-  if(!ok){
-    $("distText").textContent="—";
-    $("priceText").textContent="—";
-    return;
-  }
-  const km = haversineKm(from.lat, from.lng, to.lat, to.lng);
-  const price = estimatePrice(serviceType, km);
-  $("distText").textContent = fmtKm(km);
-  $("priceText").textContent = fmtTL(price);
-
-  // route line
-  if(line){ map.removeLayer(line); line=null; }
-  line = L.polyline([[from.lat,from.lng],[to.lat,to.lng]], {weight:4, opacity:0.7}).addTo(map);
-  map.fitBounds(line.getBounds(), {padding:[30,30]});
-}
-
-/* =========================
-   MAP INIT (50vh)
-========================= */
-function initMap(){
-  map = L.map("map",{ zoomControl:false, attributionControl:false }).setView([40.195,29.060], 13);
- map.on("click", async (e)=>{
-  const lat = e.latlng.lat;
-  const lng = e.latlng.lng;
-
-  const r = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-  );
-  const j = await r.json();
-  const addr = j.display_name || "Seçilen konum";
-
-  if(picking === "to"){
-    to = { addr, lat, lng };
-    $("toInput").value = addr;
-    if(toMarker) map.removeLayer(toMarker);
-    toMarker = L.marker([lat,lng]).addTo(map);
-  }else{
-    from = { addr, lat, lng };
-    $("fromInput").value = addr;
-    if(fromMarker) map.removeLayer(fromMarker);
-    fromMarker = L.marker([lat,lng]).addTo(map);
-    picking = "to";
-  }
-
-  enableMap();
-  updateCalc();
-});
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
-
-  // İlk açılışta harita pasif (tedirginliği azaltır)
-  map.dragging.disable();
-  map.scrollWheelZoom.disable();
-  map.doubleClickZoom.disable();
-  map.touchZoom.disable();
-
-  meMarker = L.marker([40.195,29.060]).addTo(map);
-}
-
-/* Haritayı adres seçimi sonrası canlandır */
-function enableMap(){
-  map.dragging.enable();
-  map.scrollWheelZoom.enable();
-  map.doubleClickZoom.enable();
-  map.touchZoom.enable();
-}
-
-/* =========================
-   GEOLOCATION
-========================= */
-function getLocation(){
-toastTopStatus("Konumun alınıyor, lütfen bekle");
- if(!navigator.geolocation){
-    toastTopStatus("Konum desteklenmiyor");
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    (pos)=>{
-      me.lat = pos.coords.latitude;
-      me.lng = pos.coords.longitude;
-      meMarker.setLatLng([me.lat, me.lng]);
-      map.setView([me.lat, me.lng], 15);
-      toastTopStatus("Konum hazır");
-    },
-    ()=>{
-      toastTopStatus("Konum izni yok");
-    },
-    { enableHighAccuracy:true, timeout:8000, maximumAge:60000 }
-  );
-}
-
-/* =========================
-   DRAWER
-========================= */
-function openDrawer(){
-  $("drawerBackdrop").classList.add("show");
-  $("drawer").classList.add("open");
-}
-function closeDrawer(){
-  $("drawerBackdrop").classList.remove("show");
-  $("drawer").classList.remove("open");
-}
-
-/* =========================
-   ADDRESS SEARCH (Nominatim)
-========================= */
-async function nominatimSearch(q, near){
-  const base = "https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&q=" + encodeURIComponent(q);
-  const url = (near && me.lat!=null) ? (base + "&viewbox=" +
-    [me.lng-0.15, me.lat+0.15, me.lng+0.15, me.lat-0.15].join(",") + "&bounded=1") : base;
-
-  const r = await fetch(url, { headers:{ "Accept":"application/json" }});
-  return await r.json();
-}
-function renderAddrResults(list){
-  const box = $("addrResults");
-  box.innerHTML = "";
-  $("addrEmpty").style.display = (list.length ? "none" : "block");
-
-  list.forEach((it)=>{
-    const d = document.createElement("div");
-    d.className = "dItem";
-    d.style.cursor = "pointer";
-    d.innerHTML = `
-      <div style="max-width:78%">
-        <b>${it.display_name.split(",").slice(0,2).join(",")}</b>
-        <small>${it.display_name}</small>
-      </div>
-      <div>›</div>
-    `;
-    d.onclick = ()=> pickAddress(it.display_name, parseFloat(it.lat), parseFloat(it.lon));
-    box.appendChild(d);
-  });
-}
-function openAddrPicker(which){
-  picking = which;
-  $("addrQuery").value = "";
-  $("addrResults").innerHTML = "";
-  $("addrEmpty").style.display="none";
-  show($("addrOverlay"));
-}
-function pickAddress(addr, lat, lng){
+map.on("click",async e=>{
+  const lat=e.latlng.lat,lng=e.latlng.lng;
+  const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+  const j=await r.json();
+  const addr=j.display_name||"Seçilen konum";
   if(picking==="from"){
-    from.addr = addr; from.lat = lat; from.lng = lng;
-    $("fromInput").value = addr;
-    if(fromMarker) map.removeLayer(fromMarker);
-    fromMarker = L.marker([lat,lng]).addTo(map);
+    from={addr,lat,lng};$("fromInput").value=addr;
+    if(fromMarker)map.removeLayer(fromMarker);
+    fromMarker=L.marker([lat,lng]).addTo(map);
+    picking="to";
   }else{
-    to.addr = addr; to.lat = lat; to.lng = lng;
-    $("toInput").value = addr;
-    if(toMarker) map.removeLayer(toMarker);
-    toMarker = L.marker([lat,lng]).addTo(map);
+    to={addr,lat,lng};$("toInput").value=addr;
+    if(toMarker)map.removeLayer(toMarker);
+    toMarker=L.marker([lat,lng]).addTo(map);
   }
-
-  enableMap();
-  updateCalc();
-  hide($("addrOverlay"));
-}
-
-/* =========================
-   REGISTER (Zorunlu)
-========================= */
-function loadUser(){
-  try{
-    const u = JSON.parse(localStorage.getItem("sepettaxi_user")||"null");
-    return u && u.first && u.last && u.phone ? u : null;
-  }catch(e){ return null; }
-}
-function saveUser(u){
-  localStorage.setItem("sepettaxi_user", JSON.stringify(u));
-}
-function openRegister(){
-  $("regErr").style.display="none";
-  const u = loadUser();
-  $("firstName").value = u?.first || "";
-  $("lastName").value  = u?.last  || "";
-  $("phone").value     = u?.phone || "";
-  show($("regOverlay"));
-}
-function validPhone(p){
-  // basit TR kontrol (MVP)
-  const x = (p||"").replace(/\s/g,"");
-  return x.length>=10;
-}
-
-/* =========================
-   BACKEND CALLS
-========================= */
-async function apiCall(action, payload){
-  const body = JSON.stringify({ action, ...payload });
-  const r = await fetch(API, {
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body
-  });
-  const data = await r.json();
-  if(data && data.error) throw new Error(data.error);
-  return data;
-}
-
-function showSearching(on){
- #searchingBadge{
-  backdrop-filter:blur(10px);
-  box-shadow:0 12px 40px rgba(0,0,0,.6);
-  font-weight:800;
-  letter-spacing:.2px;
-}
-
-async function createJob(){
-  const u = loadUser();
-  if(!u){ openRegister(); return; }
-
-  if(!canCall()){
-    alert("Lütfen nereden ve nereye seçin.");
-    return;
-  }
-
-  const km = haversineKm(from.lat, from.lng, to.lat, to.lng);
-  const price = estimatePrice(serviceType, km);
-
-  showSearching(true);
-
-  try{
-    const res = await apiCall("createJob", {
-      service_type: serviceType,
-      customer_first: u.first,
-      customer_last: u.last,
-      customer_phone: u.phone,
-      from_address: from.addr,
-      to_address: to.addr,
-      pickup_lat: from.lat,
-      pickup_lng: from.lng,
-      dropoff_lat: to.lat,
-      dropoff_lng: to.lng,
-      distance_km: km,
-      price: price
-    });
-
-    // beklenen: { ok:true, job_id:"..." } veya benzeri
-    const jobId = res.job_id || res.id || res.jobId;
-    if(!jobId) throw new Error("job_id alınamadı");
-
-    // Track parametre adı farklıysa burada değiştir:
-    window.location.href = "./track.html?job_id=" + encodeURIComponent(jobId);
-
-  }catch(e){
-    showSearching(false);
-    alert("Hata: " + (e?.message || e));
-  }
-}
-
-/* =========================
-   EVENTS
-========================= */
-window.addEventListener("load", ()=>{
-  initMap();
-  getLocation();
-  setService("taxi");
-
-  // service chips
-  $("chipTaxi").onclick = ()=>setService("taxi");
-  $("chipCourier").onclick = ()=>setService("courier");
-
-  // inputs -> open picker
-  $("fromInput").addEventListener("click", ()=>openAddrPicker("from"));
-  $("toInput").addEventListener("click", ()=>openAddrPicker("to"));
-
-  // call
-  $("callBtn").addEventListener("click", ()=>createJob());
-
-  // drawer
-  $("hambBtn").addEventListener("click", openDrawer);
-  $("drawerBackdrop").addEventListener("click", closeDrawer);
-  $("drawerClose").addEventListener("click", closeDrawer);
-
-  // support
-  $("supportLink").addEventListener("click", ()=>{
-    window.open(SUPPORT_WHATSAPP, "_blank");
-  });
-
-  // address modal
-  $("addrClose").addEventListener("click", ()=>hide($("addrOverlay")));
-  $("searchBtn").addEventListener("click", async ()=>{
-    const q = $("addrQuery").value.trim();
-    if(!q) return;
-    const list = await nominatimSearch(q, false);
-    renderAddrResults(list);
-  });
-  $("nearBtn").addEventListener("click", async ()=>{
-    const q = $("addrQuery").value.trim() || "yakınım";
-    const list = await nominatimSearch(q==="yakınım" ? "bursa" : q, true);
-    renderAddrResults(list);
-  });
-
-  // register modal
-  $("regClose").addEventListener("click", ()=>hide($("regOverlay")));
-  $("regCancel").addEventListener("click", ()=>{
-    hide($("regOverlay"));
-  });
-  $("regSave").addEventListener("click", ()=>{
-    const first = $("firstName").value.trim();
-    const last  = $("lastName").value.trim();
-    const phone = $("phone").value.trim();
-    if(!first || !last || !validPhone(phone)){
-      $("regErr").style.display="block";
-      return;
-    }
-    saveUser({ first, last, phone });
-    hide($("regOverlay"));
-    // kayıt bitti, çağrı tekrar denensin diye:
-    createJob();
-  });
+  map.dragging.enable();
+  calc();
 });
+
+function calc(){
+  if(!from.lat||!to.lat)return;
+  const km=haversine(from.lat,from.lng,to.lat,to.lng);
+  const price=Math.round(70+km*14);
+  $("calcInfo").innerText=`${km.toFixed(1)} km • ${price} ₺`;
+  $("callBtn").disabled=false;
+  if(line)map.removeLayer(line);
+  line=L.polyline([[from.lat,from.lng],[to.lat,to.lng]]).addTo(map);
+}
+
+function haversine(a,b,c,d){
+  const R=6371,toRad=x=>x*Math.PI/180;
+  const dLat=toRad(c-a),dLng=toRad(d-b);
+  return 2*R*Math.asin(Math.sqrt(
+    Math.sin(dLat/2)**2+
+    Math.cos(toRad(a))*Math.cos(toRad(c))*Math.sin(dLng/2)**2
+  ));
+}
+
+$("chipTaxi").onclick=()=>{service="taxi";$("chipTaxi").classList.add("on");$("chipCourier").classList.remove("on")};
+$("chipCourier").onclick=()=>{service="courier";$("chipCourier").classList.add("on");$("chipTaxi").classList.remove("on")};
+
+$("hamb").onclick=()=>{$("drawerBack").style.display="block";$("drawer").classList.add("open")};
+$("drawerBack").onclick=()=>{$("drawerBack").style.display="none";$("drawer").classList.remove("open")};
+
+$("callBtn").onclick=()=>{
+  $("searchingBadge").classList.add("show");
+  fetch(API,{method:"POST",body:JSON.stringify({
+    action:"createJob",service_type:service,
+    from_address:from.addr,to_address:to.addr,
+    pickup_lat:from.lat,pickup_lng:from.lng,
+    dropoff_lat:to.lat,dropoff_lng:to.lng
+  })})
+  .then(r=>r.json())
+  .then(d=>location.href="track.html?job_id="+d.job_id);
+};
+
+navigator.geolocation.getCurrentPosition(
+  p=>{$("topStatus").innerText="Konum hazır";},
+  ()=>{$("topStatus").innerText="Konum yok, haritadan seç";}
+);
 </script>
 
 </body>
