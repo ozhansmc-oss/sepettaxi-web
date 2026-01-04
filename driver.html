@@ -4,170 +4,228 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Sürücü</title>
-<script>
-/* ===== CANLI BACKEND (CONFIG YOK) ===== */
-const API = "https://script.google.com/macros/s/AKfycbxv2oWIgjckH09LB3tKOGIKox32G_RBgp6udb-sSM4uDIrL59iA8Ctsdl1cy5AC92rFZA/exec";
-const POLL_MS = 3000;
-</script>
-
 <meta name="theme-color" content="#f5c400">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
-:root{--y:#f5c400;--panel:#0f0f0f;--line:#222}
-header{height:56px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;border-bottom:1px solid var(--line)}
-header span{color:var(--y)}
-#wrap{height:calc(100% - 56px);display:flex;flex-direction:column;padding:12px;gap:12px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px}
-.card b{display:block;margin-bottom:8px;font-size:14px}
-.big{font-size:26px;font-weight:900;text-align:center}
-.small{font-size:12px;color:#aaa}
-.btn{width:100%;padding:16px;border-radius:18px;font-weight:900;text-align:center;cursor:pointer;border:1px solid var(--line)}
-.btn.primary{background:var(--y);color:#000;border-color:transparent}
-.btn.dark{background:#111;color:#fff}
-.btn:active{transform:scale(.98)}
-.input{width:100%;padding:14px;background:#000;border:1px solid var(--line);border-radius:16px;color:#fff}
-.hidden{display:none}
+:root{
+  --y:#f5c400;--bg:#050506;--panel:#0f0f10;--card:#141416;
+  --line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.68);--mut2:rgba(255,255,255,.45);
+  --ok:#3ddc97;--bad:#ff5a5f;--shadow:0 18px 60px rgba(0,0,0,.55);--r:18px;
+}
+html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
+#map{position:absolute;inset:0}
+
+/* Top */
+.top{
+  position:fixed;left:0;right:0;top:0;z-index:1200;
+  padding:12px 14px;display:flex;align-items:center;justify-content:space-between;
+  pointer-events:none;
+}
+.chip{
+  pointer-events:auto;display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:16px;background:rgba(5,5,6,.55);
+  border:1px solid rgba(255,255,255,.10);backdrop-filter: blur(10px);
+}
+.logo{width:34px;height:34px;border-radius:12px;background:linear-gradient(180deg,var(--y),#d9aa00);display:grid;place-items:center;color:#000;font-weight:900}
+.title{font-weight:900}.sub{font-size:12px;color:var(--mut2)}
+
+/* Bottom sheet */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:1100;padding:10px 12px 14px}
+.wrap{max-width:560px;margin:0 auto;background:rgba(15,15,16,.88);border:1px solid rgba(255,255,255,.10);border-radius:22px;box-shadow:var(--shadow);backdrop-filter: blur(14px);overflow:hidden}
+.grab{height:16px;display:grid;place-items:center;border-bottom:1px solid rgba(255,255,255,.06)}
+.grab:before{content:"";width:44px;height:5px;border-radius:999px;background:rgba(255,255,255,.18)}
+.sec{padding:12px}
+.row{display:flex;gap:10px}.col{flex:1}
+.kv{display:grid;gap:4px}.k{font-size:12px;color:var(--mut2)}.v{font-weight:900}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:12px;color:var(--mut)}
+.dot{width:8px;height:8px;border-radius:99px;background:var(--bad)}.dot.on{background:var(--ok)}
+.btn{width:100%;margin-top:10px;padding:13px 12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:#fff;font-weight:900;cursor:pointer}
+.btn.primary{background:linear-gradient(180deg,var(--y),#d9aa00);color:#000;border:0}
+.btn:active{transform:scale(.99)}
+.list{display:grid;gap:10px;margin-top:10px}
+.item{padding:12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);cursor:pointer}
+.item .t{font-weight:900}.item .s{font-size:12px;color:var(--mut2);margin-top:4px}
+
+/* Modals */
+.mask{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center}
+.mask.on{display:flex}
+.card{width:min(520px,100%);background:rgba(15,15,16,.92);border:1px solid rgba(255,255,255,.12);border-radius:22px;box-shadow:var(--shadow);padding:16px}
+.field{display:grid;gap:6px;margin-bottom:10px}
+.field label{font-size:12px;color:var(--mut)}
+.field input{padding:12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);color:#fff;outline:none}
+
+/* Leaflet */
+.leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
+.iconWrap{width:34px;height:34px;border-radius:16px;display:grid;place-items:center;background:rgba(15,15,16,.90);border:1px solid rgba(255,255,255,.16);box-shadow:0 10px 28px rgba(0,0,0,.45)}
+.iconWrap.yellow{border-color:rgba(245,196,0,.35)}
 </style>
 </head>
 
 <body>
-<header>Sepet<span>Taxi</span> Sürücü</header>
+<div id="map"></div>
 
-<div id="wrap">
-  <div id="loginCard" class="card hidden">
-    <b>Sürücü Girişi</b>
-    <input id="drvId" class="input" placeholder="Driver ID (DRV-XXXX)">
-    <div style="height:10px"></div>
-    <div class="btn primary" id="loginBtn">GİRİŞ YAP</div>
-    <div class="small" style="margin-top:8px">Driver ID, “Sürücü Ol” başvurusu sonrası verilir.</div>
+<div class="top">
+  <div class="chip">
+    <div class="logo">S</div>
+    <div>
+      <div class="title">Sürücü Paneli</div>
+      <div class="sub" id="topSub">Bağlanıyor…</div>
+    </div>
   </div>
-
-  <div id="statusCard" class="card hidden">
-    <b>Durum</b>
-    <div class="big" id="statusText">HAZIR</div>
-    <div class="small" id="statusHint">Yeni iş bekleniyor</div>
+  <div class="chip">
+    <div class="badge"><span class="dot" id="availDot"></span><span id="availTxt">Meşgul</span></div>
   </div>
+</div>
 
-  <div id="jobCard" class="card hidden">
-    <b>Yeni İş</b>
-    <div class="small" id="jobInfo">Yükleniyor…</div>
-    <div style="height:12px"></div>
-    <div class="btn primary" id="acceptBtn">İŞİ KABUL ET</div>
+<div class="sheet">
+  <div class="wrap">
+    <div class="grab"></div>
+    <div class="sec">
+      <div class="row">
+        <div class="col kv"><div class="k">Durum</div><div class="v" id="statusTxt">—</div></div>
+        <div class="col kv"><div class="k">Kazanç (Bugün)</div><div class="v" id="earnTxt">0 ₺</div></div>
+        <div class="col kv"><div class="k">Komisyon</div><div class="v">15%</div></div>
+      </div>
+
+      <button class="btn" id="btnToggle">Uygun Ol</button>
+
+      <div class="list" id="jobs"></div>
+
+      <button class="btn primary" id="btnCenter">Konuma Odaklan</button>
+    </div>
   </div>
+</div>
 
-  <div id="emptyCard" class="card hidden">
-    <b>Açık İş Yok</b>
-    <div class="small">Şu an bölgede iş bulunmuyor.</div>
-    <div style="height:12px"></div>
-    <div class="btn dark" id="refreshBtn">YENİLE</div>
+<!-- Login / Signup -->
+<div class="mask on" id="loginMask">
+  <div class="card">
+    <div style="font-weight:1000;font-size:18px;margin-bottom:6px">Sürücü Girişi</div>
+    <div class="field"><label>Ad Soyad</label><input id="dName" placeholder="Ad Soyad"></div>
+    <div class="field"><label>Telefon</label><input id="dPhone" inputmode="tel" placeholder="05xx xxx xx xx"></div>
+    <div class="field"><label>Plaka</label><input id="dPlate" placeholder="34 ABC 123"></div>
+    <button class="btn primary" id="btnLogin">Devam</button>
   </div>
 </div>
 
 <script>
-let driverId = (localStorage.getItem("st_driver_id")||"").trim();
-let currentJob = null;
+/* ===== CONFIG ===== */
+const API_BASE="https://script.google.com/macros/s/AKfycbxv2oWIgjckH09LB3tKOGIKox32G_RBgp6udb-sSM4uDIrL59iA8Ctsdl1cy5AC92rFZA/";
+const API=(API_BASE.endsWith("/exec")?API_BASE:(API_BASE.endsWith("/")?API_BASE+"exec":API_BASE+"/exec"));
+const POLL_MS=4000;
 
+/* ===== STATE ===== */
 const $=id=>document.getElementById(id);
-const loginCard=$("loginCard");
-const statusCard=$("statusCard");
-const jobCard=$("jobCard");
-const emptyCard=$("emptyCard");
+const LS="sepettaxi_driver_v1";
+let state={map:null,me:null,avail:false,driver:null,watch:null};
 
-async function apiGet(params){
-  const r = await fetch(url);
-  const d = await r.json();
-  if(window.Log) Log.api(params.action, params, d);
-  return d;
+/* ===== ICON ===== */
+function divIcon(svg, extra=""){return L.divIcon({className:"",html:`<div class="iconWrap ${extra}">${svg}</div>`,iconSize:[34,34],iconAnchor:[17,17]});}
+const meSVG=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" stroke="white" stroke-width="2"/><circle cx="12" cy="9" r="2.5" fill="white"/></svg>`;
+
+/* ===== MAP ===== */
+function initMap(){
+  state.map=L.map("map",{zoomControl:false,attributionControl:false}).setView([40.195,29.06],13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(state.map);
 }
-async function apiPost(bodyObj){
-  const payload = JSON.stringify(bodyObj || {});
-  const r = await fetch(SEPT.BACKEND_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body: payload
+
+/* ===== GEO ===== */
+function startGeo(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(p=>{
+    const {latitude,longitude}=p.coords;
+    if(!state.me){
+      state.me=L.marker([latitude,longitude],{icon:divIcon(meSVG,"yellow")}).addTo(state.map);
+      state.map.setView([latitude,longitude],16);
+    }else state.me.setLatLng([latitude,longitude]);
   });
-  let d=null;
-  try{ d = await r.json(); }catch(_){}
-  if(window.Log) Log.api(bodyObj.action, bodyObj, d);
-  return d;
+  state.watch=navigator.geolocation.watchPosition(p=>{
+    const {latitude,longitude}=p.coords;
+    if(state.me) state.me.setLatLng([latitude,longitude]);
+    if(state.avail) sendLocation(latitude,longitude);
+  });
 }
 
-document.addEventListener("DOMContentLoaded", ()=>{
-  if(!driverId){
-    loginCard.classList.remove("hidden");
-  }else{
-    statusCard.classList.remove("hidden");
-    loadJob();
-  }
-});
+/* ===== STORAGE ===== */
+function loadDriver(){try{return JSON.parse(localStorage.getItem(LS)||"null");}catch(e){return null}}
+function saveDriver(d){localStorage.setItem(LS,JSON.stringify(d))}
 
-$("loginBtn").onclick=()=>{
-  const id=$("drvId").value.trim().toUpperCase();
-  if(!/^DRV-/.test(id)){ alert("Geçerli Driver ID giriniz"); return; }
-  localStorage.setItem("st_driver_id", id);
-  driverId=id;
-  loginCard.classList.add("hidden");
-  statusCard.classList.remove("hidden");
-  loadJob();
-};
-
-async function loadJob(){
-  jobCard.classList.add("hidden");
-  emptyCard.classList.add("hidden");
-  $("statusText").textContent="HAZIR";
-  $("statusHint").textContent="Yeni iş bekleniyor";
-
+/* ===== API ===== */
+async function api(action,payload={}){
   try{
-    const d = await apiGet({action:"getOpenJob"});
-    if(d && d.ok && d.job_id){
-      currentJob = d;
-      $("jobInfo").innerHTML = `
-        <b>Mesafe:</b> ${Number(d.distance_km||0).toFixed(1)} km<br>
-        <b>Kazanç:</b> ${d.price_driver_net || "—"} TL<br>
-        <b>Nereden:</b> ${d.from_addr || "—"}<br>
-        <b>Nereye:</b> ${d.to_addr || "—"}
-      `;
-      jobCard.classList.remove("hidden");
-    }else{
-      currentJob=null;
-      emptyCard.classList.remove("hidden");
-    }
-  }catch(e){
-    console.error(e);
-    emptyCard.classList.remove("hidden");
-  }
+    const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,...payload})});
+    const t=await r.text();return JSON.parse(t);
+  }catch(e){return {error:"NET"}}
 }
-$("refreshBtn").onclick=loadJob;
 
-$("acceptBtn").onclick=async()=>{
-  if(!currentJob) return;
-
-  $("acceptBtn").textContent="Alınıyor…";
-  $("acceptBtn").style.pointerEvents="none";
-
-  try{
-    const d = await apiPost({action:"assignJob", job_id: currentJob.job_id, driver_id: driverId});
-    if(d && d.ok){
-      location.href = "track.html?job_id="+encodeURIComponent(currentJob.job_id)+"&driver=1";
-      return;
-    }
-    alert("İş alınamadı (başkası almış olabilir).");
-    await loadJob();
-  }catch(e){
-    console.error(e);
-    alert("Bağlantı hatası");
-    await loadJob();
-  }finally{
-    $("acceptBtn").textContent="İŞİ KABUL ET";
-    $("acceptBtn").style.pointerEvents="auto";
-  }
-};
-
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+/* ===== AVAIL ===== */
+function setAvail(v){
+  state.avail=v;
+  $("availDot").className="dot"+(v?" on":"");
+  $("availTxt").textContent=v?"Uygun":"Meşgul";
+  $("btnToggle").textContent=v?"Meşgul Ol":"Uygun Ol";
+  $("statusTxt").textContent=v?"İş bekleniyor":"Kapalı";
 }
+
+/* ===== JOBS ===== */
+async function pollJobs(){
+  if(!state.avail) return;
+  const res=await api("listJobs",{driver_phone:state.driver.phone});
+  if(res?.error) return;
+  const box=$("jobs");box.innerHTML="";
+  (res.jobs||[]).forEach(j=>{
+    const div=document.createElement("div");
+    div.className="item";
+    div.innerHTML=`<div class="t">${j.service_type==="taxi"?"Taksi":"Kurye"} • ${j.distance_km} km</div>
+                   <div class="s">${j.from_address} → ${j.to_address}</div>
+                   <div class="s">Kazanç: ${j.driver_earn} ₺</div>`;
+    div.onclick=()=>acceptJob(j.job_id);
+    box.appendChild(div);
+  });
+}
+
+/* ===== ACCEPT ===== */
+async function acceptJob(job_id){
+  const r=await api("acceptJob",{job_id,driver:state.driver});
+  if(r?.error) return alert("Kabul edilemedi");
+  setAvail(false);
+  alert("İş kabul edildi");
+}
+
+/* ===== LOCATION SEND ===== */
+async function sendLocation(lat,lng){
+  await api("driverLocation",{lat,lng,driver_phone:state.driver.phone});
+}
+
+/* ===== START ===== */
+initMap();
+const d=loadDriver();
+if(d){
+  state.driver=d;
+  $("loginMask").classList.remove("on");
+  $("topSub").textContent=d.name;
+  setAvail(false);
+  startGeo();
+}else{
+  $("btnLogin").onclick=()=>{
+    const name=$("dName").value.trim(),phone=$("dPhone").value.trim(),plate=$("dPlate").value.trim();
+    if(!name||!phone||!plate) return;
+    state.driver={name,phone,plate};
+    saveDriver(state.driver);
+    $("loginMask").classList.remove("on");
+    $("topSub").textContent=name;
+    setAvail(false);
+    startGeo();
+  };
+}
+
+$("btnToggle").onclick=()=>setAvail(!state.avail);
+$("btnCenter").onclick=()=>{ if(state.me) state.map.setView(state.me.getLatLng(),16); };
+
+setInterval(pollJobs,POLL_MS);
 </script>
 </body>
 </html>
