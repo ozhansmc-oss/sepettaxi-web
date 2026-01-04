@@ -1,231 +1,323 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>SepetTaxi – Sürücü</title>
-<meta name="theme-color" content="#f5c400">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+<meta name="theme-color" content="#000000" />
 <style>
-*{box-sizing:border-box}
-:root{
-  --y:#f5c400;--bg:#050506;--panel:#0f0f10;--card:#141416;
-  --line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.68);--mut2:rgba(255,255,255,.45);
-  --ok:#3ddc97;--bad:#ff5a5f;--shadow:0 18px 60px rgba(0,0,0,.55);--r:18px;
-}
-html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
-#map{position:absolute;inset:0}
-
-/* Top */
-.top{
-  position:fixed;left:0;right:0;top:0;z-index:1200;
-  padding:12px 14px;display:flex;align-items:center;justify-content:space-between;
-  pointer-events:none;
-}
-.chip{
-  pointer-events:auto;display:flex;align-items:center;gap:10px;
-  padding:10px 12px;border-radius:16px;background:rgba(5,5,6,.55);
-  border:1px solid rgba(255,255,255,.10);backdrop-filter: blur(10px);
-}
-.logo{width:34px;height:34px;border-radius:12px;background:linear-gradient(180deg,var(--y),#d9aa00);display:grid;place-items:center;color:#000;font-weight:900}
-.title{font-weight:900}.sub{font-size:12px;color:var(--mut2)}
-
-/* Bottom sheet */
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:1100;padding:10px 12px 14px}
-.wrap{max-width:560px;margin:0 auto;background:rgba(15,15,16,.88);border:1px solid rgba(255,255,255,.10);border-radius:22px;box-shadow:var(--shadow);backdrop-filter: blur(14px);overflow:hidden}
-.grab{height:16px;display:grid;place-items:center;border-bottom:1px solid rgba(255,255,255,.06)}
-.grab:before{content:"";width:44px;height:5px;border-radius:999px;background:rgba(255,255,255,.18)}
-.sec{padding:12px}
-.row{display:flex;gap:10px}.col{flex:1}
-.kv{display:grid;gap:4px}.k{font-size:12px;color:var(--mut2)}.v{font-weight:900}
-.badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:12px;color:var(--mut)}
-.dot{width:8px;height:8px;border-radius:99px;background:var(--bad)}.dot.on{background:var(--ok)}
-.btn{width:100%;margin-top:10px;padding:13px 12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:#fff;font-weight:900;cursor:pointer}
-.btn.primary{background:linear-gradient(180deg,var(--y),#d9aa00);color:#000;border:0}
-.btn:active{transform:scale(.99)}
-.list{display:grid;gap:10px;margin-top:10px}
-.item{padding:12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);cursor:pointer}
-.item .t{font-weight:900}.item .s{font-size:12px;color:var(--mut2);margin-top:4px}
-
-/* Modals */
-.mask{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center}
-.mask.on{display:flex}
-.card{width:min(520px,100%);background:rgba(15,15,16,.92);border:1px solid rgba(255,255,255,.12);border-radius:22px;box-shadow:var(--shadow);padding:16px}
-.field{display:grid;gap:6px;margin-bottom:10px}
-.field label{font-size:12px;color:var(--mut)}
-.field input{padding:12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);color:#fff;outline:none}
-
-/* Leaflet */
-.leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
-.iconWrap{width:34px;height:34px;border-radius:16px;display:grid;place-items:center;background:rgba(15,15,16,.90);border:1px solid rgba(255,255,255,.16);box-shadow:0 10px 28px rgba(0,0,0,.45)}
-.iconWrap.yellow{border-color:rgba(245,196,0,.35)}
+  *{box-sizing:border-box}
+  :root{--y:#f5c400; --line:rgba(255,255,255,.10); --mut:rgba(255,255,255,.65); --mut2:rgba(255,255,255,.45); --ok:#2bd576; --bad:#ff4d4d}
+  html,body{height:100%; margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; overflow:hidden}
+  header{height:56px; display:flex; align-items:center; justify-content:center; border-bottom:1px solid rgba(255,255,255,.08); position:relative}
+  header .t{font-weight:900} header .t span{color:var(--y)}
+  #wrap{height:calc(100vh - 56px); overflow:hidden; display:flex; flex-direction:column; padding:12px; gap:10px}
+  .card{background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:12px}
+  .row{display:flex; gap:10px; align-items:center; justify-content:space-between}
+  .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); font-weight:800; font-size:13px}
+  .dot{width:10px; height:10px; border-radius:5px; background:rgba(255,255,255,.35)}
+  .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.y{background:var(--y)}
+  .btn{border:0; width:100%; padding:14px; border-radius:16px; font-weight:900; cursor:pointer; background:var(--y); color:#000}
+  .btn[disabled]{opacity:.45; cursor:not-allowed}
+  .btn2{border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#fff}
+  .inp{width:100%; padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.25); color:#fff; font-weight:800; outline:none}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .kpi .v{font-size:20px; font-weight:950}
+  .kpi .l{font-size:12px; color:rgba(255,255,255,.55); font-weight:800}
+  #list{flex:1; min-height:0; overflow:auto; padding-bottom:4px}
+  .job{padding:12px; border-radius:16px; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); margin-bottom:10px}
+  .job .top{display:flex; justify-content:space-between; gap:10px}
+  .job .svc{font-weight:950}
+  .job .price{font-weight:950; color:var(--y)}
+  .job .addr{margin-top:8px; color:rgba(255,255,255,.78); font-weight:800; font-size:13px}
+  .job small{color:rgba(255,255,255,.50); font-weight:800}
+  .actions{display:flex; gap:10px; margin-top:10px}
 </style>
 </head>
-
 <body>
-<div id="map"></div>
+<header><div class="t">Sepet<span>Taxi</span> Sürücü</div></header>
 
-<div class="top">
-  <div class="chip">
-    <div class="logo">S</div>
-    <div>
-      <div class="title">Sürücü Paneli</div>
-      <div class="sub" id="topSub">Bağlanıyor…</div>
-    </div>
-  </div>
-  <div class="chip">
-    <div class="badge"><span class="dot" id="availDot"></span><span id="availTxt">Meşgul</span></div>
-  </div>
-</div>
-
-<div class="sheet">
-  <div class="wrap">
-    <div class="grab"></div>
-    <div class="sec">
-      <div class="row">
-        <div class="col kv"><div class="k">Durum</div><div class="v" id="statusTxt">—</div></div>
-        <div class="col kv"><div class="k">Kazanç (Bugün)</div><div class="v" id="earnTxt">0 ₺</div></div>
-        <div class="col kv"><div class="k">Komisyon</div><div class="v">15%</div></div>
-      </div>
-
-      <button class="btn" id="btnToggle">Uygun Ol</button>
-
-      <div class="list" id="jobs"></div>
-
-      <button class="btn primary" id="btnCenter">Konuma Odaklan</button>
-    </div>
-  </div>
-</div>
-
-<!-- Login / Signup -->
-<div class="mask on" id="loginMask">
+<div id="wrap">
   <div class="card">
-    <div style="font-weight:1000;font-size:18px;margin-bottom:6px">Sürücü Girişi</div>
-    <div class="field"><label>Ad Soyad</label><input id="dName" placeholder="Ad Soyad"></div>
-    <div class="field"><label>Telefon</label><input id="dPhone" inputmode="tel" placeholder="05xx xxx xx xx"></div>
-    <div class="field"><label>Plaka</label><input id="dPlate" placeholder="34 ABC 123"></div>
-    <button class="btn primary" id="btnLogin">Devam</button>
+    <div class="row">
+      <div class="pill" id="statePill"><span class="dot y"></span><span id="stateText">Yükleniyor…</span></div>
+      <button class="btn2" style="padding:10px 12px; border-radius:14px; font-weight:900; cursor:pointer" onclick="location.href='index.html'">Müşteri Modu</button>
+    </div>
+    <div style="height:10px"></div>
+    <div class="grid">
+      <div class="kpi card" style="padding:10px">
+        <div class="v" id="kpiJobs">0</div>
+        <div class="l">Toplam İş</div>
+      </div>
+      <div class="kpi card" style="padding:10px">
+        <div class="v" id="kpiEarn">₺0</div>
+        <div class="l">Kazanç</div>
+      </div>
+      <div class="kpi card" style="padding:10px">
+        <div class="v" id="kpiComm">₺0</div>
+        <div class="l">Komisyon</div>
+      </div>
+      <div class="kpi card" style="padding:10px">
+        <div class="v" id="kpiDebt">₺0</div>
+        <div class="l">Bakiye (Borç)</div>
+      </div>
+    </div>
   </div>
+
+  <div class="card" id="loginCard">
+    <div style="font-weight:950; margin-bottom:8px">Sürücü Girişi</div>
+    <input id="phone" class="inp" placeholder="Telefon (+90...)" inputmode="tel" autocomplete="tel">
+    <div style="height:8px"></div>
+    <button id="loginBtn" class="btn">Giriş Yap</button>
+    <div style="margin-top:10px; color:rgba(255,255,255,.55); font-weight:800; font-size:12px">
+      Not: Bu hesap aynı zamanda müşteri hesabıdır (tek hesap – çift rol).
+    </div>
+  </div>
+
+  <div class="card" id="activeCard" style="display:none">
+    <div class="row">
+      <div style="font-weight:950">Çalışma Durumu</div>
+      <div class="pill" id="actPill"><span class="dot bad"></span><span id="actText">Pasif</span></div>
+    </div>
+    <div style="height:10px"></div>
+    <button id="toggleBtn" class="btn btn2">Aktif / Pasif Değiştir</button>
+    <div style="height:10px"></div>
+    <button id="contractBtn" class="btn btn2" onclick="location.href='driver-contract.html'">Sürücü Sözleşmesi</button>
+  </div>
+
+  <div class="card" style="padding:10px">
+    <div style="font-weight:950; margin-bottom:6px">İş Havuzu</div>
+    <div style="color:rgba(255,255,255,.55); font-weight:800; font-size:12px">Yakınınızdaki açık işleri göreceksiniz. Kabul edince müşteri canlı takipte sizi görür.</div>
+  </div>
+
+  <div id="list"></div>
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const API_BASE="https://script.google.com/macros/s/AKfycbxcB50-q3xv2BeSF3iJP0iKiFewvcwrKDjrCkz8-Cm5Jd7fXhl3YMt72QAWrSdfsWkNAw/exec";
-const API=(API_BASE.endsWith("/exec")?API_BASE:(API_BASE.endsWith("/")?API_BASE+"exec":API_BASE+"/exec"));
-const POLL_MS=4000;
+const API = (localStorage.getItem("SEPETTAXI_API") || "").trim();
 
-/* ===== STATE ===== */
-const $=id=>document.getElementById(id);
-const LS="sepettaxi_driver_v1";
-let state={map:null,me:null,avail:false,driver:null,watch:null};
-
-/* ===== ICON ===== */
-function divIcon(svg, extra=""){return L.divIcon({className:"",html:`<div class="iconWrap ${extra}">${svg}</div>`,iconSize:[34,34],iconAnchor:[17,17]});}
-const meSVG=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" stroke="white" stroke-width="2"/><circle cx="12" cy="9" r="2.5" fill="white"/></svg>`;
-
-/* ===== MAP ===== */
-function initMap(){
-  state.map=L.map("map",{zoomControl:false,attributionControl:false}).setView([40.195,29.06],13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(state.map);
+function ensureAPI(){
+  if(!API){
+    alert("API URL tanımlı değil. SEPETTAXI_API ayarlayın.");
+    throw new Error("API missing");
+  }
+}
+function normalizePhone(p){
+  p = (p||"").replace(/[^\d+]/g,"");
+  if(p.startsWith("0")) p = "+9" + p;
+  if(p.startsWith("90")) p = "+" + p;
+  if(!p.startsWith("+")) p = "+90" + p;
+  return p;
+}
+async function apiCall(action, payload){
+  ensureAPI();
+  const url = API + (API.includes("?") ? "&" : "?") + "action=" + encodeURIComponent(action);
+  const r = await fetch(url, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(payload||{}) });
+  const j = await r.json();
+  if(j && j.error) throw new Error(j.error);
+  return j;
+}
+async function apiGet(action, params){
+  ensureAPI();
+  const u = new URL(API);
+  u.searchParams.set("action", action);
+  Object.keys(params||{}).forEach(k=> u.searchParams.set(k, params[k]));
+  const r = await fetch(u.toString());
+  const j = await r.json();
+  if(j && j.error) throw new Error(j.error);
+  return j;
 }
 
-/* ===== GEO ===== */
-function startGeo(){
-  if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(p=>{
-    const {latitude,longitude}=p.coords;
-    if(!state.me){
-      state.me=L.marker([latitude,longitude],{icon:divIcon(meSVG,"yellow")}).addTo(state.map);
-      state.map.setView([latitude,longitude],16);
-    }else state.me.setLatLng([latitude,longitude]);
-  });
-  state.watch=navigator.geolocation.watchPosition(p=>{
-    const {latitude,longitude}=p.coords;
-    if(state.me) state.me.setLatLng([latitude,longitude]);
-    if(state.avail) sendLocation(latitude,longitude);
+function setState(kind, text){
+  const pill = document.getElementById("statePill");
+  const dot = pill.querySelector(".dot");
+  dot.classList.remove("ok","bad","y");
+  dot.classList.add(kind);
+  document.getElementById("stateText").textContent = text;
+}
+
+let driver = null; // {driver_id, phone, active, approved, contract_accepted, ...}
+let geo = null;
+let geoTimer = null;
+let pollTimer = null;
+
+function getGeo(){
+  return new Promise((resolve)=>{
+    if(!navigator.geolocation){ resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos)=> resolve({lat:pos.coords.latitude, lng:pos.coords.longitude}),
+      ()=> resolve(null),
+      { enableHighAccuracy:true, timeout:8000, maximumAge:8000 }
+    );
   });
 }
 
-/* ===== STORAGE ===== */
-function loadDriver(){try{return JSON.parse(localStorage.getItem(LS)||"null");}catch(e){return null}}
-function saveDriver(d){localStorage.setItem(LS,JSON.stringify(d))}
+function renderKPIs(st){
+  document.getElementById("kpiJobs").textContent = st.total_jobs || 0;
+  document.getElementById("kpiEarn").textContent = "₺" + (st.total_earn || 0);
+  document.getElementById("kpiComm").textContent = "₺" + (st.total_commission || 0);
+  document.getElementById("kpiDebt").textContent = "₺" + (st.balance_due || 0);
+}
 
-/* ===== API ===== */
-async function api(action,payload={}){
+function showDriverUI(){
+  document.getElementById("loginCard").style.display = "none";
+  document.getElementById("activeCard").style.display = "block";
+
+  // contract gate
+  if(!driver.contract_accepted){
+    // must accept contract first
+    setState("y","Sözleşme onayı gerekli");
+    setTimeout(()=> location.href="driver-contract.html", 600);
+    return;
+  }
+  if(!driver.approved){
+    setState("y","Hesabınız aktivasyon bekliyor");
+  }else{
+    setState("ok","Hazırsınız");
+  }
+  updateActivePill();
+}
+
+function updateActivePill(){
+  const dot = document.querySelector("#actPill .dot");
+  const txt = document.getElementById("actText");
+  dot.classList.remove("ok","bad");
+  if(driver.active){
+    dot.classList.add("ok"); txt.textContent="Aktif";
+  }else{
+    dot.classList.add("bad"); txt.textContent="Pasif";
+  }
+}
+
+document.getElementById("loginBtn").addEventListener("click", async ()=>{
   try{
-    const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,...payload})});
-    const t=await r.text();return JSON.parse(t);
-  }catch(e){return {error:"NET"}}
+    const phone = normalizePhone(document.getElementById("phone").value.trim());
+    if(phone.length < 10) return alert("Telefon girin.");
+    // login returns driver profile (if exists)
+    const res = await apiCall("driverLogin", { phone });
+    driver = res.driver;
+    localStorage.setItem("stx_driver", JSON.stringify(driver));
+    showDriverUI();
+  }catch(e){
+    alert("Hata: "+e.message);
+  }
+});
+
+document.getElementById("toggleBtn").addEventListener("click", async ()=>{
+  try{
+    if(!driver) return;
+    if(!driver.contract_accepted) return alert("Önce sözleşmeyi onaylayın.");
+    if(!driver.approved) return alert("Hesap aktivasyonu bekleniyor.");
+    driver.active = !driver.active;
+    await apiCall("setDriverActive", { driver_id: driver.driver_id, active: driver.active ? 1 : 0 });
+    updateActivePill();
+    if(driver.active){
+      startGeo();
+      pollJobs();
+    }
+  }catch(e){
+    alert("Hata: "+e.message);
+  }
+});
+
+async function startGeo(){
+  if(geoTimer) clearInterval(geoTimer);
+  geo = await getGeo();
+  if(!geo) return;
+  await apiCall("updateDriverLocation", { driver_id: driver.driver_id, lat: geo.lat, lng: geo.lng });
+  geoTimer = setInterval(async ()=>{
+    const g = await getGeo();
+    if(!g) return;
+    geo = g;
+    if(driver && driver.active){
+      try{ await apiCall("updateDriverLocation", { driver_id: driver.driver_id, lat: geo.lat, lng: geo.lng }); }catch(e){}
+    }
+  }, 3500);
 }
 
-/* ===== AVAIL ===== */
-function setAvail(v){
-  state.avail=v;
-  $("availDot").className="dot"+(v?" on":"");
-  $("availTxt").textContent=v?"Uygun":"Meşgul";
-  $("btnToggle").textContent=v?"Meşgul Ol":"Uygun Ol";
-  $("statusTxt").textContent=v?"İş bekleniyor":"Kapalı";
+function jobCard(j){
+  const svcLabel = (j.service_type==="courier_moto") ? "Kurye (Moto)" : "Taksi";
+  const price = "₺" + (j.price || 0);
+  const dist = (j.distance_km ? (Number(j.distance_km).toFixed(1) + " km") : "");
+  return `
+    <div class="job">
+      <div class="top">
+        <div>
+          <div class="svc">${svcLabel}</div>
+          <small>${dist}</small>
+        </div>
+        <div class="price">${price}</div>
+      </div>
+      <div class="addr"><small>Alım:</small> ${escapeHtml(j.from_address||"")}</div>
+      <div class="addr"><small>Varış:</small> ${escapeHtml(j.to_address||"")}</div>
+      ${j.service_type==="courier_moto" ? `
+        <div class="addr"><small>Paket:</small> ${escapeHtml(j.package_type||"")}</div>
+      ` : ``}
+      <div class="actions">
+        <button class="btn" onclick="acceptJob('${j.job_id}')">İşi Kabul Et</button>
+        <button class="btn btn2" onclick="openTrack('${j.job_id}')">Takip</button>
+      </div>
+    </div>
+  `;
 }
 
-/* ===== JOBS ===== */
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
 async function pollJobs(){
-  if(!state.avail) return;
-  const res=await api("listJobs",{driver_phone:state.driver.phone});
-  if(res?.error) return;
-  const box=$("jobs");box.innerHTML="";
-  (res.jobs||[]).forEach(j=>{
-    const div=document.createElement("div");
-    div.className="item";
-    div.innerHTML=`<div class="t">${j.service_type==="taxi"?"Taksi":"Kurye"} • ${j.distance_km} km</div>
-                   <div class="s">${j.from_address} → ${j.to_address}</div>
-                   <div class="s">Kazanç: ${j.driver_earn} ₺</div>`;
-    div.onclick=()=>acceptJob(j.job_id);
-    box.appendChild(div);
-  });
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(loadJobs, 2500);
+  await loadJobs();
 }
 
-/* ===== ACCEPT ===== */
-async function acceptJob(job_id){
-  const r=await api("acceptJob",{job_id,driver:state.driver});
-  if(r?.error) return alert("Kabul edilemedi");
-  setAvail(false);
-  alert("İş kabul edildi");
+async function loadJobs(){
+  if(!driver || !driver.active || !geo) return;
+  try{
+    const list = await apiGet("listOpenJobs", { lat: geo.lat, lng: geo.lng, km: 8 });
+    const box = document.getElementById("list");
+    if(!list.jobs || list.jobs.length===0){
+      box.innerHTML = `<div class="card" style="text-align:center;color:rgba(255,255,255,.60);font-weight:900">Şu an uygun iş yok</div>`;
+      return;
+    }
+    box.innerHTML = list.jobs.map(jobCard).join("");
+  }catch(e){}
 }
 
-/* ===== LOCATION SEND ===== */
-async function sendLocation(lat,lng){
-  await api("driverLocation",{lat,lng,driver_phone:state.driver.phone});
-}
+window.openTrack = (job_id)=>{
+  location.href = `track.html?job_id=${encodeURIComponent(job_id)}`;
+};
 
-/* ===== START ===== */
-initMap();
-const d=loadDriver();
-if(d){
-  state.driver=d;
-  $("loginMask").classList.remove("on");
-  $("topSub").textContent=d.name;
-  setAvail(false);
-  startGeo();
-}else{
-  $("btnLogin").onclick=()=>{
-    const name=$("dName").value.trim(),phone=$("dPhone").value.trim(),plate=$("dPlate").value.trim();
-    if(!name||!phone||!plate) return;
-    state.driver={name,phone,plate};
-    saveDriver(state.driver);
-    $("loginMask").classList.remove("on");
-    $("topSub").textContent=name;
-    setAvail(false);
-    startGeo();
-  };
-}
+window.acceptJob = async (job_id)=>{
+  try{
+    if(!driver || !driver.active) return alert("Önce aktif olun.");
+    const res = await apiCall("acceptJob", { job_id, driver_id: driver.driver_id });
+    // after accept, open track and keep sending location
+    alert("İş alındı. Müşteri sizi canlı takipte görecek.");
+    location.href = `track.html?job_id=${encodeURIComponent(job_id)}`;
+  }catch(e){
+    alert("Hata: "+e.message);
+  }
+};
 
-$("btnToggle").onclick=()=>setAvail(!state.avail);
-$("btnCenter").onclick=()=>{ if(state.me) state.map.setView(state.me.getLatLng(),16); };
-
-setInterval(pollJobs,POLL_MS);
+// load stored driver
+(function boot(){
+  try{
+    const d = JSON.parse(localStorage.getItem("stx_driver")||"null");
+    if(d && d.driver_id){
+      driver = d;
+      showDriverUI();
+      if(driver.active){
+        startGeo();
+        pollJobs();
+      }
+    }else{
+      setState("y","Giriş yapın");
+    }
+  }catch(e){
+    setState("y","Giriş yapın");
+  }
+})();
 </script>
 </body>
 </html>
