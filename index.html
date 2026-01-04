@@ -26,23 +26,17 @@
   }
   html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
   a{color:inherit;text-decoration:none}
- <body>
 
-<header id=#topbar">
-  <button id="hamburger">☰</button>
-  <span class="logo">SepetTaxi</span>
-</header>
- 
   /* ===== LAYOUT ===== */
   #app{height:100%;display:none}
   #map{position:absolute;inset:0}
-  #topbar{
+  .topbar{
     position:fixed;left:0;right:0;top:0;z-index:1200;
     padding:12px 14px;
     display:flex;align-items:center;justify-content:space-between;
     pointer-events:none;
   }
-  #topbar .btn{
+  .topbar .btn{
     pointer-events:auto;
     width:42px;height:42px;border-radius:14px;
     background:rgba(15,15,16,.72);
@@ -416,11 +410,8 @@
 </div>
 
 <!-- APP -->
- <section id="bottom-sheet">
 <div id="app">
-  <div id="map-wrap">
   <div id="map"></div>
-</div>
 
   <div class="topbar">
     <div class="btn" id="btnHamb" aria-label="Menü">
