@@ -632,7 +632,7 @@
    ================================ */
 
 /* ===== CANLI BACKEND (CONFIG YOK) ===== */
-const API_BASE = "https://script.google.com/macros/s/AKfycbwXKzBcvA5xRpvGqJSWCq7vzrOGxG1KplHq1vCHTb4j5auQ1G0ySNSfn9der1um4MsMug/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycbxcB50-q3xv2BeSF3iJP0iKiFewvcwrKDjrCkz8-Cm5Jd7fXhl3YMt72QAWrSdfsWkNAw/exec";
 const API = (API_BASE.endsWith("/exec") ? API_BASE : (API_BASE.endsWith("/") ? API_BASE + "exec" : API_BASE + "/exec"));
 
 /* ===== STATE ===== */
@@ -918,20 +918,21 @@ function escapeHTML(s){
 
 /* ===== API CALLS ===== */
 async function callAPI(action, payload){
-  // POST JSON first (preferred)
-  const body = JSON.stringify({ action, ...payload });
   try{
     const r = await fetch(API, {
-      method:"POST",
-      headers: { "Content-Type":"text/plain;charset=utf-8" }, // Apps Script friendly
-      body
+      method: "POST",
+      body: JSON.stringify({ action, ...payload })
     });
+
     const t = await r.text();
-    let j=null;
-    try{ j = JSON.parse(t); }catch(_){ j = { raw:t }; }
-    return j;
+    try {
+      return JSON.parse(t);
+    } catch {
+      return { error: "BAD_RESPONSE", raw: t };
+    }
+
   }catch(e){
-    return { error:"NETWORK", detail:String(e) };
+    return { error:"NETWORK_ERROR", detail:String(e) };
   }
 }
 
