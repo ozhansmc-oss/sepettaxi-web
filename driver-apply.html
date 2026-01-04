@@ -56,7 +56,7 @@
 </div>
 
 <script>
-const API = (localStorage.getItem("SEPETTAXI_API") || "").trim();
+const API = (localStorage.getItem("SEPETTAXI_API") || "https://script.google.com/macros/s/AKfycbxoeXl9XfxWtsqqCfftNV578KD_woNSKfT3KmSYwZuCv8iPSPd8-cZXNoYMh6Qx-yrlWA/exec").trim();
 function ensureAPI(){ if(!API){ alert("API URL tanımlı değil. SEPETTAXI_API ayarlayın."); throw new Error("API missing"); } }
 function normalizePhone(p){
   p=(p||"").replace(/[^\d+]/g,"");
