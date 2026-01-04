@@ -72,19 +72,19 @@
     border-radius:18px 18px 0 0;
     box-shadow:var(--shadow);
     border-top:1px solid rgba(255,255,255,.08);
-    padding:14px 14px 18px;
-    overflow:auto;
+    padding:10px 12px 12px;
+    overflow:hidden;
   }
 
   .card{
     background:var(--card);
     border:1px solid var(--line);
     border-radius:var(--r);
-    padding:14px;
-    margin-bottom:12px;
+    padding:10px 12px;
+  margin-bottom:8px;
   }
 
-  .h1{font-size:18px;font-weight:950;margin:0 0 6px}
+  .h1{font-size:16px;font-weight:950;margin:0 0 6px}
   .p{font-size:12.5px;color:var(--mut);margin:0}
   .row{display:flex;gap:10px}
   .col{flex:1}
@@ -490,6 +490,33 @@ function updateCalc(){
 ========================= */
 function initMap(){
   map = L.map("map",{ zoomControl:false, attributionControl:false }).setView([40.195,29.060], 13);
+ map.on("click", async (e)=>{
+  const lat = e.latlng.lat;
+  const lng = e.latlng.lng;
+
+  const r = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+  );
+  const j = await r.json();
+  const addr = j.display_name || "Seçilen konum";
+
+  if(picking === "to"){
+    to = { addr, lat, lng };
+    $("toInput").value = addr;
+    if(toMarker) map.removeLayer(toMarker);
+    toMarker = L.marker([lat,lng]).addTo(map);
+  }else{
+    from = { addr, lat, lng };
+    $("fromInput").value = addr;
+    if(fromMarker) map.removeLayer(fromMarker);
+    fromMarker = L.marker([lat,lng]).addTo(map);
+    picking = "to";
+  }
+
+  enableMap();
+  updateCalc();
+});
+
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
   // İlk açılışta harita pasif (tedirginliği azaltır)
@@ -513,8 +540,8 @@ function enableMap(){
    GEOLOCATION
 ========================= */
 function getLocation(){
-  toastTopStatus("Konum alınıyor…");
-  if(!navigator.geolocation){
+toastTopStatus("Konumun alınıyor, lütfen bekle");
+ if(!navigator.geolocation){
     toastTopStatus("Konum desteklenmiyor");
     return;
   }
@@ -643,7 +670,11 @@ async function apiCall(action, payload){
 }
 
 function showSearching(on){
-  $("searchingBadge").classList.toggle("show", !!on);
+ #searchingBadge{
+  backdrop-filter:blur(10px);
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+  font-weight:800;
+  letter-spacing:.2px;
 }
 
 async function createJob(){
