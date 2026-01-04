@@ -1,318 +1,253 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>SepetTaxi – Canlı Takip</title>
-<meta name="theme-color" content="#f5c400">
+<meta name="theme-color" content="#000000" />
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-*{box-sizing:border-box}
-:root{
-  --y:#f5c400;
-  --bg:#050506;
-  --panel:#0f0f10;
-  --card:#141416;
-  --line:rgba(255,255,255,.10);
-  --mut:rgba(255,255,255,.68);
-  --mut2:rgba(255,255,255,.45);
-  --ok:#3ddc97;
-  --bad:#ff5a5f;
-  --shadow:0 18px 60px rgba(0,0,0,.55);
-  --r:18px;
-}
-html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
+  *{box-sizing:border-box}
+  :root{--y:#f5c400; --line:rgba(255,255,255,.10); --mut:rgba(255,255,255,.65); --ok:#2bd576}
+  html,body{height:100%; margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; overflow:hidden}
+  header{
+    height:56px; display:flex; align-items:center; justify-content:center;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    position:relative;
+  }
+  header .t{font-weight:900}
+  header .t span{color:var(--y)}
+  #map{height:calc(100vh - 56px); width:100%}
+  .pill{
+    position:fixed; left:50%; transform:translateX(-50%);
+    top:70px; z-index:1200;
+    padding:10px 14px; border-radius:999px;
+    background:rgba(0,0,0,.55);
+    border:1px solid rgba(255,255,255,.14);
+    backdrop-filter:blur(10px);
+    font-weight:900;
+    display:flex; align-items:center; gap:10px;
+  }
+  .dot{width:10px; height:10px; border-radius:5px; background:rgba(255,255,255,.35)}
+  .dot.ok{background:var(--ok)}
+  .dot.y{background:var(--y)}
+  .sub{
+    position:fixed; left:50%; transform:translateX(-50%);
+    top:114px; z-index:1200;
+    padding:8px 12px; border-radius:999px;
+    background:rgba(0,0,0,.45);
+    border:1px solid rgba(255,255,255,.12);
+    color:rgba(255,255,255,.75);
+    font-weight:800;
+  }
 
-#map{position:absolute;inset:0}
-
-/* Top bar */
-.top{
-  position:fixed;left:0;right:0;top:0;z-index:1200;
-  padding:12px 14px;
-  display:flex;align-items:center;justify-content:space-between;
-  pointer-events:none;
-}
-.top .chip{
-  pointer-events:auto;
-  display:flex;align-items:center;gap:10px;
-  padding:10px 12px;border-radius:16px;
-  background:rgba(5,5,6,.55);
-  border:1px solid rgba(255,255,255,.10);
-  backdrop-filter: blur(10px);
-}
-.logo{
-  width:34px;height:34px;border-radius:12px;
-  background:linear-gradient(180deg,var(--y),#d9aa00);
-  display:grid;place-items:center;color:#000;font-weight:900;
-}
-.top .title{font-weight:900}
-.top .sub{font-size:12px;color:var(--mut2);margin-top:1px}
-
-/* Bottom sheet */
-.sheet{
-  position:fixed;left:0;right:0;bottom:0;z-index:1100;
-  padding:10px 12px 14px;
-}
-.wrap{
-  max-width:560px;margin:0 auto;
-  background:rgba(15,15,16,.88);
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:22px;
-  box-shadow:var(--shadow);
-  backdrop-filter: blur(14px);
-  overflow:hidden;
-}
-.grab{height:16px;display:grid;place-items:center;border-bottom:1px solid rgba(255,255,255,.06)}
-.grab:before{content:"";width:44px;height:5px;border-radius:999px;background:rgba(255,255,255,.18)}
-.sec{padding:12px}
-.row{display:flex;gap:10px}
-.col{flex:1}
-.kv{display:grid;gap:4px}
-.kv .k{font-size:12px;color:var(--mut2)}
-.kv .v{font-weight:900}
-.badge{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:6px 10px;border-radius:999px;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.10);
-  font-size:12px;color:var(--mut)
-}
-.dot{width:8px;height:8px;border-radius:99px;background:var(--bad)}
-.dot.on{background:var(--ok)}
-.cta{
-  width:100%;margin-top:10px;
-  padding:13px 12px;border-radius:16px;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.10);
-  color:#fff;font-weight:900;cursor:pointer;
-}
-.cta.primary{
-  background:linear-gradient(180deg,var(--y),#d9aa00);
-  color:#000;border:0;
-}
-
-/* Overlays */
-.overlay{
-  position:fixed;inset:0;z-index:1500;
-  background:rgba(0,0,0,.70);
-  display:none;align-items:center;justify-content:center;
-}
-.overlay.on{display:flex}
-.card{
-  width:min(520px,100%);
-  background:rgba(15,15,16,.92);
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:22px;
-  box-shadow:var(--shadow);
-  padding:16px;text-align:center;
-}
-.spin{
-  width:54px;height:54px;border-radius:999px;margin:0 auto 12px;
-  border:4px solid rgba(255,255,255,.12);
-  border-top-color:var(--y);
-  animation:rot 1s linear infinite;
-}
-@keyframes rot{to{transform:rotate(360deg)}}
-
-/* Leaflet tweaks */
-.leaflet-control-zoom{display:none!important}
-.leaflet-control-attribution{display:none!important}
-.iconWrap{
-  width:34px;height:34px;border-radius:16px;
-  display:grid;place-items:center;
-  background:rgba(15,15,16,.90);
-  border:1px solid rgba(255,255,255,.16);
-  box-shadow:0 10px 28px rgba(0,0,0,.45);
-}
-.iconWrap.yellow{border-color:rgba(245,196,0,.35)}
+  /* vehicle marker container for rotation */
+  .vehWrap{
+    width:44px; height:44px;
+    transform-origin:50% 50%;
+    filter:drop-shadow(0 10px 14px rgba(0,0,0,.55));
+  }
 </style>
 </head>
-
 <body>
+<header><div class="t">Sepet<span>Taxi</span> Takip</div></header>
 <div id="map"></div>
-
-<div class="top">
-  <div class="chip">
-    <div class="logo">S</div>
-    <div>
-      <div class="title">Canlı Takip</div>
-      <div class="sub" id="topSub">Bağlanıyor…</div>
-    </div>
-  </div>
-  <div class="chip">
-    <div class="badge"><span class="dot" id="statusDot"></span><span id="statusTxt">Aranıyor</span></div>
-  </div>
-</div>
-
-<div class="sheet">
-  <div class="wrap">
-    <div class="grab"></div>
-    <div class="sec">
-      <div class="row">
-        <div class="col kv">
-          <div class="k">Hizmet</div>
-          <div class="v" id="svcTxt">—</div>
-        </div>
-        <div class="col kv">
-          <div class="k">Mesafe</div>
-          <div class="v" id="kmTxt">—</div>
-        </div>
-        <div class="col kv">
-          <div class="k">Tahmini Tutar</div>
-          <div class="v" id="priceTxt">—</div>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div class="col kv">
-          <div class="k">Sürücü</div>
-          <div class="v" id="driverTxt">Atanmadı</div>
-        </div>
-        <div class="col kv">
-          <div class="k">Plaka</div>
-          <div class="v" id="plateTxt">—</div>
-        </div>
-      </div>
-
-      <button class="cta" id="btnCenter">Konuma Odaklan</button>
-      <button class="cta primary" id="btnCallDriver" style="display:none">Sürücüyü Ara</button>
-    </div>
-  </div>
-</div>
-
-<!-- Searching overlay -->
-<div class="overlay on" id="searchOv">
-  <div class="card">
-    <div class="spin"></div>
-    <div style="font-weight:1000;font-size:16px">Sürücü aranıyor</div>
-    <div style="margin-top:6px;color:var(--mut)">En yakın sürücü bulunuyor…</div>
-  </div>
-</div>
+<div class="pill"><span id="dot" class="dot y"></span><span id="status">Yükleniyor…</span></div>
+<div class="sub" id="sub">Lütfen bekleyin</div>
 
 <script>
-/* ===== CONFIG ===== */
-const API_BASE = "https://script.google.com/macros/s/AKfycbxcB50-q3xv2BeSF3iJP0iKiFewvcwrKDjrCkz8-Cm5Jd7fXhl3YMt72QAWrSdfsWkNAw/exec";
-const API = (API_BASE.endsWith("/exec") ? API_BASE : (API_BASE.endsWith("/") ? API_BASE + "exec" : API_BASE + "/exec"));
-const POLL_MS = 3000;
+const API = (localStorage.getItem("SEPETTAXI_API") || "").trim();
 
-/* ===== STATE ===== */
-const qs = new URLSearchParams(location.search);
-const jobId = qs.get("job_id");
-if(!jobId){ alert("Job ID yok"); }
-const state = {
-  map:null,
-  markers:{ from:null, to:null, driver:null },
-  assigned:false,
-  last:null
-};
-const $ = (id)=>document.getElementById(id);
-
-/* ===== ICONS ===== */
-function divIcon(svg, extra=""){
-  return L.divIcon({className:"",html:`<div class="iconWrap ${extra}">${svg}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
+function qs(name){
+  const u = new URL(location.href);
+  return u.searchParams.get(name) || "";
 }
-const taxiSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M7 16h10l1-5-2-4H8l-2 4 1 5Z" stroke="white" stroke-width="2"/><circle cx="8.5" cy="18.5" r="1.5" fill="white"/><circle cx="15.5" cy="18.5" r="1.5" fill="white"/></svg>`;
-const motoSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M7 16h4l2-6h5l2 6" stroke="white" stroke-width="2"/><circle cx="7" cy="16" r="2" stroke="white" stroke-width="2"/><circle cx="19" cy="16" r="2" stroke="white" stroke-width="2"/></svg>`;
-const pinFrom = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" stroke="white" stroke-width="2"/><circle cx="12" cy="9" r="2.5" fill="#f5c400"/></svg>`;
-const pinTo = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" stroke="white" stroke-width="2"/><circle cx="12" cy="9" r="2.5" fill="white"/></svg>`;
+const jobId = qs("job_id");
 
-/* ===== MAP ===== */
-function initMap(){
-  state.map = L.map("map",{zoomControl:false,attributionControl:false}).setView([40.195,29.06],13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(state.map);
+function ensureAPI(){
+  if(!API){
+    alert("API URL tanımlı değil. SEPETTAXI_API ayarlayın.");
+    throw new Error("API missing");
+  }
+}
+async function apiGet(action, params){
+  ensureAPI();
+  const u = new URL(API);
+  u.searchParams.set("action", action);
+  Object.keys(params||{}).forEach(k=> u.searchParams.set(k, params[k]));
+  const r = await fetch(u.toString());
+  const j = await r.json();
+  if(j && j.error) throw new Error(j.error);
+  return j;
 }
 
-/* ===== API ===== */
-async function api(action){
+/* Map */
+const map = L.map("map", { zoomControl:false, attributionControl:false });
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+
+let pickupMarker=null, dropMarker=null;
+let vehMarker=null;
+let lastVeh=null; // {lat,lng}
+let animReq=null;
+let currentHeading=0;
+
+function setStatus(text, kind){
+  document.getElementById("status").textContent = text;
+  const dot = document.getElementById("dot");
+  dot.classList.remove("ok","y");
+  dot.classList.add(kind==="ok" ? "ok" : "y");
+}
+function setSub(text){
+  document.getElementById("sub").textContent = text;
+}
+
+/* Icons */
+function taxiSVG(){
+  return `
+  <div class="vehWrap" style="transform:rotate(${currentHeading}deg)">
+    <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+      <path d="M14 28c2-8 6-14 10-15h16c4 1 8 7 10 15l2 8c.6 2.5-1 5-3.6 5H15.6C13 41 11.4 38.5 12 36l2-8z" fill="#f5c400"/>
+      <path d="M22 18h20c2 0 4 2 5 7H17c1-5 3-7 5-7z" fill="#111"/>
+      <rect x="18" y="34" width="10" height="8" rx="2" fill="#111"/>
+      <rect x="36" y="34" width="10" height="8" rx="2" fill="#111"/>
+      <circle cx="18" cy="44" r="4" fill="#000"/><circle cx="46" cy="44" r="4" fill="#000"/>
+      <rect x="28" y="12" width="8" height="6" rx="2" fill="#111"/>
+    </svg>
+  </div>`;
+}
+function motoSVG(){
+  return `
+  <div class="vehWrap" style="transform:rotate(${currentHeading}deg)">
+    <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+      <path d="M26 10h12c2 0 4 2 5 5l2 8c.6 2.5 2.2 4.2 4.8 6.2l2.2 1.6c2 1.4 3 3.6 3 6.0V42c0 2.2-1.8 4-4 4H13c-2.2 0-4-1.8-4-4v-4.8c0-2.4 1.1-4.6 3-6.0l2.2-1.6c2.6-2 4.2-3.7 4.8-6.2l2-8c1-3 3-5 5-5z" fill="#f5c400"/>
+      <rect x="26" y="14" width="12" height="10" rx="3" fill="#111"/>
+      <rect x="22" y="26" width="20" height="10" rx="5" fill="#111"/>
+      <circle cx="18" cy="46" r="5" fill="#000"/>
+      <circle cx="46" cy="46" r="5" fill="#000"/>
+      <path d="M20 36h24" stroke="#000" stroke-width="3" opacity=".85"/>
+    </svg>
+  </div>`;
+}
+
+function makeVehIcon(service_type){
+  const html = (service_type==="courier_moto") ? motoSVG() : taxiSVG();
+  return L.divIcon({ className:"", html, iconSize:[44,44], iconAnchor:[22,22] });
+}
+
+/* Smooth move + heading */
+function bearingDeg(a,b){
+  const y = Math.sin((b.lng-a.lng)*Math.PI/180) * Math.cos(b.lat*Math.PI/180);
+  const x = Math.cos(a.lat*Math.PI/180)*Math.sin(b.lat*Math.PI/180) -
+            Math.sin(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.cos((b.lng-a.lng)*Math.PI/180);
+  const brng = Math.atan2(y, x) * 180/Math.PI;
+  return (brng + 360) % 360;
+}
+
+function animateVehicle(fromLL, toLL, service_type){
+  if(animReq) cancelAnimationFrame(animReq);
+  const start = performance.now();
+  const dur = (service_type==="courier_moto") ? 900 : 1200; // moto slightly snappier
+  const startHeading = currentHeading;
+  const targetHeading = bearingDeg(fromLL, toLL);
+
+  function easeOut(t){ return 1 - Math.pow(1-t, 2); }
+
+  function step(now){
+    const t = Math.min(1, (now-start)/dur);
+    const k = easeOut(t);
+
+    const lat = fromLL.lat + (toLL.lat - fromLL.lat)*k;
+    const lng = fromLL.lng + (toLL.lng - fromLL.lng)*k;
+
+    // interpolate heading shortest path
+    let dh = ((targetHeading - startHeading + 540) % 360) - 180;
+    currentHeading = (startHeading + dh*k + 360) % 360;
+
+    if(vehMarker){
+      vehMarker.setLatLng([lat,lng]);
+      vehMarker.setIcon(makeVehIcon(service_type)); // update rotation via html
+    }
+    if(t < 1){
+      animReq = requestAnimationFrame(step);
+    }
+  }
+  animReq = requestAnimationFrame(step);
+}
+
+/* Polling */
+let lastService="taxi";
+async function tick(){
+  if(!jobId){
+    setStatus("Job bulunamadı", "y");
+    setSub("Geçersiz bağlantı");
+    return;
+  }
   try{
-    const r = await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,job_id:jobId})});
-    const t = await r.text();
-    return JSON.parse(t);
-  }catch(e){ return {error:"NET"}; }
-}
+    const j = await apiGet("getJob", { job_id: jobId });
 
-/* ===== UI ===== */
-function setStatus(assigned){
-  $("statusDot").className = "dot"+(assigned?" on":"");
-  $("statusTxt").textContent = assigned ? "Atandı" : "Aranıyor";
-  $("topSub").textContent = assigned ? "Sürücü yolda" : "Sürücü aranıyor";
-  document.getElementById("searchOv").classList.toggle("on", !assigned);
-}
+    // markers
+    const pu = {lat: Number(j.pickup_lat), lng: Number(j.pickup_lng)};
+    const dr = {lat: Number(j.dropoff_lat), lng: Number(j.dropoff_lng)};
+    if(!pickupMarker){
+      pickupMarker = L.marker([pu.lat, pu.lng]).addTo(map).bindPopup("Alım");
+      dropMarker = L.marker([dr.lat, dr.lng]).addTo(map).bindPopup("Varış");
+      const b = L.latLngBounds([pu.lat,pu.lng],[dr.lat,dr.lng]);
+      map.fitBounds(b.pad(0.35));
+    }
 
-/* ===== POLL ===== */
-async function poll(){
-  const res = await api("trackJob");
-  if(res?.error) return;
+    // status mapping
+    const st = (j.status||"open");
+    const svc = (j.service_type||"taxi");
+    lastService = svc;
 
-  // static info
-  if(res.service_type){
-    $("svcTxt").textContent = res.service_type==="taxi"?"Taksi":"Kurye";
-  }
-  if(res.distance_km!=null){
-    $("kmTxt").textContent = `${Number(res.distance_km).toFixed(1)} km`;
-  }
-  if(res.price!=null){
-    $("priceTxt").textContent = `${res.price} ₺`;
-  }
-
-  // markers
-  if(res.pickup_lat && res.pickup_lng){
-    if(!state.markers.from){
-      state.markers.from = L.marker([res.pickup_lat,res.pickup_lng],{icon:divIcon(pinFrom,"yellow")}).addTo(state.map);
-      state.map.setView([res.pickup_lat,res.pickup_lng],15);
+    if(st==="open"){
+      setStatus(svc==="courier_moto" ? "Kuryeniz aranıyor" : "Sürücü aranıyor", "y");
+      setSub("Yakın sürücülerle eşleşiyoruz");
+    }else if(st==="assigned"){
+      setStatus(svc==="courier_moto" ? "Kuryeniz yolda" : "Taksiniz yolda", "ok");
+      setSub("Canlı konum güncelleniyor");
+    }else if(st==="arrived"){
+      setStatus(svc==="courier_moto" ? "Kuryeniz geldi" : "Taksiniz geldi", "ok");
+      setSub("Varış noktasında");
+    }else if(st==="completed"){
+      setStatus("Tamamlandı", "ok");
+      setSub("Teşekkürler");
     }else{
-      state.markers.from.setLatLng([res.pickup_lat,res.pickup_lng]);
+      setStatus("Durum güncelleniyor", "y");
+      setSub("Lütfen bekleyin");
     }
-  }
-  if(res.dropoff_lat && res.dropoff_lng){
-    if(!state.markers.to){
-      state.markers.to = L.marker([res.dropoff_lat,res.dropoff_lng],{icon:divIcon(pinTo)}).addTo(state.map);
-    }else{
-      state.markers.to.setLatLng([res.dropoff_lat,res.dropoff_lng]);
-    }
-  }
 
-  // assigned?
-  if(res.driver_id){
-    if(!state.assigned){
-      state.assigned = true;
-      setStatus(true);
-      // notify
-      if("Notification" in window && Notification.permission==="granted"){
-        new Notification("SepetTaxi","Sürücü atandı ve yola çıktı.");
-      }
-    }
-    $("driverTxt").textContent = res.driver_name || "Sürücü";
-    $("plateTxt").textContent = res.driver_plate || "—";
-    if(res.driver_lat && res.driver_lng){
-      if(!state.markers.driver){
-        const ico = divIcon(res.service_type==="taxi"?taxiSVG:motoSVG,"yellow");
-        state.markers.driver = L.marker([res.driver_lat,res.driver_lng],{icon:ico}).addTo(state.map);
+    // vehicle
+    const dlat = Number(j.driver_lat||0);
+    const dlng = Number(j.driver_lng||0);
+    if(dlat && dlng && (st==="assigned" || st==="arrived")){
+      const cur = {lat:dlat, lng:dlng};
+      if(!vehMarker){
+        vehMarker = L.marker([cur.lat, cur.lng], { icon: makeVehIcon(svc) }).addTo(map);
+        lastVeh = cur;
       }else{
-        state.markers.driver.setLatLng([res.driver_lat,res.driver_lng]);
+        // smooth animate
+        if(lastVeh){
+          animateVehicle(lastVeh, cur, svc);
+        }else{
+          vehMarker.setLatLng([cur.lat, cur.lng]);
+          vehMarker.setIcon(makeVehIcon(svc));
+        }
+        lastVeh = cur;
       }
     }
-  }else{
-    setStatus(false);
+  }catch(e){
+    setStatus("Bağlantı sorunu", "y");
+    setSub(e.message || "Tekrar deneniyor");
+  }finally{
+    setTimeout(tick, 2500);
   }
 }
 
-/* ===== START ===== */
-initMap();
-setStatus(false);
-setInterval(poll, POLL_MS);
-poll();
-
-$("btnCenter").onclick = ()=>{
-  if(state.markers.driver){
-    state.map.setView(state.markers.driver.getLatLng(),16);
-  }else if(state.markers.from){
-    state.map.setView(state.markers.from.getLatLng(),16);
-  }
-};
+tick();
 </script>
 </body>
 </html>
