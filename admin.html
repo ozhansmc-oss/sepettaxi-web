@@ -1,201 +1,191 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SepetTaxi – Admin</title>
-<meta name="theme-color" content="#000000" />
+
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;background:#050506;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-  .wrap{max-width:980px;margin:0 auto;padding:18px}
-  .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.45);margin-bottom:12px}
-  h1{margin:6px 0 12px;font-size:20px}
-  .row{display:flex;gap:10px;align-items:center}
-  input{height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;padding:0 12px;font-size:15px;outline:none}
-  button{height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-weight:800;cursor:pointer}
-  .btnY{background:linear-gradient(180deg,#ffd84a,#f5c400);border:none;color:#0b0b0b;font-weight:900}
-  .grid{display:grid;grid-template-columns: 1fr 120px 120px;gap:10px;margin-top:10px}
-  .item{padding:12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)}
-  .mut{color:rgba(255,255,255,.7);font-size:13px;margin-top:6px;line-height:1.3}
-  .hint{margin-top:10px;color:rgba(255,255,255,.7);font-size:13px}
-  .tabs{display:flex;gap:10px;margin-top:10px}
-  .tab{padding:10px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);cursor:pointer;background:rgba(255,255,255,.06);font-weight:800}
-  .tab.active{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.08)}
-  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
-  th,td{border-bottom:1px solid rgba(255,255,255,.08);padding:10px;text-align:left}
-  th{color:rgba(255,255,255,.7)}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,Arial;
+  background:#050506;
+  color:#fff;
+}
+header{
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  font-size:22px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+header span{color:#f5c400}
+
+#login,#panel{
+  max-width:720px;
+  margin:20px auto;
+  padding:16px;
+}
+input,button{
+  width:100%;
+  height:48px;
+  margin-top:10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.15);
+  background:#000;
+  color:#fff;
+  font-size:16px;
+}
+button{
+  background:linear-gradient(#ffd84a,#f5c400);
+  color:#000;
+  font-weight:900;
+  cursor:pointer;
+}
+.list{
+  margin-top:16px;
+}
+.card{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:12px;
+}
+.badge{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+}
+.badge.taxi{background:#f5c400;color:#000}
+.badge.courier{background:#31d07b;color:#000}
+.row{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+.btn-red{
+  background:#ff3b3b;
+  color:#fff;
+}
+.small{
+  font-size:13px;
+  opacity:.7;
+}
 </style>
 </head>
+
 <body>
-<div class="wrap">
-  <div class="card">
-    <h1>Admin Giriş</h1>
-    <div class="row">
-      <input id="pin" placeholder="PIN" inputmode="numeric" style="width:180px">
-      <button class="btnY" id="login">Giriş</button>
-      <button id="reload">Yenile</button>
-    </div>
-    <div class="hint" id="hint">Backend’te varsayılan PIN: <b>1234</b> (Code.gs içinde değiştirilebilir)</div>
-  </div>
 
-  <div class="card" id="panel" style="display:none">
-    <div class="tabs">
-      <div class="tab active" id="tApps">Başvurular</div>
-      <div class="tab" id="tDrivers">Sürücüler</div>
-      <div class="tab" id="tJobs">İşler</div>
-    </div>
+<header>Sepet<span>Taxi</span> Admin</header>
 
-    <div id="appsBox"></div>
-    <div id="driversBox" style="display:none"></div>
-    <div id="jobsBox" style="display:none"></div>
-  </div>
+<div id="login">
+  <h3>Admin Giriş</h3>
+  <input id="pin" placeholder="Admin PIN">
+  <button onclick="login()">Giriş</button>
+</div>
+
+<div id="panel" style="display:none">
+  <h3>Bekleyen Sürücü Başvuruları</h3>
+  <div class="list" id="list"></div>
 </div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycby1ekP3NTaDt0AtRiQG3CrA4iiz9MYLSsWko4mIPsjdUwBWbAJpCp-k250W3O_GnoBxzg/exec";
-let PIN = "";
+let ADMIN_PIN = "";
 
-document.getElementById("login").onclick = async () => {
-  PIN = document.getElementById("pin").value.trim();
-  if (!PIN) return setHint("PIN gerekli");
-  const res = await getJSON({action:"adminLogin", pin: PIN});
-  if (!res.ok) return setHint("Hatalı PIN");
-  setHint("Giriş başarılı");
-  document.getElementById("panel").style.display = "block";
-  await loadApps();
-};
-
-document.getElementById("reload").onclick = () => {
-  if (!PIN) return;
-  const active = document.querySelector(".tab.active").id;
-  if (active==="tApps") loadApps();
-  if (active==="tDrivers") loadDrivers();
-  if (active==="tJobs") loadJobs();
-};
-
-document.getElementById("tApps").onclick = ()=> switchTab("apps");
-document.getElementById("tDrivers").onclick = ()=> switchTab("drivers");
-document.getElementById("tJobs").onclick = ()=> switchTab("jobs");
-
-function switchTab(which){
-  document.getElementById("tApps").classList.toggle("active", which==="apps");
-  document.getElementById("tDrivers").classList.toggle("active", which==="drivers");
-  document.getElementById("tJobs").classList.toggle("active", which==="jobs");
-  document.getElementById("appsBox").style.display = (which==="apps") ? "block" : "none";
-  document.getElementById("driversBox").style.display = (which==="drivers") ? "block" : "none";
-  document.getElementById("jobsBox").style.display = (which==="jobs") ? "block" : "none";
-  if (which==="apps") loadApps();
-  if (which==="drivers") loadDrivers();
-  if (which==="jobs") loadJobs();
+function login(){
+  ADMIN_PIN = document.getElementById("pin").value.trim();
+  if(!ADMIN_PIN){
+    alert("PIN girin");
+    return;
+  }
+  document.getElementById("login").style.display="none";
+  document.getElementById("panel").style.display="block";
+  loadApplications();
 }
 
-async function loadApps(){
-  if (!PIN) return;
-  const res = await getJSON({action:"adminListApps", pin: PIN});
-  if (!res.ok) return setHint("Başvurular alınamadı: " + (res.error||""));
-  const box = document.getElementById("appsBox");
-  box.innerHTML = `<div class="hint">Bekleyen başvuru: ${(res.apps||[]).length}</div>`;
+async function loadApplications(){
+  const res = await fetch(`${API}?action=adminGetDriverApplications&admin_pin=${ADMIN_PIN}&status=pending`);
+  const data = await res.json();
 
-  const grid = document.createElement("div");
-  grid.className = "grid";
+  if(!data.ok){
+    alert("Yetki hatası");
+    location.reload();
+    return;
+  }
 
-  (res.apps||[]).forEach(app=>{
-    const it = document.createElement("div");
-    it.className = "item";
-    it.innerHTML = `
-      <div style="font-weight:900">${esc(app.name||"")}</div>
-      <div class="mut">Telefon: ${esc(app.phone||"")}</div>
-      <div class="mut">Şehir: ${esc(app.city||"")}</div>
-      <div class="mut">Evrak: ${esc(app.docs_url||"")}</div>
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if(data.applications.length === 0){
+    list.innerHTML = "<p class='small'>Bekleyen başvuru yok.</p>";
+    return;
+  }
+
+  data.applications.forEach(app=>{
+    const div = document.createElement("div");
+    div.className="card";
+
+    div.innerHTML = `
+      <strong>${app.name}</strong><br>
+      <span class="small">${app.phone}</span><br>
+      <span class="badge ${app.vehicle_type}">
+        ${app.vehicle_type === "taxi" ? "🚕 Taksi" : "🏍️ Kurye"}
+      </span>
+      <div class="row">
+        <button onclick="approve('${app.application_id}')">Kabul</button>
+        <button class="btn-red" onclick="reject('${app.application_id}')">Red</button>
+      </div>
     `;
-
-    const aBtn = document.createElement("button");
-    aBtn.className="btnY";
-    aBtn.textContent="Kabul";
-    aBtn.onclick = ()=> review(app.application_id, "approve");
-
-    const rBtn = document.createElement("button");
-    rBtn.textContent="Red";
-    rBtn.onclick = ()=> review(app.application_id, "reject");
-
-    grid.appendChild(it);
-    grid.appendChild(aBtn);
-    grid.appendChild(rBtn);
+    list.appendChild(div);
   });
-
-  box.appendChild(grid);
 }
 
-async function review(id, decision){
-  if (!PIN) return;
-  setHint("İşleniyor…");
-  const res = await getJSON({action:"adminReviewApp", pin: PIN, application_id: id, decision});
-  if (!res.ok) return setHint("Hata: " + (res.error||""));
-  setHint("Tamam: " + res.status);
-  loadApps();
-}
+async function approve(id){
+  if(!confirm("Sürücü kabul edilsin mi?")) return;
 
-async function loadDrivers(){
-  if (!PIN) return;
-  const res = await getJSON({action:"adminListDrivers", pin: PIN});
-  if (!res.ok) return setHint("Sürücüler alınamadı");
-  const box = document.getElementById("driversBox");
-  const rows = res.drivers||[];
-  box.innerHTML = `<div class="hint">Toplam sürücü: ${rows.length}</div>`;
-  box.appendChild(renderTable(rows, ["driver_id","name","phone","approved","online","last_seen","active_job_id"]));
-}
-
-async function loadJobs(){
-  if (!PIN) return;
-  const res = await getJSON({action:"adminListJobs", pin: PIN});
-  if (!res.ok) return setHint("İşler alınamadı");
-  const box = document.getElementById("jobsBox");
-  const rows = res.jobs||[];
-  box.innerHTML = `<div class="hint">Son işler: ${rows.length}</div>`;
-  box.appendChild(renderTable(rows, ["job_id","service_type","status","customer_phone","price","created_at","driver_id"]));
-}
-
-function renderTable(rows, cols){
-  const t = document.createElement("table");
-  const thead = document.createElement("thead");
-  const trh = document.createElement("tr");
-  cols.forEach(c=>{
-    const th=document.createElement("th");
-    th.textContent=c;
-    trh.appendChild(th);
+  const res = await fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      action:"adminApproveDriver",
+      admin_pin:ADMIN_PIN,
+      application_id:id
+    })
   });
-  thead.appendChild(trh);
-  t.appendChild(thead);
+  const data = await res.json();
+  if(data.ok){
+    loadApplications();
+  }else{
+    alert("Hata: " + data.error);
+  }
+}
 
-  const tb=document.createElement("tbody");
-  rows.forEach(r=>{
-    const tr=document.createElement("tr");
-    cols.forEach(c=>{
-      const td=document.createElement("td");
-      td.textContent = (r[c]===undefined? "" : String(r[c]));
-      tr.appendChild(td);
-    });
-    tb.appendChild(tr);
+async function reject(id){
+  const note = prompt("Red sebebi (opsiyonel):","");
+
+  const res = await fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      action:"adminRejectDriver",
+      admin_pin:ADMIN_PIN,
+      application_id:id,
+      notes:note
+    })
   });
-  t.appendChild(tb);
-  return t;
-}
-
-function setHint(t){ document.getElementById("hint").textContent = t; }
-function esc(s){ return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
-
-function buildQS(obj){
-  const u = new URLSearchParams();
-  Object.keys(obj).forEach(k => u.set(k, obj[k]));
-  return u.toString();
-}
-async function getJSON(params){
-  if (!API || API.includes("PASTE_")) return {ok:false, error:"API URL missing"};
-  const url = API + "?" + buildQS(params);
-  const r = await fetch(url, { method:"GET" });
-  return await r.json();
+  const data = await res.json();
+  if(data.ok){
+    loadApplications();
+  }else{
+    alert("Hata: " + data.error);
+  }
 }
 </script>
+
 </body>
 </html>
