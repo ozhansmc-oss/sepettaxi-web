@@ -47,6 +47,34 @@ html,body{
 </div>
 
 <div id="map"></div>
+  <div id="panel" style="
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:40vh;
+  background:#0b0b0b;
+  border-top:1px solid #222;
+  padding:16px;
+  color:#fff;
+">
+  <div style="font-weight:800;margin-bottom:10px">
+    Nereye gidiyorsun?
+  </div>
+
+  <input id="fromAddr" placeholder="Nereden"
+    style="width:100%;height:46px;border-radius:12px;border:none;padding:0 12px;margin-bottom:8px">
+
+  <input id="toAddr" placeholder="Nereye"
+    style="width:100%;height:46px;border-radius:12px;border:none;padding:0 12px">
+
+  <button id="callBtn"
+    style="margin-top:14px;width:100%;height:52px;border-radius:999px;
+    border:none;background:#f5c400;font-weight:900">
+    Taksi Çağır
+  </button>
+</div>
+
 <script>
 const API = "https://script.google.com/macros/s/AKfycbz5Qk4OSBwQ1NCf09EGfczk7I8d3pRUSihE6xpb69mFRSf-MfNactwUxEQrNBYh6GcM/exec";
 
@@ -61,12 +89,25 @@ navigator.geolocation.getCurrentPosition(
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
     L.marker([lat,lng]).addTo(map);
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+  .then(r => r.json())
+  .then(j => {
+    document.getElementById("fromAddr").value = j.display_name;
+    console.log("Adres:", j.display_name);
+  });
   },
   ()=>{
     alert("Konum izni gerekli");
   },
   {enableHighAccuracy:true}
 );
+  document.getElementById("burger").onclick = () => {
+  alert("Menü buraya açılacak (Sürücü Ol / Giriş / Hakkımızda)");
+};
+  document.getElementById("callBtn").onclick = () => {
+  alert("Bir sonraki adım: createJob");
+};
+
 </script>
 </html>
 
