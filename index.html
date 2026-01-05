@@ -229,7 +229,23 @@
   pointer-events: auto !important;
   z-index: 1;
 }
+  .driver-float{
+  width:34px;
+  height:34px;
+  border-radius:14px;
+  background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.20);
+  display:grid;
+  place-items:center;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
+  animation: floaty 2.6s ease-in-out infinite;
+}
 
+@keyframes floaty{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-3px)}
+}
+  
 </style>
 </head>
 
@@ -747,20 +763,16 @@ function pinIcon(kind){
 }
 
 function driverIcon(mode){
-  // müşteri seçimine göre görünüm
   const sym = (mode==="courier") ? "🏍️" : "🚕";
   const html = `
-    <div style="
-      width:34px;height:34px;border-radius:14px;
-      background:rgba(0,0,0,.55);
-      border:1px solid rgba(255,255,255,.20);
-      display:grid;place-items:center;
-      box-shadow:0 18px 40px rgba(0,0,0,.45);
-      animation: floaty 2.6s ease-in-out infinite;
-    ">${sym}</div>
-    <style>@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}</style>
+    <div class="driver-float">${sym}</div>
   `;
-  return L.divIcon({html, className:"", iconSize:[34,34], iconAnchor:[17,17]});
+  return L.divIcon({
+    html,
+    className:"",
+    iconSize:[34,34],
+    iconAnchor:[17,17]
+  });
 }
 
 function smoothMoveMarker(marker, latlng){
