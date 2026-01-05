@@ -10,6 +10,9 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
 <style>
+    #map{
+  pointer-events: auto !important;
+  z-index: 1;
   *{box-sizing:border-box}
   :root{
     --y:#f5c400;
@@ -225,10 +228,6 @@
   }
   #searchCard .t1{font-size:20px;font-weight:900;margin-top:12px}
   #searchCard .t2{font-size:13.5px;color:var(--mut);margin-top:6px;line-height:1.35}
-  #map{
-  pointer-events: auto !important;
-  z-index: 1;
-}
   .driver-float{
   width:34px;
   height:34px;
