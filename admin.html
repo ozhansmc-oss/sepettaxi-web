@@ -1,146 +1,161 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>SepetTaxi – Admin</title>
-<meta name="theme-color" content="#000000" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SepetTaxi | Admin</title>
+<meta name="theme-color" content="#f5c400">
 <style>
-  *{box-sizing:border-box}
-  :root{--y:#f5c400; --line:rgba(255,255,255,.10); --mut:rgba(255,255,255,.65); --ok:#2bd576; --bad:#ff4d4d}
-  html,body{margin:0; background:#000; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-  header{height:56px; display:flex; align-items:center; justify-content:center; border-bottom:1px solid rgba(255,255,255,.08)}
-  header span{color:var(--y); font-weight:900}
-  .wrap{padding:12px; display:flex; flex-direction:column; gap:10px}
-  .card{background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:12px}
-  .inp{width:100%; padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.25); color:#fff; font-weight:800; outline:none}
-  .btn{border:0; width:100%; padding:14px; border-radius:16px; font-weight:900; cursor:pointer; background:var(--y); color:#000}
-  .btn2{border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#fff}
-  .list .item{padding:12px; border-radius:16px; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); margin-bottom:10px}
-  .row{display:flex; justify-content:space-between; gap:10px; align-items:center}
-  .tag{padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); font-weight:900; font-size:12px}
-  .tag.ok{border-color:rgba(43,213,118,.35); background:rgba(43,213,118,.10)}
-  .tag.bad{border-color:rgba(255,77,77,.35); background:rgba(255,77,77,.10)}
-  small{color:rgba(255,255,255,.55); font-weight:800}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+:root{--y:#f5c400;--line:rgba(255,255,255,.1)}
+.wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{
+  width:100%;max-width:420px;
+  background:#141416;border:1px solid var(--line);border-radius:18px;padding:16px
+}
+h1{margin:0 0 12px;font-size:18px}
+input{
+  width:100%;padding:12px;border-radius:14px;
+  border:1px solid var(--line);background:#000;color:#fff;font-weight:800
+}
+button{
+  width:100%;padding:14px;border-radius:16px;
+  border:0;background:var(--y);color:#000;font-weight:900;cursor:pointer
+}
+.list{margin-top:12px}
+.item{
+  padding:10px;border-radius:12px;border:1px solid var(--line);
+  margin-bottom:8px;font-size:13px
+}
+.badge{font-weight:900}
+.ok{color:#2bd576}
+.no{color:#ff4d4d}
+.top{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:10px
+}
+.small{font-size:12px;opacity:.6}
 </style>
 </head>
 <body>
-<header>Sepet<span>Taxi</span> – Admin</header>
 
 <div class="wrap">
-  <div class="card">
-    <div style="font-weight:950; margin-bottom:8px">Giriş</div>
-    <input id="pin" class="inp" placeholder="Admin PIN">
-    <div style="height:10px"></div>
-    <button id="loginBtn" class="btn">Giriş Yap</button>
-    <div style="margin-top:10px"><small>Not: PIN backend’de Script Properties ile değiştirilebilir.</small></div>
+  <div class="card" id="loginCard">
+    <h1>Admin Giriş</h1>
+    <input id="pin" placeholder="Admin PIN" type="password">
+    <div style="height:12px"></div>
+    <button onclick="login()">Giriş</button>
+    <div class="small" style="margin-top:8px">Yetkisiz erişimler loglanır.</div>
   </div>
 
-  <div class="card">
-    <div class="row">
-      <div style="font-weight:950">Sürücü Başvuruları</div>
-      <button class="btn2" style="padding:10px 12px; border-radius:14px; font-weight:900; cursor:pointer" id="refreshBtn">Yenile</button>
+  <div class="card" id="panelCard" style="display:none">
+    <div class="top">
+      <h1>Admin Panel</h1>
+      <button onclick="logout()" style="width:auto;padding:8px 12px">Çıkış</button>
     </div>
-    <div style="height:10px"></div>
-    <div id="list" class="list"></div>
+
+    <button onclick="loadDrivers()">Sürücüleri Listele</button>
+
+    <div class="list" id="list"></div>
   </div>
 </div>
 
 <script>
-const API = (localStorage.getItem("SEPETTAXI_API") || "https://script.google.com/macros/s/AKfycbxoeXl9XfxWtsqqCfftNV578KD_woNSKfT3KmSYwZuCv8iPSPd8-cZXNoYMh6Qx-yrlWA/exec").trim();
-function ensureAPI(){ if(!API){ alert("API URL tanımlı değil. SEPETTAXI_API ayarlayın."); throw new Error("API missing"); } }
-async function apiCall(action, payload){
-  ensureAPI();
-  const url = API + (API.includes("?") ? "&" : "?") + "action=" + encodeURIComponent(action);
-  const r = await fetch(url, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(payload||{}) });
+/* ========= CONFIG ========= */
+const API = "https://script.google.com/macros/s/AKfycbxoeXl9XfxWtsqqCfftNV578KD_woNSKfT3KmSYwZuCv8iPSPd8-cZXNoYMh6Qx-yrlWA/exec";
+
+/* ========= STATE ========= */
+const ADMIN_KEY = "stx_admin_pin";
+
+/* ========= API ========= */
+async function api(action, payload){
+  const pin = localStorage.getItem(ADMIN_KEY) || "";
+  const r = await fetch(API, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ action, pin, ...(payload||{}) })
+  });
   const j = await r.json();
-  if(j && j.error) throw new Error(j.error);
+  if(j.error) throw new Error(j.error);
   return j;
 }
-async function apiGet(action, params){
-  ensureAPI();
-  const u = new URL(API);
-  u.searchParams.set("action", action);
-  Object.keys(params||{}).forEach(k=> u.searchParams.set(k, params[k]));
-  const r = await fetch(u.toString());
-  const j = await r.json();
-  if(j && j.error) throw new Error(j.error);
-  return j;
-}
 
-let adminPin = localStorage.getItem("stx_admin_pin") || "";
-
-document.getElementById("pin").value = adminPin;
-
-document.getElementById("loginBtn").addEventListener("click", async ()=>{
+/* ========= AUTH ========= */
+async function login(){
+  const p = document.getElementById("pin").value.trim();
+  if(!p){ alert("PIN gir"); return; }
+  localStorage.setItem(ADMIN_KEY, p);
   try{
-    adminPin = document.getElementById("pin").value.trim();
-    if(adminPin.length<2) return alert("PIN girin.");
-    // ping auth
-    const res = await apiGet("adminPing", { pin: adminPin });
-    localStorage.setItem("stx_admin_pin", adminPin);
-    alert("Giriş OK");
-    await loadDrivers();
+    await api("adminPing");
+    showPanel();
   }catch(e){
-    alert("Hata: "+e.message);
+    localStorage.removeItem(ADMIN_KEY);
+    alert("PIN yanlış");
   }
-});
-
-document.getElementById("refreshBtn").addEventListener("click", loadDrivers);
-
-function itemCard(d){
-  const approved = d.approved==1;
-  const contract = d.contract_accepted==1;
-  return `
-    <div class="item">
-      <div class="row">
-        <div style="font-weight:950">${esc(d.first)} ${esc(d.last)}</div>
-        <div class="tag ${approved?'ok':'bad'}">${approved?'Aktif':'Bekliyor'}</div>
-      </div>
-      <div style="height:6px"></div>
-      <small>${esc(d.phone)} • ${esc(d.city)} • ${esc(d.vehicle)}</small>
-      <div style="height:6px"></div>
-      <small>Plaka: ${esc(d.plate||'-')} • Sözleşme: ${contract?'Onaylı':'Yok'}</small>
-      <div style="height:10px"></div>
-      <div class="row" style="gap:10px">
-        <button class="btn" onclick="approve('${d.driver_id}')">Aktive Et</button>
-        <button class="btn btn2" onclick="reject('${d.driver_id}')">Reddet</button>
-      </div>
-    </div>
-  `;
 }
-function esc(s){return (s||"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));}
 
+function logout(){
+  localStorage.removeItem(ADMIN_KEY);
+  location.reload();
+}
+
+function showPanel(){
+  document.getElementById("loginCard").style.display="none";
+  document.getElementById("panelCard").style.display="block";
+}
+
+/* ========= DATA ========= */
 async function loadDrivers(){
+  const list = document.getElementById("list");
+  list.innerHTML = "Yükleniyor…";
   try{
-    if(!adminPin) return;
-    const res = await apiGet("adminListDrivers", { pin: adminPin });
-    const list = document.getElementById("list");
-    if(!res.drivers || res.drivers.length===0){
-      list.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.60);font-weight:900">Kayıt yok</div>`;
-      return;
-    }
-    list.innerHTML = res.drivers.map(itemCard).join("");
+    const r = await api("adminListDrivers");
+    list.innerHTML = "";
+    r.drivers.forEach(d=>{
+      const div = document.createElement("div");
+      div.className="item";
+      div.innerHTML = `
+        <div><b>${d.first} ${d.last}</b> (${d.phone})</div>
+        <div class="small">
+          Onay: <span class="badge ${d.approved?'ok':'no'}">${d.approved?'EVET':'HAYIR'}</span> ·
+          Sözleşme: <span class="badge ${d.contract_accepted?'ok':'no'}">${d.contract_accepted?'EVET':'HAYIR'}</span>
+        </div>
+        <div style="margin-top:6px">
+          <button onclick="approve('${d.driver_id}')">Onayla</button>
+          <button onclick="reject('${d.driver_id}')">Reddet</button>
+        </div>
+      `;
+      list.appendChild(div);
+    });
   }catch(e){
-    alert("Hata: "+e.message);
+    list.innerHTML = "Hata: " + e.message;
   }
 }
 
-window.approve = async (driver_id)=>{
-  try{
-    const res = await apiCall("adminApproveDriver", { pin: adminPin, driver_id });
-    alert("Sürücü aktive edildi.");
-    await loadDrivers();
-  }catch(e){ alert("Hata: "+e.message); }
-};
-window.reject = async (driver_id)=>{
-  try{
-    const reason = prompt("Red sebebi (opsiyonel)", "") || "";
-    const res = await apiCall("adminRejectDriver", { pin: adminPin, driver_id, reason });
-    alert("Sürücü reddedildi.");
-    await loadDrivers();
-  }catch(e){ alert("Hata: "+e.message); }
-};
+async function approve(id){
+  if(!confirm("Sürücü onaylansın mı?")) return;
+  await api("adminApproveDriver",{driver_id:id});
+  loadDrivers();
+}
+async function reject(id){
+  const r = prompt("Reddetme nedeni","");
+  if(!r) return;
+  await api("adminRejectDriver",{driver_id:id,reason:r});
+  loadDrivers();
+}
+
+/* ========= INIT ========= */
+(async function(){
+  const pin = localStorage.getItem(ADMIN_KEY);
+  if(pin){
+    try{
+      await api("adminPing");
+      showPanel();
+    }catch(e){
+      localStorage.removeItem(ADMIN_KEY);
+    }
+  }
+})();
 </script>
 </body>
 </html>
