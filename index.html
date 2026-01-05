@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
+
 <meta name="theme-color" content="#f5c400">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -11,232 +12,62 @@
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,Arial;overflow:hidden}
-
-:root{
-  --y:#f5c400;
-  --panel:#0f0f10;
-  --line:rgba(255,255,255,.12);
+html,body{
+  margin:0;
+  height:100%;
+  background:#000;
+  color:#fff;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  overflow:hidden;
 }
-
-/* LANDING */
-#landing{
-  position:fixed;inset:0;z-index:2000;
-  background:#000 url("assets/landing.png") center/cover no-repeat;
-  display:flex;align-items:flex-end;justify-content:center;
-  padding:24px
-}
-#landing button{
-  width:92%;height:56px;border-radius:999px;
-  background:linear-gradient(#ffd84a,#f5c400);
-  border:none;font-size:20px;font-weight:900
-}
-
-/* TOPBAR */
-#topbar{
-  position:fixed;left:0;right:0;top:0;height:60px;z-index:10;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--line)
-}
-#topbar span{font-size:24px;font-weight:900}
-#topbar .y{color:var(--y)}
-
-/* MAP */
 #map{
-  position:absolute;left:0;right:0;top:60px;height:50vh;
-  z-index:1
-}
-
-/* PANEL */
-#panel{
-  position:absolute;left:0;right:0;top:calc(50vh + 60px);bottom:0;
-  background:linear-gradient(#0b0b0c,#050506);
-  border-top:1px solid var(--line);
-  padding:12px
-}
-.serviceRow{display:flex;gap:10px}
-.service{
-  flex:1;padding:14px;border-radius:16px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.05);
-  cursor:pointer
-}
-.service.active{border-color:var(--y)}
-
-.field{
-  margin-top:10px;padding:12px;border-radius:14px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--line)
-}
-.field input{
-  width:100%;background:transparent;border:none;
-  color:#fff;font-size:16px;outline:none
-}
-
-#courierBox{display:none}
-
-.metrics{display:flex;gap:10px;margin-top:10px}
-.metric{
-  flex:1;padding:12px;border-radius:14px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--line)
-}
-
-#callBtn{
-  margin-top:12px;width:100%;height:56px;
-  border-radius:999px;border:none;
-  background:linear-gradient(#ffd84a,#f5c400);
-  font-size:20px;font-weight:900;
-  opacity:.4
-}
-#callBtn.on{opacity:1}
-
-/* REGISTER */
-#regBack{
-  position:fixed;inset:0;z-index:3000;
-  background:rgba(0,0,0,.75);
-  display:none;align-items:center;justify-content:center
-}
-#reg{
-  width:90%;background:#111;border-radius:18px;
-  padding:16px;border:1px solid var(--line)
-}
-#reg input{
-  width:100%;height:46px;margin-top:8px;
-  border-radius:12px;border:1px solid var(--line);
-  background:#000;color:#fff;padding:0 10px
-}
-
-/* DRIVER MARKER */
-.driverMarker{
-  width:34px;height:34px;border-radius:14px;
-  background:rgba(0,0,0,.6);
-  border:1px solid rgba(255,255,255,.25);
-  display:grid;place-items:center;
-  animation:floaty 2.6s ease-in-out infinite
-}
-@keyframes floaty{
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-3px)}
+  position:absolute;
+  top:60px;
+  left:0;
+  right:0;
+  height:50vh;
+  z-index:1;
 }
 </style>
 </head>
-
 <body>
 
-<div id="landing">
-  <button id="startBtn">Başla</button>
-</div>
-
-<div id="topbar">
-  <span>Sepet<span class="y">Taxi</span></span>
+<div id="topbar" style="
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+  background:#000;
+  border-bottom:1px solid #222;
+">
+  <div id="burger" style="font-size:26px;cursor:pointer">☰</div>
+  <div style="font-weight:900">Sepet<span style="color:#f5c400">Taxi</span></div>
+  <div></div>
 </div>
 
 <div id="map"></div>
-
-<div id="panel">
-  <div class="serviceRow">
-    <div class="service" id="svcTaxi">🚕 Taksi</div>
-    <div class="service" id="svcCourier">🏍️ Kurye</div>
-  </div>
-
-  <div class="field"><input id="fromInput" placeholder="Nereden" readonly></div>
-  <div class="field"><input id="toInput" placeholder="Nereye" readonly></div>
-
-  <div id="courierBox">
-    <div class="field"><input id="pkgType" placeholder="Gönderi türü"></div>
-    <div class="field"><input id="pkgContent" placeholder="İçerik"></div>
-    <div class="field"><input id="recvName" placeholder="Alıcı adı"></div>
-    <div class="field"><input id="recvPhone" placeholder="Alıcı telefon"></div>
-    <label><input type="checkbox" id="decl"> Gönderi yasal taahhüdü</label>
-  </div>
-
-  <div class="metrics">
-    <div class="metric">Mesafe: <span id="km">—</span></div>
-    <div class="metric">Ücret: <span id="price">—</span></div>
-  </div>
-
-  <button id="callBtn">Çağır</button>
-</div>
-
-<!-- REGISTER -->
-<div id="regBack">
-  <div id="reg">
-    <h3>Zorunlu Kayıt</h3>
-    <input id="rFirst" placeholder="Ad">
-    <input id="rLast" placeholder="Soyad">
-    <input id="rPhone" placeholder="Telefon">
-    <button id="regOk">Devam</button>
-  </div>
-</div>
-
 <script>
-/* CONFIG */
-const API="https://script.google.com/macros/s/AKfycbz5Qk4OSBwQ1NCf09EGfczk7I8d3pRUSihE6xpb69mFRSf-MfNactwUxEQrNBYh6GcM/exec";
+const API = "https://script.google.com/macros/s/AKfycbz5Qk4OSBwQ1NCf09EGfczk7I8d3pRUSihE6xpb69mFRSf-MfNactwUxEQrNBYh6GcM/exec";
 
-let map,pickup,drop,service="",customer=null;
+let map;
 
-/* START */
-document.getElementById("startBtn").onclick=()=>{
-  landing.style.display="none";
-  initMap();
-};
+navigator.geolocation.getCurrentPosition(
+  (pos)=>{
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
 
-/* MAP */
-function initMap(){
-  map=L.map("map");
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  map.setView([41.01,28.97],13);
+    map = L.map("map").setView([lat,lng],16);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-  map.on("click",async e=>{
-    if(!service){alert("Hizmet seç");return}
-    if(!customer){showReg();return}
-    const a=await rev(e.latlng);
-    if(!pickup){
-      pickup={...e.latlng,a};
-      L.marker(e.latlng).addTo(map);
-      fromInput.value=a;
-    }else{
-      drop={...e.latlng,a};
-      L.marker(e.latlng).addTo(map);
-      toInput.value=a;
-      calc();
-    }
-  });
-}
-
-/* SERVICE */
-svcTaxi.onclick=()=>setService("taxi");
-svcCourier.onclick=()=>setService("courier");
-
-function setService(t){
-  service=t;
-  svcTaxi.classList.toggle("active",t==="taxi");
-  svcCourier.classList.toggle("active",t==="courier");
-  courierBox.style.display=t==="courier"?"block":"none";
-  if(!customer)showReg();
-}
-
-/* REGISTER */
-function showReg(){regBack.style.display="flex"}
-regOk.onclick=()=>{
-  customer={};
-  regBack.style.display="none";
-}
-
-/* CALC */
-function calc(){
-  km.textContent="5.6 km";
-  price.textContent= service==="courier" ? "132 TL" : "110 TL";
-  callBtn.classList.add("on");
-}
-
-/* GEO */
-async function rev(ll){
-  const r=await fetch(`https://nominatim.openstreetmapdf=DFjFHDF`);
-  return "Seçilen adres";
-}
+    L.marker([lat,lng]).addTo(map);
+  },
+  ()=>{
+    alert("Konum izni gerekli");
+  },
+  {enableHighAccuracy:true}
+);
 </script>
-</body>
 </html>
+
+</body>
