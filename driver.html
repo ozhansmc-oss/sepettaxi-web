@@ -50,4 +50,230 @@
   .job .a{display:flex;gap:10px;margin-top:10px}
   .job .a button{flex:1}
   .hint{margin-top:10px;color:rgba(255,255,255,.7);font-size:13px}
-  .pill{display:inline-flex;gap:8px;align-items
+  .pill{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25)}
+  .dot{width:10px;height:10px;border-radius:50%;background:#ff3b3b}
+  .dot.on{background:#31d07b}
+</style>
+</head>
+<body>
+  <header>Sepet<span>Taxi</span> • Sürücü</header>
+  <div id="map"></div>
+
+  <div id="panel">
+    <div class="handle"></div>
+
+    <div class="card" id="loginCard">
+      <div style="font-weight:900;margin-bottom:8px">Sürücü Girişi</div>
+      <div class="row">
+        <input id="phone" placeholder="Telefon" inputmode="tel" />
+        <button class="btnY" id="loginBtn">Giriş</button>
+      </div>
+      <div class="hint" id="loginHint">Başvuru yaptıysanız admin onayı sonrası giriş yapabilirsiniz.</div>
+    </div>
+
+    <div class="card" id="driverCard" style="display:none">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:900" id="dName">—</div>
+          <div style="color:rgba(255,255,255,.7);font-size:13px">Araç: Ticari Taksi + Kurye • 5km havuz</div>
+        </div>
+        <div class="pill" id="onlinePill"><span class="dot" id="dot"></span><span id="onTxt">Offline</span></div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button id="toggleOnline">Online / Offline</button>
+        <button class="btnY" id="refresh">İşleri Yenile</button>
+      </div>
+
+      <div class="list" id="jobs"></div>
+      <div class="hint" id="hint"></div>
+    </div>
+  </div>
+
+<script>
+const API = "PASTE_YOUR_GAS_WEBAPP_URL_HERE";
+const RADIUS_KM = 5;
+
+let map, meMarker=null;
+let driver=null; // {driver_id,name,phone}
+let myPos=null;
+let online=false;
+let hbWatchId=null;
+let hbTimer=null;
+
+initMap();
+
+document.getElementById("loginBtn").onclick = doLogin;
+document.getElementById("toggleOnline").onclick = toggleOnline;
+document.getElementById("refresh").onclick = refreshJobs;
+
+function initMap(){
+  map = L.map("map", { zoomControl:false, attributionControl:false });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+  map.setView([41.015, 28.979], 13);
+
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    myPos = [pos.coords.latitude, pos.coords.longitude];
+    map.setView(myPos, 16);
+    meMarker = L.marker(myPos, {icon: meIcon()}).addTo(map);
+  }, ()=>{}, {enableHighAccuracy:true, timeout:12000});
+}
+
+async function doLogin(){
+  const phone = document.getElementById("phone").value.trim();
+  if (!phone){ setLoginHint("Telefon gerekli"); return; }
+  setLoginHint("Kontrol ediliyor…");
+  const res = await getJSON({action:"driverLogin", phone});
+  if (!res.ok){
+    setLoginHint(res.error || "Giriş başarısız");
+    return;
+  }
+  driver = { driver_id: res.driver_id, name: res.name, phone: res.phone };
+  document.getElementById("dName").textContent = res.name || "Sürücü";
+  document.getElementById("loginCard").style.display = "none";
+  document.getElementById("driverCard").style.display = "block";
+  setHint("Giriş başarılı. Online olunca işler görünecek.");
+}
+
+function setLoginHint(t){ document.getElementById("loginHint").textContent = t; }
+function setHint(t){ document.getElementById("hint").textContent = t; }
+
+async function toggleOnline(){
+  if (!driver){ setHint("Önce giriş yapın"); return; }
+  online = !online;
+  const r = await postJSON({action:"driverSetOnline", driver_id: driver.driver_id, online});
+  if (!r.ok){
+    online = !online;
+    setHint("Hata: " + (r.error||""));
+    return;
+  }
+  updateOnlineUI();
+
+  if (online){
+    startHeartbeat();
+    await refreshJobs();
+  }else{
+    stopHeartbeat();
+  }
+}
+
+function updateOnlineUI(){
+  document.getElementById("dot").classList.toggle("on", online);
+  document.getElementById("onTxt").textContent = online ? "Online" : "Offline";
+}
+
+function startHeartbeat(){
+  if (hbWatchId!==null) return;
+
+  hbWatchId = navigator.geolocation.watchPosition(async (pos)=>{
+    myPos = [pos.coords.latitude, pos.coords.longitude];
+    if (!meMarker) meMarker = L.marker(myPos, {icon: meIcon()}).addTo(map);
+    meMarker.setLatLng(myPos);
+
+    // send heartbeat immediately
+    await postJSON({action:"driverHeartbeat", driver_id: driver.driver_id, lat: myPos[0], lng: myPos[1]});
+  }, ()=>{}, {enableHighAccuracy:true, maximumAge:1000, timeout:12000});
+
+  hbTimer = setInterval(async ()=>{
+    if (!online || !driver || !myPos) return;
+    await postJSON({action:"driverHeartbeat", driver_id: driver.driver_id, lat: myPos[0], lng: myPos[1]});
+  }, 8000);
+}
+
+function stopHeartbeat(){
+  if (hbWatchId!==null){
+    navigator.geolocation.clearWatch(hbWatchId);
+    hbWatchId=null;
+  }
+  if (hbTimer){
+    clearInterval(hbTimer);
+    hbTimer=null;
+  }
+}
+
+async function refreshJobs(){
+  if (!driver){ setHint("Önce giriş yapın"); return; }
+  if (!online){ setHint("İş görmek için Online olun"); return; }
+  if (!myPos){ setHint("Konum alınamadı"); return; }
+
+  setHint("Yakındaki işler yükleniyor…");
+  const res = await getJSON({action:"getNearbyJobs", driver_id: driver.driver_id, lat: myPos[0], lng: myPos[1], radius_km: RADIUS_KM});
+  if (!res.ok){
+    setHint("Hata: " + (res.error||""));
+    return;
+  }
+  renderJobs(res.jobs||[]);
+  setHint((res.jobs||[]).length ? "İş havuzu hazır." : "Yakın iş bulunamadı.");
+}
+
+function renderJobs(jobs){
+  const box = document.getElementById("jobs");
+  box.innerHTML = "";
+  for (const j of jobs){
+    const div = document.createElement("div");
+    div.className = "job";
+    const title = (j.service_type==="courier") ? "Kurye İşi" : "Taksi İşi";
+    const extra = (j.service_type==="courier")
+      ? `<div class="s"><b>Gönderi:</b> ${escapeHtml(j.package_type||"")} • <b>Alıcı:</b> ${escapeHtml(j.receiver_name||"")} (${escapeHtml(j.receiver_phone||"")})</div>`
+      : "";
+    div.innerHTML = `
+      <div class="t">${title} • ${Math.round(j.price||0)} TL</div>
+      <div class="s"><b>Nereden:</b> ${escapeHtml(shorten(j.from_address))}</div>
+      <div class="s"><b>Nereye:</b> ${escapeHtml(shorten(j.to_address))}</div>
+      ${extra}
+      <div class="s">İşe uzaklık: ${Number(j.distance_to_pickup_km||0).toFixed(1)} km • Yol: ${Number(j.distance_km||0).toFixed(1)} km</div>
+      <div class="a">
+        <button class="btnY" data-id="${j.job_id}">İşi Al</button>
+        <button data-nav="${j.job_id}">Haritada Göster</button>
+      </div>
+    `;
+    const [btnTake, btnNav] = div.querySelectorAll("button");
+    btnTake.onclick = () => takeJob(j.job_id);
+    btnNav.onclick = () => {
+      map.setView([j.pickup_lat, j.pickup_lng], 16);
+      L.circle([j.pickup_lat, j.pickup_lng], {radius:180}).addTo(map);
+    };
+    box.appendChild(div);
+  }
+}
+
+async function takeJob(job_id){
+  if (!driver || !online) return;
+  setHint("İş alınmaya çalışılıyor…");
+  const res = await postJSON({action:"driverAcceptJob", driver_id: driver.driver_id, job_id});
+  if (!res.ok){
+    setHint("Alınamadı: " + (res.error||""));
+    return;
+  }
+  setHint("İş alındı. Müşteri takip ekranına yönlendirilecek.");
+  // sürücü de takip etmek isterse:
+  window.location.href = "track.html?job_id=" + encodeURIComponent(job_id);
+}
+
+function meIcon(){
+  const html = `<div style="width:18px;height:18px;border-radius:50%;background:#f5c400;border:2px solid rgba(0,0,0,.6);box-shadow:0 10px 24px rgba(0,0,0,.45)"></div>`;
+  return L.divIcon({html, className:"", iconSize:[18,18], iconAnchor:[9,9]});
+}
+
+function shorten(s){ s=String(s||""); return s.length>60 ? s.slice(0,57)+"…" : s; }
+function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+
+function buildQS(obj){
+  const u = new URLSearchParams();
+  Object.keys(obj).forEach(k => u.set(k, obj[k]));
+  return u.toString();
+}
+async function getJSON(params){
+  if (!API || API.includes("PASTE_")) return {ok:false, error:"API URL missing"};
+  const url = API + "?" + buildQS(params);
+  const r = await fetch(url, { method:"GET" });
+  return await r.json();
+}
+async function postJSON(body){
+  if (!API || API.includes("PASTE_")) return {ok:false, error:"API URL missing"};
+  const r = await fetch(API, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+  return await r.json();
+}
+</script>
+</body>
+</html>
