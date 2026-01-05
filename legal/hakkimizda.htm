@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>SepetTaxi | Hakkımızda</title>
+  <meta name="theme-color" content="#f5c400" />
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --y:#f5c400;
+      --bg:#050506;
+      --panel:#0f0f10;
+      --card:#141416;
+      --line:rgba(255,255,255,.10);
+      --mut:rgba(255,255,255,.70);
+      --mut2:rgba(255,255,255,.45);
+      --ok:#31d07f;
+      --bad:#ff4d4d;
+      --r:18px;
+    }
+    html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial; }
+    a{color:inherit}
+    .wrap{min-height:100%;display:flex;flex-direction:column}
+    .topbar{
+      height:56px;display:flex;align-items:center;gap:10px;padding:0 14px;
+      border-bottom:1px solid var(--line);background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,11,.92));
+      position:sticky;top:0;z-index:10;
+      backdrop-filter: blur(10px);
+    }
+    .back{
+      width:36px;height:36px;border-radius:12px;border:1px solid var(--line);
+      display:grid;place-items:center;background:rgba(255,255,255,.04);text-decoration:none;
+    }
+    .brand{font-weight:900;letter-spacing:.2px}
+    .brand span{color:var(--y)}
+    .content{padding:14px;max-width:860px;width:100%;margin:0 auto}
+    .hero{
+      border:1px solid var(--line);background:radial-gradient(1200px 400px at 20% -20%, rgba(245,196,0,.18), transparent 60%),
+      linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius:var(--r);padding:14px 14px 12px;
+    }
+    .h1{font-size:18px;font-weight:900;margin:0 0 6px}
+    .p{margin:0;color:var(--mut);line-height:1.55;font-size:14px}
+    .cards{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+    .card{border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:var(--r);padding:12px}
+    .h2{margin:0 0 6px;font-size:14px;font-weight:900}
+    ul{margin:8px 0 0 18px;color:var(--mut);font-size:14px;line-height:1.55}
+    .meta{
+      margin-top:12px;padding:10px 12px;border-radius:14px;border:1px dashed rgba(255,255,255,.18);
+      color:var(--mut2);font-size:12px;line-height:1.5
+    }
+    .footer{margin-top:auto;padding:14px;border-top:1px solid var(--line);color:var(--mut2);font-size:12px}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;border:1px solid rgba(245,196,0,.35);
+      background:rgba(245,196,0,.08);color:#fff;font-size:12px;font-weight:700
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <a class="back" href="javascript:history.back()" aria-label="Geri">←</a>
+      <div class="brand">Sepet<span>Taxi</span></div>
+      <div style="margin-left:auto" class="pill">Hakkımızda</div>
+    </div>
+
+    <div class="content">
+      <div class="hero">
+        <h1 class="h1">SepetTaxi nedir?</h1>
+        <p class="p">
+          SepetTaxi; şehir içi ulaşım ve kurye ihtiyaçlarını, kullanıcılar ile bağımsız sürücüleri dijital bir platformda buluşturan
+          teknoloji odaklı bir hizmettir. SepetTaxi, doğrudan taşıma hizmeti sunmaz; hizmet, ilgili sürücü tarafından sağlanır.
+        </p>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <h2 class="h2">Vizyon</h2>
+          <p class="p">Hızlı, şeffaf, güvenli ve erişilebilir bir şehir içi mobilite deneyimi sunmak.</p>
+        </div>
+
+        <div class="card">
+          <h2 class="h2">Ne sunar?</h2>
+          <ul>
+            <li>Konum bazlı eşleşme ve yönlendirme</li>
+            <li>Tahmini mesafe ve ücret bilgilendirmesi</li>
+            <li>Canlı iş takibi</li>
+            <li>Hizmet türüne göre (Taksi/Kurye) akış</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2 class="h2">Aracılık modeli</h2>
+          <p class="p">
+            SepetTaxi, kullanıcılar ve sürücüler arasında aracılık eder. Taşıma/teslimatın ifası, sürücü ile kullanıcı arasındaki ilişki kapsamında yürütülür.
+          </p>
+        </div>
+
+        <div class="meta">
+          Bu sayfa bilgilendirme amaçlıdır. Hukuki metinler için KVKK ve sözleşme sayfalarına bakınız.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      © <span id="y"></span> SepetTaxi
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
