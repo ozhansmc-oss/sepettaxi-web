@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>SepetTaxi | Müşteri Hizmet Sözleşmesi</title>
+  <meta name="theme-color" content="#f5c400" />
+  <style>
+    *{box-sizing:border-box}
+    :root{--y:#f5c400;--bg:#050506;--line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.70);--mut2:rgba(255,255,255,.45);--r:18px;}
+    html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial;}
+    .wrap{min-height:100%;display:flex;flex-direction:column}
+    .topbar{height:56px;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,11,.92));position:sticky;top:0;z-index:10;backdrop-filter: blur(10px);}
+    .back{width:36px;height:36px;border-radius:12px;border:1px solid var(--line);display:grid;place-items:center;background:rgba(255,255,255,.04);text-decoration:none;color:#fff}
+    .brand{font-weight:900}
+    .brand span{color:var(--y)}
+    .content{padding:14px;max-width:860px;width:100%;margin:0 auto}
+    .card{border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:var(--r);padding:12px}
+    .title{font-size:16px;font-weight:900;margin:0 0 6px}
+    .sub{color:var(--mut2);font-size:12px;line-height:1.4;margin:0 0 10px}
+    .h{margin:12px 0 6px;font-size:13px;font-weight:900}
+    .p{margin:0;color:var(--mut);font-size:14px;line-height:1.55}
+    ul{margin:8px 0 0 18px;color:var(--mut);font-size:14px;line-height:1.55}
+    .note{margin-top:12px;padding:10px 12px;border-radius:14px;border:1px dashed rgba(255,255,255,.18);color:var(--mut2);font-size:12px;line-height:1.5}
+    .footer{margin-top:auto;padding:14px;border-top:1px solid var(--line);color:var(--mut2);font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <a class="back" href="javascript:history.back()" aria-label="Geri">←</a>
+      <div class="brand">Sepet<span>Taxi</span></div>
+      <div style="margin-left:auto;font-weight:800;color:rgba(255,255,255,.85);font-size:12px">Müşteri Sözleşmesi</div>
+    </div>
+
+    <div class="content">
+      <div class="card">
+        <div class="title">Müşteri Hizmet Sözleşmesi</div>
+        <div class="sub">Versiyon: 1.0 • Yürürlük Tarihi: 05.01.2026</div>
+
+        <div class="h">1. Taraflar ve Kabul</div>
+        <p class="p">
+          İşbu sözleşme, SepetTaxi platformunu kullanan müşteri (“Müşteri”) ile SepetTaxi arasında, elektronik ortamda onaylanması ile yürürlüğe girer.
+        </p>
+
+        <div class="h">2. Hizmetin Niteliği</div>
+        <p class="p">
+          SepetTaxi, Müşteri ile bağımsız sürücüleri buluşturan bir aracılık platformudur. SepetTaxi, taşıma/teslimat hizmetinin doğrudan sağlayıcısı değildir.
+        </p>
+
+        <div class="h">3. Hizmet Akışı</div>
+        <ul>
+          <li>Müşteri; taksi veya kurye hizmeti için talep oluşturur.</li>
+          <li>Talep, uygun sürücülere iletilir ve sürücü tarafından kabul edilmesiyle hizmet başlar.</li>
+          <li>Hizmetin ifası sürücü sorumluluğundadır.</li>
+        </ul>
+
+        <div class="h">4. Ücretlendirme</div>
+        <p class="p">
+          Platformda görünen ücretler tahmini bilgilendirme niteliğindedir. Nihai ücret; mesafe, süre, trafik koşulları ve hizmet türüne göre değişebilir.
+        </p>
+
+        <div class="h">5. Müşteri Yükümlülükleri</div>
+        <ul>
+          <li>Talep sırasında doğru bilgi vermek</li>
+          <li>Hukuka aykırı, tehlikeli veya yasaklı içerik taşınmasını talep etmemek</li>
+          <li>Sürücü ve üçüncü kişilerin güvenliğini tehlikeye atmamak</li>
+        </ul>
+
+        <div class="h">6. Sorumluluk Sınırı</div>
+        <p class="p">
+          Taşıma/teslimat sırasında doğabilecek zararlar ve uyuşmazlıklarda, somut olaya göre ilgili sürücü sorumludur.
+          SepetTaxi, platform aracılığı dışında, hizmetin ifasından kaynaklanan sonuçlardan sorumlu tutulamaz.
+        </p>
+
+        <div class="h">7. Askıya Alma / Fesih</div>
+        <p class="p">
+          SepetTaxi; suistimal, mevzuata aykırılık veya güvenlik riski halinde Müşteri hesabını askıya alabilir veya sözleşmeyi tek taraflı feshedebilir.
+        </p>
+
+        <div class="note">
+          Not: Bu metin, MVP/lansman sürümü için hazırlanmıştır. Ödeme altyapısı ve faturalandırma modeli netleştiğinde “Ödemeler” başlığı genişletilmelidir.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">© <span id="y"></span> SepetTaxi</div>
+  </div>
+  <script>document.getElementById("y").textContent=new Date().getFullYear();</script>
+</body>
+</html>
