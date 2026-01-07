@@ -94,6 +94,30 @@ html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:system-
 .searching{
   position:fixed;inset:0;background:rgba(0,0,0,.7);
   z-index:150;display:none;align-items:center;justify-content:center
+  /* === CRITICAL MOBILE FIX (MODAL MAP ÜSTÜNDE) === */
+
+/* Leaflet harita katmanlarını aşağı çek */
+.leaflet-pane,
+.leaflet-control,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10 !important;
+}
+
+/* Modal her şeyin üstünde olsun */
+.modalWrap {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal içerik ekrana sığsın */
+.modal {
+  max-height: 85vh;
+  overflow-y: auto;
 }
 </style>
 </head>
@@ -218,14 +242,16 @@ function setService(s){
   btnTaxi.classList.toggle("active",s==="taxi");
   btnCourier.classList.toggle("active",s==="courier");
   if(!localStorage.sepettaxi_user) regWrap.style.display="flex";
+  document.body.style.overflow = "hidden"; 
 }
-
+  
 regOk.onclick=()=>{
   if(!first.value||!last.value||!phone.value||!terms.checked){
     regErr.style.display="block";return;
   }
   localStorage.sepettaxi_user="1";
   regWrap.style.display="none";
+  document.body.style.overflow = "hidden";
   compute();
 };
 
