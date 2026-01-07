@@ -1,130 +1,55 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
-<meta name="theme-color" content="#f5c400" />
+<meta name="theme-color" content="#f5c400">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-/* ================= BASE ================= */
 *{box-sizing:border-box}
-html,body{
-  margin:0;height:100%;
-  background:#050506;color:#fff;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  overflow:hidden
-}
-:root{
-  --y:#f5c400;
-  --panel:#0f0f10;
-  --card:#141416;
-  --line:rgba(255,255,255,.10);
-  --mut:rgba(255,255,255,.65);
-  --ok:#3ddc97;
-  --bad:#ff5a5f;
-  --shadow:0 18px 60px rgba(0,0,0,.55);
-}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+:root{--y:#f5c400;--line:#222;--bad:#ff5a5f}
 
-/* ================= MAP ================= */
+/* MAP */
 #map{position:absolute;inset:0}
-.leaflet-control-zoom,
-.leaflet-control-attribution{display:none!important}
+.leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
 
-/* ================= TOPBAR ================= */
-.topbar{
-  position:fixed;left:0;right:0;top:0;z-index:1200;
-  padding:12px;display:flex;justify-content:space-between;
-}
-.topbar .btn{
-  width:42px;height:42px;border-radius:14px;
-  background:rgba(15,15,16,.72);
-  border:1px solid var(--line);
-  display:grid;place-items:center;
-}
-
-/* ================= BOTTOM ================= */
-.sheet{
-  position:fixed;left:0;right:0;bottom:0;z-index:1100;
-  padding:10px;pointer-events:none
-}
-.sheet .wrap{
-  pointer-events:auto;
-  max-width:560px;margin:0 auto;
-  background:rgba(15,15,16,.90);
-  border:1px solid var(--line);
-  border-radius:22px;
-  box-shadow:var(--shadow);
-}
-.section{padding:12px}
-.title{font-weight:900;font-size:14px}
-
-/* ================= SERVICE ================= */
+/* BOTTOM */
+.sheet{position:fixed;left:0;right:0;bottom:0;padding:10px;z-index:1000}
+.card{background:#141416;border-radius:18px;padding:12px;border:1px solid var(--line)}
 .cards2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.svc{
-  border-radius:18px;padding:12px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--line);
-  cursor:pointer
-}
+.svc{padding:12px;border-radius:14px;border:1px solid var(--line);cursor:pointer}
 .svc.active{border-color:var(--y);background:rgba(245,196,0,.12)}
 
-/* ================= FORM ================= */
-.field{
-  margin-top:10px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--line);
-  border-radius:16px
-}
-.frow{display:flex;gap:8px;padding:10px}
-.frow+.frow{border-top:1px solid var(--line)}
-.input{
-  flex:1;background:transparent;border:0;color:#fff;outline:none
-}
-.cta{
-  margin-top:10px;width:100%;
-  padding:14px;border-radius:16px;
-  background:linear-gradient(180deg,var(--y),#d9aa00);
-  border:0;font-weight:900
-}
+.field{margin-top:10px;border:1px solid var(--line);border-radius:14px}
+.field input{width:100%;padding:12px;background:transparent;border:0;color:#fff}
 
-/* ================= MODAL ================= */
-.modalMask{
-  position:fixed;inset:0;z-index:2000;
-  background:rgba(0,0,0,.6);
-  display:none;align-items:center;justify-content:center
-}
+.cta{margin-top:10px;width:100%;padding:14px;border-radius:16px;
+background:linear-gradient(180deg,var(--y),#d9aa00);border:0;font-weight:900}
+.cta:disabled{opacity:.35}
+
+/* MODAL */
+.modalMask{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;
+align-items:center;justify-content:center;z-index:2000}
 .modalMask.on{display:flex}
-.modal{
-  width:90%;max-width:420px;
-  background:#141416;border-radius:18px;padding:14px
-}
-.modal input{
-  width:100%;padding:12px;border-radius:12px;
-  background:#0f0f10;border:1px solid var(--line);color:#fff
-}
-.err{color:var(--bad);font-size:12px;display:none;margin-top:6px}
+.modal{background:#141416;border-radius:18px;padding:14px;width:90%;max-width:420px}
+.modal h3{margin:0 0 10px}
+.modal label{font-size:12px;opacity:.7}
+.modal input,.modal select{width:100%;padding:10px;margin-top:4px;
+background:#0f0f10;border:1px solid var(--line);color:#fff;border-radius:10px}
+.err{font-size:12px;color:var(--bad);display:none;margin-top:6px}
 
-/* ================= OVERLAY ================= */
-.overlay{
-  position:fixed;inset:0;z-index:3000;
-  background:rgba(0,0,0,.7);
-  display:none;align-items:center;justify-content:center
-}
+/* OVERLAY */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;
+align-items:center;justify-content:center;z-index:3000}
 .overlay.on{display:flex}
-.card{
-  background:#141416;border-radius:18px;
-  padding:16px;text-align:center
-}
-.spin{
-  width:48px;height:48px;border-radius:50%;
-  border:4px solid rgba(255,255,255,.2);
-  border-top-color:var(--y);
-  animation:rot 1s linear infinite;margin:0 auto 10px
-}
+.spin{width:44px;height:44px;border-radius:50%;
+border:4px solid rgba(255,255,255,.2);border-top-color:var(--y);
+animation:rot 1s linear infinite}
 @keyframes rot{to{transform:rotate(360deg)}}
 </style>
 </head>
@@ -133,117 +58,143 @@ html,body{
 
 <div id="map"></div>
 
-<div class="topbar">
-  <div class="btn">☰</div>
-  <div class="btn">🔔</div>
-</div>
-
 <div class="sheet">
-  <div class="wrap">
-    <div class="section">
-      <div class="title">Hizmet Seç</div>
-      <div class="cards2">
-        <div class="svc active" id="svcTaxi">🚕 Taksi</div>
-        <div class="svc" id="svcCourier">📦 Kurye</div>
-      </div>
-
-      <div class="field">
-        <div class="frow">
-          <input id="fromAddr" class="input" placeholder="Nereden" readonly>
-        </div>
-        <div class="frow">
-          <input id="toAddr" class="input" placeholder="Nereye" readonly>
-        </div>
-      </div>
-
-      <button class="cta" id="btnCall">Taksi Çağır</button>
+  <div class="card">
+    <div class="cards2">
+      <div class="svc active" id="svcTaxi">🚕 Taksi</div>
+      <div class="svc" id="svcCourier">📦 Kurye</div>
     </div>
+
+    <div class="field">
+      <input id="fromAddr" placeholder="Nereden" readonly>
+      <input id="toAddr" placeholder="Nereye" readonly>
+    </div>
+
+    <button class="cta" id="btnCall">Taksi Çağır</button>
   </div>
 </div>
 
-<!-- REGISTER -->
-<div class="modalMask" id="regMask">
+<!-- KURYE MODAL -->
+<div class="modalMask" id="courierMask">
   <div class="modal">
-    <h3>Zorunlu Kayıt</h3>
-    <input id="regFirst" placeholder="Ad">
-    <input id="regLast" placeholder="Soyad" style="margin-top:6px">
-    <input id="regPhone" placeholder="Telefon" style="margin-top:6px">
-    <div class="err" id="regErr">Tüm alanlar zorunlu</div>
-    <button class="cta" id="regSave" style="margin-top:10px">Kaydet</button>
+    <h3>Kurye Detayları</h3>
+
+    <label>Paket Türü</label>
+    <select id="cType">
+      <option value="">Seçiniz</option>
+      <option value="evrak">Evrak</option>
+      <option value="kucuk_paket">Küçük Paket</option>
+      <option value="buyuk_paket">Büyük Paket</option>
+      <option value="diger">Diğer</option>
+    </select>
+
+    <label style="margin-top:8px">Paket İçeriği</label>
+    <input id="cContent" placeholder="Örn: Resmi evrak">
+
+    <label style="margin-top:8px">Alıcı Ad Soyad</label>
+    <input id="cName">
+
+    <label style="margin-top:8px">Alıcı Telefon</label>
+    <input id="cPhone">
+
+    <label style="margin-top:8px;display:flex;gap:8px;align-items:center">
+      <input type="checkbox" id="cAccept">
+      İçeriğin yasal olduğunu onaylıyorum
+    </label>
+
+    <div class="err" id="cErr">Tüm alanlar ve onay zorunludur.</div>
+
+    <button class="cta" id="cSave" style="margin-top:10px">Onayla</button>
   </div>
 </div>
 
 <!-- SEARCH -->
 <div class="overlay" id="searchOverlay">
-  <div class="card">
-    <div class="spin"></div>
-    <b>Sürücü aranıyor</b>
-  </div>
+  <div><div class="spin"></div><div style="margin-top:8px">Kurye aranıyor</div></div>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-const API="https://script.google.com/macros/s/AKfycbwXKzBcvA5xRpvGqJSWCq7vzrOGxG1KplHq1vCHTb4j5auQ1G0ySNSfn9der1um4MsMug/exec";
+const API="https://script.google.com/macros/s/AKfycbz5Qk4OSBwQ1NCf09EGfczk7I8d3pRUSihE6xpb69mFRSf-MfNactwUxEQrNBYh6GcM/exec";
 const LS="sepettaxi_customer";
 
-/* ================= API ================= */
-async function api(action,payload={}){
+let service="taxi";
+let courier=null;
+
+/* API */
+async function api(action,p){
   const r=await fetch(API,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({action,...payload})
+    body:JSON.stringify({action,...p})
   });
   const j=await r.json();
-  if(!j.ok) throw new Error(j.error||"API_ERROR");
+  if(!j.ok) throw new Error(j.error);
   return j;
 }
 
-/* ================= USER ================= */
-function getUser(){try{return JSON.parse(localStorage.getItem(LS))}catch(_){return null}}
-function setUser(u){localStorage.setItem(LS,JSON.stringify(u))}
-
-/* ================= MAP ================= */
+/* MAP */
 const map=L.map("map",{zoomControl:false}).setView([40.195,29.06],13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-navigator.geolocation.getCurrentPosition(async p=>{
-  const {latitude,longitude}=p.coords;
-  map.setView([latitude,longitude],16);
-  document.getElementById("fromAddr").value="Mevcut Konum";
-});
+/* USER */
+function getUser(){try{return JSON.parse(localStorage.getItem(LS))}catch(_){return null}}
 
-/* ================= UI ================= */
-document.getElementById("svcCourier").onclick=()=>{
-  alert("Kurye hizmeti çok yakında açılacaktır.");
+/* SERVICE */
+svcTaxi.onclick=()=>{
+  service="taxi";
+  svcTaxi.classList.add("active");
+  svcCourier.classList.remove("active");
+  btnCall.textContent="Taksi Çağır";
+  btnCall.disabled=false;
 };
-document.getElementById("btnCall").onclick=async()=>{
-  let u=getUser();
-  if(!u){document.getElementById("regMask").classList.add("on");return}
-  document.getElementById("searchOverlay").classList.add("on");
 
-  const res=await api("createJob",{
-    service_type:"taxi",
+svcCourier.onclick=()=>{
+  service="courier";
+  svcCourier.classList.add("active");
+  svcTaxi.classList.remove("active");
+  btnCall.textContent="Kurye Çağır";
+  btnCall.disabled=true;
+  courierMask.classList.add("on");
+};
+
+/* COURIER MODAL */
+cSave.onclick=()=>{
+  const t=cType.value,c=cContent.value.trim(),
+        n=cName.value.trim(),p=cPhone.value.trim(),
+        a=cAccept.checked;
+  if(!t||!c||!n||!p||!a){
+    cErr.style.display="block";return;
+  }
+  courier={
+    package_type:t,
+    package_content_text:c,
+    receiver_name:n,
+    receiver_phone:p,
+    content_declaration_accept:true
+  };
+  cErr.style.display="none";
+  courierMask.classList.remove("on");
+  btnCall.disabled=false;
+};
+
+/* CALL */
+btnCall.onclick=async()=>{
+  const u=getUser();
+  if(!u){alert("Önce kayıt gerekli");return;}
+  searchOverlay.classList.add("on");
+
+  const payload={
+    service_type:service,
     customer_id:u.customer_id,
-    customer_first:u.first,
-    customer_last:u.last,
-    customer_phone:u.phone,
-    from_address:"Mevcut Konum",
-    to_address:"Seçilecek",
     pickup_lat:map.getCenter().lat,
     pickup_lng:map.getCenter().lng,
     dropoff_lat:map.getCenter().lat,
-    dropoff_lng:map.getCenter().lng
-  });
+    dropoff_lng:map.getCenter().lng,
+    ...(service==="courier"?courier:{})
+  };
 
-  location.href="track.html?job_id="+res.job_id;
-};
-
-document.getElementById("regSave").onclick=async()=>{
-  const f=regFirst.value.trim(),l=regLast.value.trim(),p=regPhone.value.trim();
-  if(!f||!l||!p){regErr.style.display="block";return}
-  const r=await api("registerCustomer",{first:f,last:l,phone:p});
-  setUser(r);
-  regMask.classList.remove("on");
+  const r=await api("createJob",payload);
+  location.href="track.html?job_id="+r.job_id;
 };
 </script>
 </body>
