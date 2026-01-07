@@ -248,6 +248,7 @@ html,body{margin:0;height:100%;background:#050506;color:#fff;overflow:hidden;fon
 <script>
 /* ===== SepetTaxi Index FINAL ===== */
 const API = "https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
+  const resp = await apiJSONP({ action:"ping" });
 
 let map, pickupMarker=null, dropMarker=null;
 let pickup=null, dropoff=null;
