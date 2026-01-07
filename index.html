@@ -290,6 +290,28 @@
     .overlayMeta{margin-top:10px;color:rgba(255,255,255,.55);font-size:12px}
     .overlayActions{display:flex;gap:10px;margin-top:14px}
     .overlayActions .btn{height:46px;border-radius:16px}
+    /* === CARD FOOTER FIX (CTA SABİT) === */
+.card{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+
+.cardBody{
+  flex:1;
+  overflow:hidden; /* scroll YOK */
+}
+
+.cardFooter{
+  position:sticky;
+  bottom:0;
+  padding-top:10px;
+  background:linear-gradient(
+    180deg,
+    rgba(15,15,16,0.6),
+    rgba(15,15,16,0.95)
+  );
+}
   </style>
 </head>
 
@@ -325,44 +347,47 @@
     <div id="map"></div>
 
     <div class="panel">
-      <div class="card">
+  <div class="card">
 
-        <!-- Service toggle -->
-        <div class="seg">
-          <button class="segBtn active" id="segTaxi">Taksi</button>
-          <button class="segBtn" id="segCourier">Kurye</button>
-        </div>
+  <!-- 🔽 ÜST KISIM: içerik -->
+  <div class="cardBody">
 
-        <!-- Addresses -->
-        <div class="row">
-          <div class="col">
-            <div class="label">Nereden</div>
-            <input class="input" id="fromInput" placeholder="Haritadan seç (tıkla) veya yaz" />
-          </div>
-        </div>
+    <!-- Nereden -->
+    <div class="label">Nereden</div>
+    <input class="input" id="fromInput" />
 
-        <div style="height:10px"></div>
+    <!-- Nereye -->
+    <div class="label" style="margin-top:10px">Nereye</div>
+    <input class="input" id="toInput" />
 
-        <div class="row">
-          <div class="col">
-            <div class="label">Nereye</div>
-            <input class="input" id="toInput" placeholder="Haritadan seç (tıkla) veya yaz" />
-          </div>
-        </div>
+    <!-- Metrics -->
+    <div class="metrics" id="metrics" style="display:none">
+      <div class="metric">
+        <small>Mesafe</small>
+        <b id="mDistance">—</b>
+      </div>
+      <div class="metric">
+        <small>Ücret</small>
+        <b id="mPrice">—</b>
+      </div>
+    </div>
 
-        <div class="hint" id="statusHint">Konum alınıyor… Konum izni vermezsen haritadan seçebilirsin.</div>
+  </div>
 
-        <!-- Metrics (adres seçilince görünür) -->
-        <div class="metrics" id="metrics" style="display:none">
-          <div class="metric">
-            <small>Mesafe</small>
-            <b id="mDistance">—</b>
-          </div>
-          <div class="metric">
-            <small>Ücret</small>
-            <b id="mPrice">—</b>
-          </div>
-        </div>
+  <!-- 🔽 ALT KISIM: SABİT CTA -->
+  <div class="cardFooter">
+
+    <div class="cta">
+      <button class="btn" id="btnRegister">Kayıt</button>
+      <button class="btn primary" id="btnCall">Taksi Çağır</button>
+    </div>
+
+    <div class="tiny" id="callNote"></div>
+
+  </div>
+
+</div>
+
 
         <!-- CTA -->
         <div class="cta">
