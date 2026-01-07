@@ -10,165 +10,41 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-  *{box-sizing:border-box}
-  :root{
-    --y:#f5c400;
-    --bg:#050506;
-    --panel:#0f0f10;
-    --card:#141416;
-    --line:rgba(255,255,255,.10);
-    --mut:rgba(255,255,255,.68);
-    --mut2:rgba(255,255,255,.45);
-    --ok:#3ddc97;
-    --bad:#ff5a5f;
-    --shadow:0 18px 60px rgba(0,0,0,.55);
-  }
-  html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
-  a{color:inherit;text-decoration:none}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
+:root{
+  --y:#f5c400; --line:rgba(255,255,255,.10);
+  --ok:#3ddc97; --bad:#ff5a5f;
+}
+#map{position:absolute;inset:0}
+.leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
 
-  /* MAP */
-  #map{position:absolute;inset:0}
-  .leaflet-control-zoom{display:none !important}
-  .leaflet-control-attribution{display:none !important}
+/* overlay */
+.overlay{
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(0,0,0,.65);
+  display:none;align-items:center;justify-content:center
+}
+.overlay.on{display:flex}
+.card{
+  background:#141416;border-radius:18px;padding:16px;
+  border:1px solid var(--line);text-align:center
+}
+.spin{
+  width:44px;height:44px;border-radius:50%;
+  border:4px solid rgba(255,255,255,.2);
+  border-top-color:var(--y);
+  animation:rot 1s linear infinite;margin:0 auto 10px
+}
+@keyframes rot{to{transform:rotate(360deg)}}
 
-  /* TOPBAR */
-  .topbar{
-    position:fixed;left:0;right:0;top:0;z-index:1200;
-    padding:12px 14px;
-    display:flex;align-items:center;justify-content:space-between;
-    pointer-events:none;
-  }
-  .btn{
-    pointer-events:auto;
-    width:42px;height:42px;border-radius:14px;
-    background:rgba(15,15,16,.72);
-    border:1px solid rgba(255,255,255,.10);
-    display:grid;place-items:center;
-    box-shadow:0 10px 30px rgba(0,0,0,.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    cursor:pointer;
-  }
-  .brand{
-    pointer-events:none;
-    display:flex;align-items:center;gap:10px;
-    padding:10px 12px;border-radius:16px;
-    background:rgba(5,5,6,.45);
-    border:1px solid rgba(255,255,255,.08);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-  .logoMark{
-    width:34px;height:34px;border-radius:12px;
-    background:linear-gradient(180deg,var(--y),#d9aa00);
-    display:grid;place-items:center;color:#000;font-weight:900;
-  }
-  .brand .t1{font-weight:900;letter-spacing:.3px}
-  .brand .t1 span{color:var(--y)}
-  .brand .t2{font-size:12px;color:var(--mut2);margin-top:1px}
-
-  /* OVERLAY */
-  .overlayMask{
-    position:fixed;inset:0;z-index:1700;
-    background:rgba(0,0,0,.70);
-    display:none;align-items:center;justify-content:center;
-    padding:16px;
-  }
-  .overlayMask.on{display:flex}
-  .overlayCard{
-    width:min(520px,100%);
-    background:rgba(15,15,16,.92);
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:22px;
-    box-shadow:var(--shadow);
-    padding:16px;
-    text-align:center;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-  }
-  .spin{
-    width:54px;height:54px;border-radius:999px;
-    margin:0 auto 12px;
-    border:4px solid rgba(255,255,255,.12);
-    border-top-color:var(--y);
-    animation:rot 1s linear infinite;
-  }
-  @keyframes rot{to{transform:rotate(360deg)}}
-  .ovT{font-weight:1000;font-size:16px}
-  .ovS{margin-top:6px;color:var(--mut);font-size:13px;line-height:1.3}
-  .ovHint{
-    margin-top:10px;
-    font-size:12px;color:var(--mut2);
-    line-height:1.25
-  }
-
-  /* BOTTOM STATUS CARD */
-  .sheet{
-    position:fixed;left:0;right:0;bottom:0;z-index:1100;
-    padding:10px 12px 14px;
-  }
-  .wrap{
-    max-width:560px;margin:0 auto;
-    background:rgba(15,15,16,.86);
-    border:1px solid rgba(255,255,255,.10);
-    border-radius:22px;
-    box-shadow:var(--shadow);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    overflow:hidden;
-  }
-  .section{padding:12px}
-  .title{
-    font-weight:900;letter-spacing:.2px;font-size:14px;
-    display:flex;align-items:center;justify-content:space-between;
-  }
-  .pill{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:6px 10px;border-radius:999px;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.08);
-    font-size:12px;color:var(--mut);
-  }
-  .dot{width:8px;height:8px;border-radius:99px;background:var(--bad);display:inline-block}
-  .dot.on{background:var(--ok)}
-  .hline{height:1px;background:rgba(255,255,255,.06)}
-  .grid{
-    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px
-  }
-  .mini{
-    border-radius:16px;padding:12px;
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.10);
-  }
-  .mini .k{font-size:12px;color:var(--mut2)}
-  .mini .v{margin-top:4px;font-weight:1000}
-  .btnRow{display:flex;gap:10px;margin-top:10px}
-  .ghost{
-    flex:1;
-    padding:13px 12px;border-radius:16px;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.10);
-    color:#fff;font-weight:900;
-    cursor:pointer;
-  }
-  .cta{
-    flex:1;
-    padding:13px 12px;border-radius:16px;
-    background:linear-gradient(180deg,var(--y),#d9aa00);
-    color:#000;font-weight:1000;letter-spacing:.2px;
-    border:0;cursor:pointer;
-  }
-
-  /* MARKERS */
-  .iconWrap{
-    width:34px;height:34px;border-radius:16px;
-    display:grid;place-items:center;
-    background:rgba(15,15,16,.90);
-    border:1px solid rgba(255,255,255,.16);
-    box-shadow:0 10px 28px rgba(0,0,0,.45);
-  }
-  .iconWrap.yellow{border-color:rgba(245,196,0,.35)}
-  .iconWrap svg{display:block}
+/* marker */
+.iconWrap{
+  width:34px;height:34px;border-radius:16px;
+  display:grid;place-items:center;
+  background:rgba(15,15,16,.95);
+  border:1px solid rgba(255,255,255,.2)
+}
 </style>
 </head>
 
@@ -176,248 +52,99 @@
 
 <div id="map"></div>
 
-<div class="topbar">
-  <div class="btn" id="btnBack" aria-label="Geri">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </div>
-
-  <div class="brand">
-    <div class="logoMark">S</div>
-    <div>
-      <div class="t1">Sepet<span>Taxi</span></div>
-      <div class="t2" id="topStatus">Takip başlatılıyor…</div>
-    </div>
-  </div>
-
-  <div class="btn" id="btnCenter" aria-label="Haritayı ortala">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" stroke="white" stroke-width="2"/>
-      <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="white" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </div>
-</div>
-
-<!-- SEARCHING OVERLAY -->
-<div class="overlayMask" id="searchOverlay">
-  <div class="overlayCard">
+<div class="overlay on" id="wait">
+  <div class="card">
     <div class="spin"></div>
-    <div class="ovT" id="ovTitle">Sürücü aranıyor</div>
-    <div class="ovS" id="ovSub">En yakın sürücüye bildiriyoruz…</div>
-    <div class="ovHint" id="ovHint">Atama gerçekleştiğinde bu ekran otomatik kapanır.</div>
-  </div>
-</div>
-
-<!-- BOTTOM STATUS -->
-<div class="sheet">
-  <div class="wrap">
-    <div class="section">
-      <div class="title">
-        Canlı Takip
-        <div class="pill">
-          <span class="dot" id="dotNet"></span>
-          <span id="netText"><b>Bağlantı</b> kontrol ediliyor</span>
-        </div>
-      </div>
-
-      <div style="margin-top:8px;font-size:12px;color:var(--mut2);line-height:1.25">
-        <span style="opacity:.9">Job ID:</span> <span id="jobIdText" style="font-weight:900"></span>
-      </div>
-
-      <div class="grid">
-        <div class="mini">
-          <div class="k">Durum</div>
-          <div class="v" id="statusText">—</div>
-        </div>
-        <div class="mini">
-          <div class="k">Sürücü</div>
-          <div class="v" id="driverText">—</div>
-        </div>
-      </div>
-
-      <div class="hline" style="margin-top:12px"></div>
-
-      <div class="btnRow">
-        <button class="ghost" id="btnRefresh">Yenile</button>
-        <button class="cta" id="btnHome">Ana Sayfa</button>
-      </div>
-
-      <div style="margin-top:10px;font-size:12px;color:var(--mut2);line-height:1.25">
-        Not: Canlı sürücü konumu için backend’e “getLiveLocation” benzeri bir endpoint eklenmesi gerekir. Şu anda bu sayfa yalnızca atama durumunu güvenilir biçimde takip eder.
-      </div>
-    </div>
+    <b>Sürücü aranıyor</b>
   </div>
 </div>
 
 <script>
-/* ==============================
-   SepetTaxi – Track (Backend Uyumlu)
-   getJobStatus(job_id) polling
-   ============================== */
+/* ================= CONFIG ================= */
+const API="https://script.google.com/macros/s/AKfycbz5Qk4OSBwQ1NCf09EGfczk7I8d3pRUSihE6xpb69mFRSf-MfNactwUxEQrNBYh6GcM/exec";
+const job_id = new URLSearchParams(location.search).get("job_id");
 
-const API_BASE = "https://script.google.com/macros/s/AKfycbz5Qk4OSBwQ1NCf09EGfczk7I8d3pRUSihE6xpb69mFRSf-MfNactwUxEQrNBYh6GcM/exec";
-const API = (API_BASE.endsWith("/exec") ? API_BASE : (API_BASE.endsWith("/") ? API_BASE + "exec" : API_BASE + "/exec"));
-
-const $ = (id)=>document.getElementById(id);
-
-function getParam(name){
-  const u = new URL(window.location.href);
-  return u.searchParams.get(name) || "";
+/* ================= API ================= */
+async function api(action,p){
+  const r = await fetch(API,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({action,...p})
+  });
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error||"API_ERROR");
+  return j;
 }
 
-const job_id = getParam("job_id");
+/* ================= MAP ================= */
+const map = L.map("map",{zoomControl:false}).setView([40.195,29.06],14);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-$("jobIdText").textContent = job_id || "—";
-
-/* ===== Icons ===== */
-function divIcon(svg, extraClass=""){
+/* ================= ICONS ================= */
+function icon(svg){
   return L.divIcon({
     className:"",
-    html:`<div class="iconWrap ${extraClass}">${svg}</div>`,
+    html:`<div class="iconWrap">${svg}</div>`,
     iconSize:[34,34],
     iconAnchor:[17,17]
   });
 }
-const pinSVG = `
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-  <path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" stroke="white" stroke-width="2" />
-  <circle cx="12" cy="9" r="2.5" fill="white"/>
-</svg>`;
-const carSVG = `
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-  <path d="M7 16h10l1-5-2-4H8l-2 4 1 5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M7 16v2M17 16v2" stroke="white" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="8.5" cy="18.5" r="1.5" fill="white"/>
-  <circle cx="15.5" cy="18.5" r="1.5" fill="white"/>
-</svg>`;
+const taxiSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+<path d="M7 16h10l1-5-2-4H8l-2 4 1 5Z" stroke="white" stroke-width="2"/>
+<circle cx="8.5" cy="18.5" r="1.5" fill="white"/>
+<circle cx="15.5" cy="18.5" r="1.5" fill="white"/></svg>`;
+const motoSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+<path d="M7 16h4l2-6h5l2 6" stroke="white" stroke-width="2"/>
+<circle cx="7" cy="16" r="2" stroke="white" stroke-width="2"/>
+<circle cx="19" cy="16" r="2" stroke="white" stroke-width="2"/></svg>`;
 
-const iconPin = divIcon(pinSVG, "yellow");
-const iconCar = divIcon(carSVG, "");
+/* ================= STATE ================= */
+let driverMarker=null;
+let lastLatLng=null;
 
-/* ===== Map init ===== */
-const map = L.map("map", { zoomControl:false, attributionControl:false, tap:true }).setView([40.195, 29.06], 13);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:19 }).addTo(map);
-map.doubleClickZoom.disable();
-map.scrollWheelZoom.disable();
-
-const markerPin = L.marker(map.getCenter(), { icon: iconPin }).addTo(map);
-const markerCar = L.marker(map.getCenter(), { icon: iconCar }); // assigned olunca addTo
-
-$("btnCenter").onclick = ()=> map.setView(markerPin.getLatLng(), Math.max(map.getZoom(), 15));
-$("btnBack").onclick = ()=> window.location.href = "index.html";
-$("btnHome").onclick = ()=> window.location.href = "index.html";
-
-/* ===== API ===== */
-async function callAPI(action, payload){
-  const r = await fetch(API, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ action, ...payload })
-  });
-  const j = await r.json().catch(()=>null);
-  if(!j || j.ok !== true){
-    const msg = (j && j.error) ? j.error : "NETWORK_OR_PARSE_ERROR";
-    throw new Error(msg);
+/* smooth move */
+function moveMarker(marker, to, duration=800){
+  const from = marker.getLatLng();
+  const start = performance.now();
+  function anim(t){
+    const p = Math.min((t-start)/duration,1);
+    const lat = from.lat + (to.lat-from.lat)*p;
+    const lng = from.lng + (to.lng-from.lng)*p;
+    marker.setLatLng([lat,lng]);
+    if(p<1) requestAnimationFrame(anim);
   }
-  return j;
+  requestAnimationFrame(anim);
 }
 
-/* ===== UI state ===== */
-function setNet(ok, text){
-  $("dotNet").className = ok ? "dot on" : "dot";
-  $("netText").innerHTML = ok ? `<b>Bağlantı</b> açık` : `<b>Bağlantı</b> sorunlu`;
-  if(text) $("topStatus").textContent = text;
-}
-function showSearching(on){
-  $("searchOverlay").classList.toggle("on", !!on);
-}
-function setStatusText(s){
-  $("statusText").textContent = s || "—";
-}
-function setDriverText(d){
-  $("driverText").textContent = d || "—";
-}
-
-/* ===== Polling ===== */
-let timer = null;
-let lastStatus = "";
-let failCount = 0;
-
-async function refresh(){
-  if(!job_id){
-    setNet(false, "Job ID bulunamadı");
-    setStatusText("HATA");
-    setDriverText("—");
-    showSearching(false);
-    return;
-  }
-
+/* ================= POLLING ================= */
+async function tick(){
   try{
-    const data = await callAPI("getJobStatus", { job_id });
-    failCount = 0;
-    setNet(true, "Takip aktif");
+    const s = await api("getJobStatus",{ job_id });
+    if(s.status==="open"){
+      wait.classList.add("on");
+      return;
+    }
+    wait.classList.remove("on");
 
-    const st = String(data.status || "");
-    const drv = String(data.driver_id || "");
+    const live = await api("getLiveLocation",{ job_id });
+    if(!live.has_driver || !live.lat) return;
 
-    setStatusText(st === "open" ? "AÇIK (SÜRÜCÜ ARANIYOR)" : (st === "assigned" ? "ATANDI" : st.toUpperCase() || "—"));
-    setDriverText(drv ? drv : "Henüz atanmadı");
-
-    if(st === "open"){
-      showSearching(true);
-      $("ovTitle").textContent = "Sürücü aranıyor";
-      $("ovSub").textContent = "En yakın sürücüye bildiriyoruz…";
-      $("ovHint").textContent = "Atama gerçekleştiğinde bu ekran otomatik kapanır.";
-      // map pin merkezde dursun
-      if(!map.hasLayer(markerPin)) markerPin.addTo(map);
-      if(map.hasLayer(markerCar)) map.removeLayer(markerCar);
-    }else if(st === "assigned"){
-      showSearching(false);
-      $("topStatus").textContent = "Sürücü atandı";
-      // Car marker görünür (konum backend'den gelmiyor; pin ile aynı noktada gösteriyoruz)
-      if(!map.hasLayer(markerCar)) markerCar.addTo(map);
-      markerCar.setLatLng(markerPin.getLatLng());
+    const pos = { lat:live.lat, lng:live.lng };
+    if(!driverMarker){
+      driverMarker = L.marker(pos,{ icon:icon(taxiSVG) }).addTo(map);
+      map.setView(pos,15);
+      lastLatLng = pos;
     }else{
-      showSearching(false);
-      $("topStatus").textContent = "Durum: " + st;
+      moveMarker(driverMarker, pos);
+      lastLatLng = pos;
     }
-
-    if(st !== lastStatus){
-      lastStatus = st;
-    }
-
-  }catch(err){
-    failCount++;
-    setNet(false, "Bağlantı sorunu");
-    $("topStatus").textContent = "Takipte bağlantı sorunu";
-    if(failCount >= 3){
-      // overlay kalabilir ama net mesaj
-      showSearching(false);
-      setStatusText("BAĞLANTI HATASI");
-      setDriverText("—");
-    }
-    console.error("[Track] getJobStatus error:", err);
+  }catch(e){
+    console.error(e);
   }
 }
 
-$("btnRefresh").onclick = refresh;
-
-/* Start */
-(function init(){
-  if(!job_id){
-    showSearching(false);
-    setNet(false, "Job ID yok");
-    setStatusText("HATA");
-    return;
-  }
-  // Başlangıçta searching overlay aç
-  showSearching(true);
-  $("topStatus").textContent = "Takip başlatılıyor…";
-  // İlk çekim + polling
-  refresh();
-  timer = setInterval(refresh, 3000);
-})();
+setInterval(tick,3000);
+tick();
 </script>
 
 </body>
