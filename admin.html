@@ -2,187 +2,190 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Admin</title>
+<meta name="theme-color" content="#f5c400">
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui,Arial;
-  background:#050506;
-  color:#fff;
+html,body{
+  margin:0;height:100%;
+  background:#050506;color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif
 }
-header{
-  height:60px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:900;
-  font-size:22px;
-  border-bottom:1px solid rgba(255,255,255,.1);
+:root{
+  --y:#f5c400;
+  --card:#141416;
+  --line:rgba(255,255,255,.10);
+  --mut:rgba(255,255,255,.65);
+  --ok:#3ddc97;
+  --bad:#ff5a5f;
 }
-header span{color:#f5c400}
 
-#login,#panel{
-  max-width:720px;
-  margin:20px auto;
-  padding:16px;
+/* HEADER */
+header{
+  height:56px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;border-bottom:1px solid var(--line)
 }
-input,button{
-  width:100%;
-  height:48px;
-  margin-top:10px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.15);
-  background:#000;
-  color:#fff;
-  font-size:16px;
+header .t{font-weight:1000}
+
+/* MAIN */
+main{padding:12px}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;padding:12px;margin-bottom:12px
+}
+.card h3{margin:0 0 8px;font-size:14px}
+
+/* LOGIN */
+input,textarea{
+  width:100%;padding:12px;border-radius:14px;
+  background:#0f0f10;border:1px solid var(--line);
+  color:#fff;outline:none
 }
 button{
-  background:linear-gradient(#ffd84a,#f5c400);
-  color:#000;
-  font-weight:900;
-  cursor:pointer;
+  width:100%;padding:14px;border-radius:16px;
+  background:linear-gradient(180deg,var(--y),#d9aa00);
+  border:0;font-weight:1000;margin-top:10px;cursor:pointer
 }
-.list{
-  margin-top:16px;
+button.secondary{
+  background:rgba(255,255,255,.06);
+  color:#fff;border:1px solid var(--line)
 }
-.card{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:14px;
-  padding:12px;
-  margin-bottom:12px;
+button.danger{
+  background:rgba(255,90,95,.15);
+  border:1px solid rgba(255,90,95,.4);
+  color:#ff5a5f
 }
-.badge{
-  display:inline-block;
-  padding:4px 10px;
-  border-radius:999px;
-  font-size:12px;
+
+/* APPLICATION */
+.app{
+  padding:12px;border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line);
+  margin-bottom:8px
 }
-.badge.taxi{background:#f5c400;color:#000}
-.badge.courier{background:#31d07b;color:#000}
-.row{
-  display:flex;
-  gap:10px;
-  margin-top:10px;
-}
-.btn-red{
-  background:#ff3b3b;
-  color:#fff;
-}
-.small{
-  font-size:13px;
-  opacity:.7;
-}
+.app .t{font-weight:900}
+.app .s{font-size:12px;color:var(--mut);margin-top:4px}
+.app .row{display:flex;gap:8px;margin-top:8px}
+.app .row button{flex:1}
 </style>
 </head>
 
 <body>
 
-<header>Sepet<span>Taxi</span> Admin</header>
+<header>
+  <div class="t">Admin Panel</div>
+</header>
 
-<div id="login">
-  <h3>Admin Giriş</h3>
-  <input id="pin" placeholder="Admin PIN">
-  <button onclick="login()">Giriş</button>
+<main>
+
+<!-- ADMIN LOGIN -->
+<div class="card" id="loginCard">
+  <h3>Admin Girişi</h3>
+  <input id="adminPin" placeholder="Admin PIN">
+  <button id="btnLogin">Giriş Yap</button>
 </div>
 
-<div id="panel" style="display:none">
+<!-- APPLICATIONS -->
+<div class="card" id="appsCard" style="display:none">
   <h3>Bekleyen Sürücü Başvuruları</h3>
-  <div class="list" id="list"></div>
+  <div id="apps"></div>
 </div>
+
+</main>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbz5Qk4OSBwQ1NCf09EGfczk7I8d3pRUSihE6xpb69mFRSf-MfNactwUxEQrNBYh6GcM/exec";
-let ADMIN_PIN = "";
+/* ================= CONFIG ================= */
+const API="https://script.google.com/macros/s/AKfycbz5Qk4OSBwQ1NCf09EGfczk7I8d3pRUSihE6xpb69mFRSf-MfNactwUxEQrNBYh6GcM/exec";
+let ADMIN_PIN="";
 
-function login(){
-  ADMIN_PIN = document.getElementById("pin").value.trim();
-  if(!ADMIN_PIN){
-    alert("PIN girin");
-    return;
-  }
-  document.getElementById("login").style.display="none";
-  document.getElementById("panel").style.display="block";
-  loadApplications();
+/* ================= API ================= */
+async function api(action,payload){
+  const r=await fetch(API,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({action,...payload})
+  });
+  const j=await r.json();
+  if(!j.ok) throw new Error(j.error||"API_ERROR");
+  return j;
 }
 
-async function loadApplications(){
-  const res = await fetch(`${API}?action=adminGetDriverApplications&admin_pin=${ADMIN_PIN}&status=pending`);
-  const data = await res.json();
+/* ================= LOGIN ================= */
+btnLogin.onclick=async()=>{
+  ADMIN_PIN = adminPin.value.trim();
+  if(!ADMIN_PIN){ alert("PIN gerekli"); return; }
+  try{
+    await loadApps();
+    loginCard.style.display="none";
+    appsCard.style.display="block";
+  }catch(e){
+    alert("Giriş başarısız: "+e.message);
+  }
+};
 
-  if(!data.ok){
-    alert("Yetki hatası");
-    location.reload();
+/* ================= LOAD APPLICATIONS ================= */
+async function loadApps(){
+  const r = await api("adminGetDriverApplications",{
+    admin_pin: ADMIN_PIN,
+    status: "pending"
+  });
+  renderApps(r.applications||[]);
+}
+
+/* ================= RENDER ================= */
+function renderApps(list){
+  apps.innerHTML="";
+  if(!list.length){
+    apps.innerHTML="<div style='font-size:12px;color:#888'>Bekleyen başvuru yok</div>";
     return;
   }
-
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-
-  if(data.applications.length === 0){
-    list.innerHTML = "<p class='small'>Bekleyen başvuru yok.</p>";
-    return;
-  }
-
-  data.applications.forEach(app=>{
-    const div = document.createElement("div");
-    div.className="card";
-
-    div.innerHTML = `
-      <strong>${app.name}</strong><br>
-      <span class="small">${app.phone}</span><br>
-      <span class="badge ${app.vehicle_type}">
-        ${app.vehicle_type === "taxi" ? "🚕 Taksi" : "🏍️ Kurye"}
-      </span>
+  list.forEach(a=>{
+    const d=document.createElement("div");
+    d.className="app";
+    d.innerHTML=`
+      <div class="t">${a.name}</div>
+      <div class="s">${a.phone} • ${a.vehicle_type}</div>
+      <div class="s">Başvuru: ${a.submitted_at}</div>
+      <textarea placeholder="Red notu (opsiyonel)" style="margin-top:6px"></textarea>
       <div class="row">
-        <button onclick="approve('${app.application_id}')">Kabul</button>
-        <button class="btn-red" onclick="reject('${app.application_id}')">Red</button>
+        <button class="secondary">Onayla</button>
+        <button class="danger">Reddet</button>
       </div>
     `;
-    list.appendChild(div);
+    const note = d.querySelector("textarea");
+    d.querySelector(".secondary").onclick=()=>approve(a.application_id);
+    d.querySelector(".danger").onclick=()=>reject(a.application_id, note.value);
+    apps.appendChild(d);
   });
 }
 
+/* ================= ACTIONS ================= */
 async function approve(id){
-  if(!confirm("Sürücü kabul edilsin mi?")) return;
-
-  const res = await fetch(API,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      action:"adminApproveDriver",
-      admin_pin:ADMIN_PIN,
-      application_id:id
-    })
-  });
-  const data = await res.json();
-  if(data.ok){
-    loadApplications();
-  }else{
-    alert("Hata: " + data.error);
+  if(!confirm("Başvuru onaylansın mı?")) return;
+  try{
+    await api("adminApproveDriver",{
+      admin_pin: ADMIN_PIN,
+      application_id: id
+    });
+    loadApps();
+  }catch(e){
+    alert("Onaylanamadı: "+e.message);
   }
 }
-
-async function reject(id){
-  const note = prompt("Red sebebi (opsiyonel):","");
-
-  const res = await fetch(API,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      action:"adminRejectDriver",
-      admin_pin:ADMIN_PIN,
-      application_id:id,
-      notes:note
-    })
-  });
-  const data = await res.json();
-  if(data.ok){
-    loadApplications();
-  }else{
-    alert("Hata: " + data.error);
+async function reject(id, note){
+  if(!confirm("Başvuru reddedilsin mi?")) return;
+  try{
+    await api("adminRejectDriver",{
+      admin_pin: ADMIN_PIN,
+      application_id: id,
+      notes: note
+    });
+    loadApps();
+  }catch(e){
+    alert("Reddedilemedi: "+e.message);
   }
 }
 </script>
