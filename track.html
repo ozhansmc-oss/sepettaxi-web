@@ -4,126 +4,138 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>SepetTaxi – Takip</title>
-<meta name="theme-color" content="#050506" />
-
+<meta name="theme-color" content="#f5c400" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <style>
-  *{box-sizing:border-box}
-  :root{--y:#f5c400;--bg:#050506;--line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.68)}
-  html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;overflow:hidden}
-  header{
-    height:56px;display:flex;align-items:center;justify-content:center;
-    border-bottom:1px solid var(--line);background:rgba(5,5,6,.92);
-    position:fixed;top:0;left:0;right:0;z-index:5000;backdrop-filter: blur(10px);
-    font-weight:900;letter-spacing:.2px
-  }
-  header b{color:var(--y)}
-  #map{position:fixed;inset:56px 0 0 0}
-  .pill{
-    position:fixed;left:50%;transform:translateX(-50%);
-    z-index:7000;border-radius:999px;padding:8px 12px;
-    border:1px solid var(--line);background:rgba(20,20,22,.78);
-    backdrop-filter: blur(10px);
-    font-size:12px;color:var(--mut)
-  }
-  .pill.top{top:68px}
-  .pill.top2{top:108px}
-
-  .vehIcon{
-    width:34px;height:34px;border-radius:999px;
-    display:grid;place-items:center;
-    border:1px solid rgba(255,255,255,.18);
-    background:rgba(20,20,22,.85);
-    box-shadow:0 10px 30px rgba(0,0,0,.45);
-    font-size:16px;
-  }
-  .leaflet-control-container{display:none}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050506;color:#fff;overflow:hidden;font-family:system-ui}
+:root{--y:#f5c400;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.72);--mut2:rgba(255,255,255,.45)}
+header{
+  height:56px;display:flex;align-items:center;justify-content:center;
+  border-bottom:1px solid var(--line);font-weight:950;position:relative;
+}
+header .back{
+  position:absolute;left:10px;top:8px;width:40px;height:40px;border-radius:12px;
+  border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;background:rgba(255,255,255,.03)
+}
+header span{color:var(--y)}
+#map{height:calc(100% - 56px)}
+.pill{
+  position:fixed;left:50%;transform:translateX(-50%);
+  z-index:200;border-radius:999px;padding:8px 12px;font-size:12px;
+  border:1px solid var(--line);background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:var(--mut)
+}
+.p1{top:70px}
+.p2{top:110px}
+.badge{color:#fff;font-weight:900}
 </style>
 </head>
 <body>
-<header>Sepet<b>Taxi</b> – Canlı Takip</header>
+<header>
+  <div class="back" onclick="location.href='index.html'">←</div>
+  Sepet<span>Taxi</span> Takip
+</header>
+
 <div id="map"></div>
-<div class="pill top" id="st">Yükleniyor…</div>
-<div class="pill top2" id="st2">Job: —</div>
+<div class="pill p1" id="statusPill">Durum: <span class="badge" id="st">—</span></div>
+<div class="pill p2" id="metaPill">İş: <span class="badge" id="jid">—</span></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzQ5Nw3WJlOTkC5vrjQHyykHT3En-jmSkcdoBvgUC4v49n-MFFZhfKDBQ4Z1ehRLyWG/exec"; // .../exec
+const API = "https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
 
 const qs = new URLSearchParams(location.search);
-const job_id = qs.get("job_id") || "";
+const jobId = qs.get("job_id") || localStorage.getItem("sepettaxi_last_job_id") || "";
+document.getElementById("jid").textContent = jobId || "—";
 
-let map, pickupMarker, dropMarker, driverMarker, line;
+const map = L.map("map", { zoomControl:false }).setView([41.0082, 28.9784], 13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:19 }).addTo(map);
 
-function $(id){ return document.getElementById(id); }
+let pickupM=null, dropM=null, vehicleM=null;
+let serviceType = localStorage.getItem("sepettaxi_last_service") || "taxi";
 
-async function api(action, payload){
-  const r = await fetch(API_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ action, ...payload }) });
-  return await r.json();
+function iconEmoji(type){
+  const html = `<div style="font-size:26px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))">${type==="courier"?"🛵":"🚕"}</div>`;
+  return L.divIcon({ className:"", html, iconSize:[26,26], iconAnchor:[13,13] });
 }
 
-function init(){
-  map = L.map("map",{ zoomControl:false, attributionControl:false }).setView([40.1885,29.0610], 13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ maxZoom:19 }).addTo(map);
-
-  if(!job_id){
-    $("st").textContent = "Job bulunamadı.";
-    $("st2").textContent = "job_id parametresi eksik";
-    return;
-  }
-  $("st2").textContent = "Job: " + job_id;
-
-  poll();
-  setInterval(poll, 2200);
+async function apiGET(params){
+  const u = new URLSearchParams(params);
+  const url = API + (API.includes("?") ? "&" : "?") + u.toString();
+  const res = await fetch(url);
+  const txt = await res.text();
+  let j=null; try{ j=JSON.parse(txt); }catch(_){}
+  if(!res.ok) throw new Error("HTTP_"+res.status);
+  return j;
 }
 
-function iconOf(serviceType){
-  const em = (serviceType==="courier") ? "🏍️" : "🚕";
-  return L.divIcon({ className:"", html:'<div class="vehIcon">'+em+'</div>', iconSize:[34,34], iconAnchor:[17,17] });
+function setStatus(s){ document.getElementById("st").textContent = s || "—"; }
+
+function ensureMarkers(j){
+  const p = {lat:Number(j.pickup_lat), lng:Number(j.pickup_lng)};
+  const d = {lat:Number(j.dropoff_lat), lng:Number(j.dropoff_lng)};
+  if(isFinite(p.lat)&&isFinite(p.lng) && !pickupM){
+    pickupM = L.marker([p.lat,p.lng]).addTo(map).bindPopup("Nereden");
+  }
+  if(isFinite(d.lat)&&isFinite(d.lng) && !dropM){
+    dropM = L.marker([d.lat,d.lng]).addTo(map).bindPopup("Nereye");
+  }
+  if((pickupM||dropM) && !vehicleM){
+    const start = pickupM ? pickupM.getLatLng() : (dropM ? dropM.getLatLng() : map.getCenter());
+    vehicleM = L.marker(start, { icon: iconEmoji(serviceType) }).addTo(map);
+  }
+  if(pickupM && dropM){
+    const g = L.featureGroup([pickupM, dropM]);
+    map.fitBounds(g.getBounds().pad(0.25));
+  }
 }
 
-async function poll(){
-  const res = await api("getJob",{ job_id });
-  if(!res || !res.ok){
-    $("st").textContent = "Takip edilemiyor: " + (res && (res.error||res.message) ? (res.error||res.message) : "hata");
-    return;
-  }
-  const job = res.job;
-
-  $("st").textContent =
-    job.status==="searching" ? ((job.service_type==="courier")?"Kurye aranıyor…":"Sürücü aranıyor…") :
-    job.status==="assigned" ? "Sürücü atandı. Kabul bekleniyor…" :
-    job.status==="active" ? "Yolda…" :
-    job.status==="picked_up" ? "Alındı, teslimata gidiyor…" :
-    job.status==="done" ? "Tamamlandı" :
-    job.status==="cancelled" ? "İptal edildi" :
-    ("Durum: " + job.status);
-
-  const a = [Number(job.pickup_lat), Number(job.pickup_lng)];
-  const b = [Number(job.dropoff_lat), Number(job.dropoff_lng)];
-
-  if(!pickupMarker){
-    pickupMarker = L.marker(a, { icon: L.divIcon({ className:"", html:'<div class="vehIcon">🟡</div>', iconSize:[34,34], iconAnchor:[17,17] })}).addTo(map);
-    dropMarker = L.marker(b, { icon: L.divIcon({ className:"", html:'<div class="vehIcon">⚫</div>', iconSize:[34,34], iconAnchor:[17,17] })}).addTo(map);
-    line = L.polyline([a,b], { weight:4, opacity:.65 }).addTo(map);
-    map.fitBounds([a,b], { padding:[30,30] });
-  }
-
-  // live driver
-  const live = res.live;
-  if(live && live.lat && live.lng){
-    const p = [Number(live.lat), Number(live.lng)];
-    if(!driverMarker){
-      driverMarker = L.marker(p, { icon: iconOf(job.service_type) }).addTo(map);
-    }else{
-      driverMarker.setLatLng(p);
-      driverMarker.setIcon(iconOf(job.service_type));
+function moveVehicle(j){
+  // driver ping varsa oraya; yoksa pickup üzerinde beklesin
+  const lat = Number(j.last_lat);
+  const lng = Number(j.last_lng);
+  if(vehicleM){
+    if(isFinite(lat)&&isFinite(lng)){
+      vehicleM.setLatLng([lat,lng]);
+    }else if(pickupM){
+      vehicleM.setLatLng(pickupM.getLatLng());
     }
   }
 }
 
-init();
+async function tick(){
+  if(!jobId){
+    setStatus("JOB_ID YOK");
+    return;
+  }
+  try{
+    const resp = await apiGET({ action:"getJob", job_id: jobId });
+    if(!resp || resp.ok !== true){ setStatus("BULUNAMADI"); return; }
+
+    const j = resp.data;
+    serviceType = j.service_type || serviceType;
+    ensureMarkers(j);
+    moveVehicle(j);
+
+    const st = j.status || "—";
+    // UX: net metin
+    const pretty =
+      st==="SEARCHING" ? "Sürücü aranıyor" :
+      st==="ASSIGNED"  ? "Sürücü atandı" :
+      st==="ACCEPTED"  ? "Sürücü kabul etti" :
+      st==="PICKED_UP" ? "Yolda" :
+      st==="DELIVERED" ? "Tamamlandı" :
+      st==="CANCELLED" ? "İptal" : st;
+
+    setStatus(pretty);
+  }catch(e){
+    console.error(e);
+    setStatus("BAĞLANTI HATASI");
+  }
+}
+
+tick();
+setInterval(tick, 2500);
 </script>
 </body>
 </html>
