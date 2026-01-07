@@ -3,209 +3,34 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>SepetTaxi</title>
-<meta name="theme-color" content="#f5c400" />
+<title>SepetTaxi – Takip</title>
+<meta name="theme-color" content="#050506" />
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
   *{box-sizing:border-box}
-  :root{
-    --y:#f5c400;
-    --bg:#050506;
-    --panel:#0f0f10;
-    --card:#141416;
-    --line:rgba(255,255,255,.10);
-    --mut:rgba(255,255,255,.66);
-    --mut2:rgba(255,255,255,.42);
-    --ok:#35d07f;
-    --warn:#f5c400;
-    --bad:#ff4d4d;
-  }
+  :root{--y:#f5c400;--bg:#050506;--line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.68)}
   html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;overflow:hidden}
-  a{color:inherit}
-
-  /* ===== Topbar (global) ===== */
-  .topbar{
-    height:56px;display:flex;align-items:center;justify-content:space-between;
-    padding:0 12px;border-bottom:1px solid var(--line);background:rgba(5,5,6,.92);
-    position:fixed;top:0;left:0;right:0;z-index:5000;
-    backdrop-filter: blur(10px);
+  header{
+    height:56px;display:flex;align-items:center;justify-content:center;
+    border-bottom:1px solid var(--line);background:rgba(5,5,6,.92);
+    position:fixed;top:0;left:0;right:0;z-index:5000;backdrop-filter: blur(10px);
+    font-weight:900;letter-spacing:.2px
   }
-  .brand{
-    display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.2px
-  }
-  .logoDot{width:10px;height:10px;border-radius:99px;background:var(--y);box-shadow:0 0 18px rgba(245,196,0,.35)}
-  .brand span b{color:var(--y)}
-  .icons{display:flex;align-items:center;gap:10px}
-  .iconBtn{
-    width:36px;height:36px;border-radius:12px;display:grid;place-items:center;
-    border:1px solid var(--line);background:rgba(255,255,255,.06);cursor:pointer;
-  }
-  .iconBtn:active{transform:scale(.98)}
-  .hamburger{
-    width:18px;height:12px;position:relative;
-  }
-  .hamburger i{
-    position:absolute;left:0;right:0;height:2px;background:#fff;border-radius:99px;opacity:.9
-  }
-  .hamburger i:nth-child(1){top:0}
-  .hamburger i:nth-child(2){top:5px;opacity:.75}
-  .hamburger i:nth-child(3){bottom:0;opacity:.9}
-
-  /* ===== Drawer ===== */
-  .drawerBack{
-    position:fixed;inset:0;background:rgba(0,0,0,.55);
-    z-index:6500;display:none;
-  }
-  .drawer{
-    position:fixed;top:0;right:-320px;height:100%;width:320px;max-width:86vw;
-    background:rgba(15,15,16,.96);border-left:1px solid var(--line);
-    z-index:7000;transition:right .22s ease;backdrop-filter: blur(12px);
-    padding:14px;
-  }
-  .drawerBack.show{display:block}
-  .drawerBack.show .drawer{right:0}
-  .drawer h3{margin:6px 0 12px 0;font-size:16px}
-  .menuItem{
-    padding:12px;border:1px solid var(--line);border-radius:14px;
-    background:rgba(255,255,255,.04);margin-bottom:10px;cursor:pointer
-  }
-  .menuItem small{display:block;color:var(--mut);margin-top:4px}
-
-  /* ===== Layout: Map 50% + Bottom Card 50% ===== */
-  .wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
-  #map{
-    height:50vh;min-height:240px;
-    border-bottom:1px solid var(--line);
-  }
-  .panel{
-    height:calc(50vh - 56px);min-height:240px;
-    padding:12px;background:linear-gradient(180deg, rgba(10,10,11,.78), rgba(10,10,11,.96));
-  }
-
-  /* Hide Leaflet default controls (your request: no +/-) */
-  .leaflet-control-container{display:none}
-
-  /* ===== Compact cards ===== */
-  .card{
-    border:1px solid var(--line);background:rgba(255,255,255,.04);
-    border-radius:18px;padding:12px;
-  }
-  .row{display:flex;gap:10px;align-items:center}
-  .col{flex:1}
-  .label{font-size:11px;color:var(--mut2);margin-bottom:6px;letter-spacing:.2px}
-  .input{
-    width:100%;height:44px;border-radius:14px;border:1px solid var(--line);
-    background:rgba(255,255,255,.06);color:#fff;padding:0 12px;font-size:14px;
-    outline:none;
-  }
-  .pillRow{display:flex;gap:8px}
+  header b{color:var(--y)}
+  #map{position:fixed;inset:56px 0 0 0}
   .pill{
-    flex:1;text-align:center;padding:10px 10px;border-radius:14px;
-    border:1px solid var(--line);background:rgba(255,255,255,.04);
-    font-weight:800;font-size:13px;cursor:pointer;
-  }
-  .pill.active{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.12)}
-  .hint{margin-top:8px;color:var(--mut);font-size:12px;line-height:1.35}
-
-  .metrics{
-    display:flex;gap:10px;margin-top:10px
-  }
-  .metric{
-    flex:1;border:1px solid var(--line);background:rgba(255,255,255,.04);
-    border-radius:16px;padding:10px
-  }
-  .metric b{display:block;font-size:16px}
-  .metric small{color:var(--mut);font-size:11px}
-
-  .ctaRow{display:flex;gap:10px;margin-top:10px}
-  .btn{
-    height:48px;border-radius:16px;border:1px solid var(--line);
-    background:rgba(255,255,255,.06);color:#fff;font-weight:900;
-    cursor:pointer;flex:1;
-  }
-  .btn.primary{
-    background:linear-gradient(180deg, rgba(245,196,0,.98), rgba(245,196,0,.78));
-    color:#090909;border-color:rgba(0,0,0,.25);
-  }
-  .btn:disabled{opacity:.45;cursor:not-allowed}
-  .btn:active{transform:scale(.99)}
-  .tiny{font-size:12px;color:var(--mut2);margin-top:6px}
-
-  /* ===== Premium Searching Overlay ===== */
-  .searchOverlay{
-    position:fixed;inset:0;z-index:9000;display:none;
-    background:rgba(0,0,0,.55);
+    position:fixed;left:50%;transform:translateX(-50%);
+    z-index:7000;border-radius:999px;padding:8px 12px;
+    border:1px solid var(--line);background:rgba(20,20,22,.78);
     backdrop-filter: blur(10px);
+    font-size:12px;color:var(--mut)
   }
-  .searchCard{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    width:min(360px,86vw);
-    border:1px solid rgba(255,255,255,.10);
-    background:rgba(20,20,22,.80);
-    border-radius:22px;padding:16px;
-    box-shadow:0 20px 60px rgba(0,0,0,.55);
-  }
-  .badge{
-    display:inline-flex;align-items:center;gap:10px;
-    padding:10px 12px;border-radius:999px;
-    border:1px solid rgba(245,196,0,.35);
-    background:linear-gradient(180deg, rgba(245,196,0,.18), rgba(245,196,0,.08));
-    font-weight:900;
-  }
-  .pulse{
-    width:10px;height:10px;border-radius:99px;background:var(--y);
-    box-shadow:0 0 0 rgba(245,196,0,.55);
-    animation:pulse 1.3s infinite;
-  }
-  @keyframes pulse{
-    0%{box-shadow:0 0 0 0 rgba(245,196,0,.45)}
-    70%{box-shadow:0 0 0 18px rgba(245,196,0,0)}
-    100%{box-shadow:0 0 0 0 rgba(245,196,0,0)}
-  }
-  .overlayText{margin-top:12px;color:rgba(255,255,255,.78);font-size:13px;line-height:1.4}
-  .overlayActions{display:flex;gap:10px;margin-top:14px}
-  .overlayActions .btn{height:44px;border-radius:14px}
+  .pill.top{top:68px}
+  .pill.top2{top:108px}
 
-  /* ===== Modals ===== */
-  .modalBack{
-    position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.62);
-    display:none;backdrop-filter: blur(8px);
-  }
-  .modal{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    width:min(420px,90vw);
-    border:1px solid var(--line);background:rgba(15,15,16,.92);
-    border-radius:22px;padding:14px;
-  }
-  .modal h3{margin:4px 0 10px;font-size:15px}
-  .modal .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .modal .grid1{display:grid;grid-template-columns:1fr;gap:10px}
-  .modal .check{display:flex;gap:10px;align-items:flex-start;color:var(--mut);font-size:12px;line-height:1.35}
-  .modal .check input{margin-top:3px}
-  .modal .foot{display:flex;gap:10px;margin-top:10px}
-  .closeX{float:right;cursor:pointer;opacity:.85;font-weight:900}
-
-  /* ===== Map pin (center hint) ===== */
-  .mapHint{
-    position:fixed;left:50%;top:calc(56px + 25vh);
-    transform:translate(-50%,-50%);
-    z-index:1200;pointer-events:none;
-    display:flex;flex-direction:column;align-items:center;gap:6px;
-  }
-  .pin{
-    width:34px;height:34px;border-radius:999px;
-    background:rgba(245,196,0,.12);
-    border:1px solid rgba(245,196,0,.30);
-    display:grid;place-items:center;
-    box-shadow:0 10px 30px rgba(0,0,0,.45);
-  }
-  .pin svg{width:18px;height:18px;fill:var(--y)}
-  .mapHint small{color:rgba(255,255,255,.65);font-size:11px}
-
-  /* Taxi/Moto marker (emoji-like via divIcon) */
   .vehIcon{
     width:34px;height:34px;border-radius:999px;
     display:grid;place-items:center;
@@ -214,616 +39,91 @@
     box-shadow:0 10px 30px rgba(0,0,0,.45);
     font-size:16px;
   }
+  .leaflet-control-container{display:none}
 </style>
 </head>
-
 <body>
-  <div class="topbar">
-    <div class="brand">
-      <div class="logoDot"></div>
-      <span>Sepet<b>Taxi</b></span>
-    </div>
-    <div class="icons">
-      <button class="iconBtn" id="btnSupport" title="Destek">
-        ?
-      </button>
-      <button class="iconBtn" id="btnMenu" title="Menü">
-        <div class="hamburger"><i></i><i></i><i></i></div>
-      </button>
-    </div>
-  </div>
-
-  <div class="drawerBack" id="drawerBack">
-    <div class="drawer">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3>Menü</h3>
-        <div class="iconBtn" id="btnCloseDrawer" title="Kapat">×</div>
-      </div>
-
-      <div class="menuItem" id="goDriver">
-        Sürücü Girişi
-        <small>driver.html</small>
-      </div>
-
-      <div class="menuItem" id="goAdmin">
-        Admin
-        <small>admin.html (PIN ile)</small>
-      </div>
-
-      <div class="menuItem" id="goContracts">
-        Sözleşmeler
-        <small>(şimdilik placeholder)</small>
-      </div>
-
-      <div class="menuItem" id="goAbout">
-        Hakkımızda
-        <small>(şimdilik placeholder)</small>
-      </div>
-    </div>
-  </div>
-
-  <div class="wrap">
-    <div id="map"></div>
-
-    <div class="panel">
-      <div class="card">
-        <div class="pillRow">
-          <div class="pill active" id="pillTaxi">Taksi</div>
-          <div class="pill" id="pillCourier">Kurye</div>
-        </div>
-
-        <div style="height:10px"></div>
-
-        <div class="row">
-          <div class="col">
-            <div class="label">Nereden</div>
-            <input class="input" id="fromInput" placeholder="Haritadan seç (tıkla) veya yaz" />
-          </div>
-        </div>
-
-        <div style="height:10px"></div>
-
-        <div class="row">
-          <div class="col">
-            <div class="label">Nereye</div>
-            <input class="input" id="toInput" placeholder="Haritadan seç (tıkla) veya yaz" />
-          </div>
-        </div>
-
-        <div class="hint" id="statusHint">Konum alınıyor… Konum izni vermezsen haritadan seçebilirsin.</div>
-
-        <div class="metrics" id="metrics" style="display:none">
-          <div class="metric">
-            <small>Mesafe</small>
-            <b id="mDistance">—</b>
-          </div>
-          <div class="metric">
-            <small>Ücret</small>
-            <b id="mPrice">—</b>
-          </div>
-        </div>
-
-        <div class="ctaRow">
-          <button class="btn" id="btnRegister">Kayıt Ol</button>
-          <button class="btn primary" id="btnCall" disabled>Çağır</button>
-        </div>
-        <div class="tiny" id="callNote">Adresleri seçince mesafe ve ücret hesaplanır. Çağırmak için kayıt zorunludur.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Map hint/pin -->
-  <div class="mapHint">
-    <div class="pin" title="Haritaya tıklayarak adres seç">
-      <svg viewBox="0 0 24 24"><path d="M12 2c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5S13.4 11.5 12 11.5z"/></svg>
-    </div>
-    <small>Haritaya tıkla: Nereden / Nereye seç</small>
-  </div>
-
-  <!-- Register Modal -->
-  <div class="modalBack" id="regBack">
-    <div class="modal">
-      <span class="closeX" id="regClose">×</span>
-      <h3>Zorunlu Kayıt</h3>
-      <div class="grid">
-        <div>
-          <div class="label">Ad</div>
-          <input class="input" id="regFirst" placeholder="Örn: Özhan" />
-        </div>
-        <div>
-          <div class="label">Soyad</div>
-          <input class="input" id="regLast" placeholder="Örn: Samurcu" />
-        </div>
-      </div>
-      <div style="height:10px"></div>
-      <div class="grid1">
-        <div>
-          <div class="label">Telefon</div>
-          <input class="input" id="regPhone" placeholder="05xx..." inputmode="tel" />
-        </div>
-      </div>
-      <div class="foot">
-        <button class="btn" id="regCancel">Vazgeç</button>
-        <button class="btn primary" id="regSave">Kaydet</button>
-      </div>
-      <div class="tiny">Kaydı cihazında saklarız (localStorage). Sonrasında “Çağır” aktif olur.</div>
-    </div>
-  </div>
-
-  <!-- Courier Details Modal -->
-  <div class="modalBack" id="courBack">
-    <div class="modal">
-      <span class="closeX" id="courClose">×</span>
-      <h3>Kurye Detayları</h3>
-
-      <div class="grid">
-        <div>
-          <div class="label">Paket Tipi</div>
-          <input class="input" id="cType" placeholder="Örn: Evrak / Kutu / Yemek" />
-        </div>
-        <div>
-          <div class="label">Beyan Değer</div>
-          <input class="input" id="cValue" placeholder="Örn: 1000" inputmode="numeric" />
-        </div>
-      </div>
-
-      <div style="height:10px"></div>
-      <div class="grid">
-        <div>
-          <div class="label">Alıcı Ad Soyad</div>
-          <input class="input" id="cRName" placeholder="Örn: Ahmet Yılmaz" />
-        </div>
-        <div>
-          <div class="label">Alıcı Telefon</div>
-          <input class="input" id="cRPhone" placeholder="05xx..." inputmode="tel" />
-        </div>
-      </div>
-
-      <div style="height:10px"></div>
-      <div class="grid1">
-        <div>
-          <div class="label">İçerik / Not</div>
-          <input class="input" id="cNote" placeholder="Örn: Kırılabilir, teslimde ara..." />
-        </div>
-      </div>
-
-      <div style="height:10px"></div>
-      <div class="check">
-        <input type="checkbox" id="cTerms" />
-        <div>
-          Taşıma taahhüdünü ve hizmet şartlarını okudum, kabul ediyorum.
-          <div style="margin-top:4px;color:rgba(255,255,255,.45)">Kurye çağır butonu bu onay olmadan aktif olmaz.</div>
-        </div>
-      </div>
-
-      <div class="foot">
-        <button class="btn" id="courCancel">Vazgeç</button>
-        <button class="btn primary" id="courSave">Kaydet</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Premium Searching Overlay -->
-  <div class="searchOverlay" id="searchOverlay">
-    <div class="searchCard">
-      <div class="badge">
-        <div class="pulse"></div>
-        <span id="searchTitle">Sürücü aranıyor</span>
-      </div>
-      <div class="overlayText" id="searchText">
-        En yakın sürücüler aranıyor. Lütfen bekleyin…
-      </div>
-      <div class="overlayActions">
-        <button class="btn" id="btnCancelSearch">İptal</button>
-        <button class="btn primary" id="btnGoTrack">Takibe Git</button>
-      </div>
-    </div>
-  </div>
+<header>Sepet<b>Taxi</b> – Canlı Takip</header>
+<div id="map"></div>
+<div class="pill top" id="st">Yükleniyor…</div>
+<div class="pill top2" id="st2">Job: —</div>
 
 <script>
-/* ===== CONFIG (replace) ===== */
 const API_URL = "PASTE_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE"; // .../exec
 
-/* ===== STATE ===== */
-let map, userMarker, fromMarker, toMarker;
-let picking = "from"; // from -> to
-let serviceType = "taxi";
-let lastDistanceKm = null;
-let lastPrice = null;
-let courierDetails = loadCourierDetails();
-let customer = loadCustomer();
+const qs = new URLSearchParams(location.search);
+const job_id = qs.get("job_id") || "";
 
-const $ = (id)=> document.getElementById(id);
+let map, pickupMarker, dropMarker, driverMarker, line;
 
-function saveCustomer(c){ localStorage.setItem("sepettaxi_customer", JSON.stringify(c)); }
-function loadCustomer(){
-  try{ const s=localStorage.getItem("sepettaxi_customer"); return s?JSON.parse(s):null; }catch(_){ return null; }
-}
-function saveCourierDetails(d){ localStorage.setItem("sepettaxi_courier_details", JSON.stringify(d)); }
-function loadCourierDetails(){
-  try{ const s=localStorage.getItem("sepettaxi_courier_details"); return s?JSON.parse(s):null; }catch(_){ return null; }
-}
+function $(id){ return document.getElementById(id); }
 
-function flashHint(t){ $("statusHint").textContent = t; }
-
-function setPill(type){
-  serviceType = type;
-  $("pillTaxi").classList.toggle("active", type==="taxi");
-  $("pillCourier").classList.toggle("active", type==="courier");
-
-  // Kurye seçildiyse detay modalı aç (kilitli kararın)
-  if(type==="courier"){
-    openCourierModal();
-  }
-  updateCallState();
-}
-
-function openDrawer(open){
-  const back = $("drawerBack");
-  if(open) back.classList.add("show");
-  else back.classList.remove("show");
-}
-
-function openModal(backId, open){
-  const el = $(backId);
-  el.style.display = open ? "block" : "none";
-}
-
-function openRegisterModal(){
-  $("regFirst").value = customer?.first || "";
-  $("regLast").value = customer?.last || "";
-  $("regPhone").value = customer?.phone || "";
-  openModal("regBack", true);
-}
-
-function openCourierModal(){
-  $("cType").value = courierDetails?.package_type || "";
-  $("cValue").value = courierDetails?.declared_value || "";
-  $("cRName").value = courierDetails?.receiver_name || "";
-  $("cRPhone").value = courierDetails?.receiver_phone || "";
-  $("cNote").value = courierDetails?.package_note || "";
-  $("cTerms").checked = !!courierDetails?.terms_ok;
-  openModal("courBack", true);
-}
-
-/* ===== MAP ===== */
-function initMap(){
-  map = L.map("map", { zoomControl:false, attributionControl:false }).setView([40.1885, 29.0610], 13);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19
-  }).addTo(map);
-
-  map.on("click", async (e)=>{
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-
-    if(picking === "from"){
-      setFrom(lat,lng, "Haritadan seçildi");
-      picking = "to";
-      flashHint("Şimdi 'Nereye' için haritaya tıkla veya yaz.");
-    }else{
-      setTo(lat,lng, "Haritadan seçildi");
-      picking = "from";
-      flashHint("Adresler seçildi. Gerekirse düzeltmek için tekrar haritaya tıkla.");
-    }
-    await reverseFillInputs();
-    await recompute();
-  });
-
-  // Try geolocation
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition((pos)=>{
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      setUserMarker(lat,lng);
-      map.setView([lat,lng], 16);
-      flashHint("Konum alındı. Haritaya tıklayarak 'Nereden' ve 'Nereye' seçebilirsin.");
-    }, ()=>{
-      flashHint("Konum alınamadı. Haritadan adres seçebilirsin.");
-    }, { enableHighAccuracy:true, timeout:8000 });
-  }else{
-    flashHint("Tarayıcı konum desteklemiyor. Haritadan adres seçebilirsin.");
-  }
-}
-
-function setUserMarker(lat,lng){
-  if(userMarker) map.removeLayer(userMarker);
-  userMarker = L.marker([lat,lng], { icon: L.divIcon({ className:"", html:'<div class="vehIcon">📍</div>', iconSize:[34,34], iconAnchor:[17,17] }) }).addTo(map);
-}
-
-function setFrom(lat,lng,label){
-  if(fromMarker) map.removeLayer(fromMarker);
-  fromMarker = L.marker([lat,lng], { icon: L.divIcon({ className:"", html:'<div class="vehIcon">🟡</div>', iconSize:[34,34], iconAnchor:[17,17] }) }).addTo(map);
-  fromMarker._stLabel = label || "";
-}
-function setTo(lat,lng,label){
-  if(toMarker) map.removeLayer(toMarker);
-  toMarker = L.marker([lat,lng], { icon: L.divIcon({ className:"", html:'<div class="vehIcon">⚫</div>', iconSize:[34,34], iconAnchor:[17,17] }) }).addTo(map);
-  toMarker._stLabel = label || "";
-}
-
-/* ===== Reverse geocode (Nominatim) ===== */
-async function reverseGeocode(lat,lng){
-  try{
-    const url = "https://nominatim.openstreetmap.org/reverse?format=json&lat="+encodeURIComponent(lat)+"&lon="+encodeURIComponent(lng);
-    const r = await fetch(url, { headers: { "Accept":"application/json" } });
-    const j = await r.json();
-    return j.display_name || "";
-  }catch(_){ return ""; }
-}
-
-async function reverseFillInputs(){
-  if(fromMarker && !$("fromInput").value.trim()){
-    const p = fromMarker.getLatLng();
-    const addr = await reverseGeocode(p.lat,p.lng);
-    if(addr) $("fromInput").value = addr;
-  }
-  if(toMarker && !$("toInput").value.trim()){
-    const p = toMarker.getLatLng();
-    const addr = await reverseGeocode(p.lat,p.lng);
-    if(addr) $("toInput").value = addr;
-  }
-}
-
-/* ===== Distance & Price ===== */
-function haversineKm(lat1, lon1, lat2, lon2){
-  const R = 6371;
-  const toRad = x => x*Math.PI/180;
-  const dLat = toRad(lat2-lat1);
-  const dLon = toRad(lon2-lon1);
-  const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
-            Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) *
-            Math.sin(dLon/2)*Math.sin(dLon/2);
-  const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R*c;
-}
-function round2(n){ return Math.round(n*100)/100; }
-
-function localPrice(distanceKm){
-  const base = (serviceType==="taxi") ? 60 : 55;
-  const perKm = (serviceType==="taxi") ? 18 : 15;
-  return round2(base + perKm*distanceKm);
-}
-
-async function recompute(){
-  if(!fromMarker || !toMarker){
-    $("metrics").style.display = "none";
-    lastDistanceKm = null; lastPrice = null;
-    updateCallState();
-    return;
-  }
-  const a = fromMarker.getLatLng();
-  const b = toMarker.getLatLng();
-  const d = haversineKm(a.lat,a.lng,b.lat,b.lng);
-  lastDistanceKm = round2(d);
-  lastPrice = localPrice(lastDistanceKm);
-
-  $("mDistance").textContent = lastDistanceKm.toFixed(2) + " km";
-  $("mPrice").textContent = lastPrice.toFixed(0) + " ₺";
-  $("metrics").style.display = "flex";
-
-  updateCallState();
-}
-
-function updateCallState(){
-  const hasRoute = !!(fromMarker && toMarker && $("fromInput").value.trim() && $("toInput").value.trim() && lastDistanceKm);
-  const isReg = !!(customer && customer.first && customer.last && customer.phone);
-
-  // Kurye için ayrıca detay modal onayı şart
-  let courierOk = true;
-  if(serviceType==="courier"){
-    courierOk = !!(courierDetails &&
-      courierDetails.package_type &&
-      courierDetails.receiver_name &&
-      courierDetails.receiver_phone &&
-      courierDetails.terms_ok === true);
-  }
-
-  $("btnCall").disabled = !(hasRoute && isReg && courierOk);
-
-  if(!hasRoute){
-    $("callNote").textContent = "Haritadan seç veya yaz: Nereden ve Nereye. Sonra mesafe ve ücret görünür.";
-  }else if(!isReg){
-    $("callNote").textContent = "Çağırmak için kayıt zorunludur. Kayıt olunca buton açılır.";
-  }else if(serviceType==="courier" && !courierOk){
-    $("callNote").textContent = "Kurye için detaylar ve taahhüt onayı zorunludur.";
-  }else{
-    $("callNote").textContent = (serviceType==="taxi") ? "Taksi çağırmaya hazırsın." : "Kurye çağırmaya hazırsın.";
-  }
-
-  // Register button state
-  $("btnRegister").textContent = isReg ? "Kayıt Güncelle" : "Kayıt Ol";
-}
-
-/* ===== Backend Call ===== */
 async function api(action, payload){
-  const body = JSON.stringify({ action, ...payload });
-  const r = await fetch(API_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body
-  });
+  const r = await fetch(API_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ action, ...payload }) });
   return await r.json();
 }
 
-/* ===== Call Driver / Courier ===== */
-function showSearching(show, title, text){
-  $("searchOverlay").style.display = show ? "block" : "none";
-  $("searchTitle").textContent = title || "Sürücü aranıyor";
-  $("searchText").textContent = text || "En yakın sürücüler aranıyor. Lütfen bekleyin…";
-  $("btnGoTrack").style.display = "none";
-}
+function init(){
+  map = L.map("map",{ zoomControl:false, attributionControl:false }).setView([40.1885,29.0610], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ maxZoom:19 }).addTo(map);
 
-async function callNow(){
-  if(!$("btnCall") || $("btnCall").disabled) return;
-
-  const fromAddr = $("fromInput").value.trim();
-  const toAddr = $("toInput").value.trim();
-  const a = fromMarker.getLatLng();
-  const b = toMarker.getLatLng();
-
-  showSearching(true,
-    (serviceType==="taxi") ? "Sürücü aranıyor" : "Kurye aranıyor",
-    (serviceType==="taxi") ? "En yakın sürücüler aranıyor. Lütfen bekleyin…" : "En yakın kuryeler aranıyor. Lütfen bekleyin…"
-  );
-
-  const payload = {
-    service_type: serviceType,
-    customer_first: customer.first,
-    customer_last: customer.last,
-    customer_phone: customer.phone,
-
-    from_address: fromAddr,
-    to_address: toAddr,
-
-    pickup_lat: a.lat,
-    pickup_lng: a.lng,
-    dropoff_lat: b.lat,
-    dropoff_lng: b.lng,
-
-    distance_km: lastDistanceKm
-  };
-
-  if(serviceType==="courier"){
-    payload.package_type = courierDetails.package_type;
-    payload.package_note = courierDetails.package_note || "";
-    payload.declared_value = courierDetails.declared_value || "";
-    payload.receiver_name = courierDetails.receiver_name;
-    payload.receiver_phone = courierDetails.receiver_phone;
-    payload.terms_ok = true;
-  }
-
-  const res = await api("createJob", payload);
-  if(!res || !res.ok){
-    showSearching(false);
-    alert("İş oluşturulamadı: " + (res && (res.error || res.message) ? (res.error || res.message) : "Bilinmeyen hata"));
+  if(!job_id){
+    $("st").textContent = "Job bulunamadı.";
+    $("st2").textContent = "job_id parametresi eksik";
     return;
   }
+  $("st2").textContent = "Job: " + job_id;
 
-  // Update metrics with backend canonical price if returned
-  if(res.distance_km) $("mDistance").textContent = Number(res.distance_km).toFixed(2) + " km";
-  if(res.final_price) $("mPrice").textContent = Number(res.final_price).toFixed(0) + " ₺";
-  $("metrics").style.display = "flex";
-
-  // enable track
-  $("btnGoTrack").style.display = "block";
-  $("btnGoTrack").onclick = ()=> { window.location.href = "track.html?job_id=" + encodeURIComponent(res.job_id); };
-
-  // Auto-redirect quickly (as per your flow)
-  setTimeout(()=> {
-    window.location.href = "track.html?job_id=" + encodeURIComponent(res.job_id);
-  }, 900);
+  poll();
+  setInterval(poll, 2200);
 }
 
-/* ===== Manual address typing -> optional geocode (basic) ===== */
-async function forwardGeocode(q){
-  try{
-    const url = "https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(q);
-    const r = await fetch(url, { headers:{ "Accept":"application/json" }});
-    const j = await r.json();
-    if(Array.isArray(j) && j[0]){
-      return { lat:Number(j[0].lat), lng:Number(j[0].lon), display:j[0].display_name };
-    }
-  }catch(_){}
-  return null;
-}
-async function onBlurGeocode(which){
-  const el = which==="from" ? $("fromInput") : $("toInput");
-  const val = el.value.trim();
-  if(!val) return;
-  const hit = await forwardGeocode(val);
-  if(!hit) return;
-  if(which==="from") { setFrom(hit.lat, hit.lng, "Yazıdan seçildi"); }
-  else { setTo(hit.lat, hit.lng, "Yazıdan seçildi"); }
-  // keep entered text, but we can normalize:
-  // el.value = hit.display || val;
-  await recompute();
+function iconOf(serviceType){
+  const em = (serviceType==="courier") ? "🏍️" : "🚕";
+  return L.divIcon({ className:"", html:'<div class="vehIcon">'+em+'</div>', iconSize:[34,34], iconAnchor:[17,17] });
 }
 
-/* ===== Events ===== */
-function bindEvents(){
-  $("pillTaxi").onclick = ()=> setPill("taxi");
-  $("pillCourier").onclick = ()=> setPill("courier");
-
-  $("btnMenu").onclick = ()=> openDrawer(true);
-  $("btnCloseDrawer").onclick = ()=> openDrawer(false);
-  $("drawerBack").addEventListener("click", (e)=>{ if(e.target.id==="drawerBack") openDrawer(false); });
-
-  $("goDriver").onclick = ()=> window.location.href = "driver.html";
-  $("goAdmin").onclick = ()=> window.location.href = "admin.html";
-  $("goContracts").onclick = ()=> alert("Sözleşmeler: bir sonraki adımda ekleyeceğiz.");
-  $("goAbout").onclick = ()=> alert("Hakkımızda: bir sonraki adımda ekleyeceğiz.");
-
-  $("btnSupport").onclick = ()=>{
-    // WhatsApp + email (as locked)
-    const msg = encodeURIComponent("Merhaba, SepetTaxi destek. Yardım istiyorum.");
-    const wa = "https://wa.me/90XXXXXXXXXX?text="+msg;
-    alert("Destek kanalları:\n- WhatsApp: "+wa+"\n- E-posta: destek@sepettaxi.com");
-  };
-
-  $("btnRegister").onclick = ()=> openRegisterModal();
-  $("regClose").onclick = $("regCancel").onclick = ()=> openModal("regBack", false);
-  $("regSave").onclick = ()=>{
-    const c = {
-      first: $("regFirst").value.trim(),
-      last: $("regLast").value.trim(),
-      phone: $("regPhone").value.trim()
-    };
-    if(!c.first || !c.last || !c.phone){
-      alert("Lütfen ad, soyad ve telefonu doldurun.");
-      return;
-    }
-    customer = c;
-    saveCustomer(c);
-    openModal("regBack", false);
-    updateCallState();
-  };
-
-  $("courClose").onclick = $("courCancel").onclick = ()=> openModal("courBack", false);
-  $("courSave").onclick = ()=>{
-    const d = {
-      package_type: $("cType").value.trim(),
-      declared_value: $("cValue").value.trim(),
-      receiver_name: $("cRName").value.trim(),
-      receiver_phone: $("cRPhone").value.trim(),
-      package_note: $("cNote").value.trim(),
-      terms_ok: $("cTerms").checked
-    };
-    if(!d.package_type || !d.receiver_name || !d.receiver_phone || !d.terms_ok){
-      alert("Kurye için Paket Tipi, Alıcı bilgileri ve taahhüt onayı zorunludur.");
-      return;
-    }
-    courierDetails = d;
-    saveCourierDetails(d);
-    openModal("courBack", false);
-    updateCallState();
-  };
-
-  $("btnCall").onclick = callNow;
-
-  $("btnCancelSearch").onclick = ()=> {
-    // For v1 we just close overlay; cancellation flow can be added later
-    $("searchOverlay").style.display = "none";
-  };
-
-  $("fromInput").addEventListener("focus", ()=> picking="from");
-  $("toInput").addEventListener("focus", ()=> picking="to");
-  $("fromInput").addEventListener("blur", ()=> onBlurGeocode("from"));
-  $("toInput").addEventListener("blur", ()=> onBlurGeocode("to"));
-}
-
-/* ===== Boot ===== */
-(function boot(){
-  bindEvents();
-  initMap();
-  updateCallState();
-
-  // initial hints based on registration
-  if(customer){
-    flashHint("Hoş geldin, " + customer.first + ". Haritadan adres seçerek devam edebilirsin.");
+async function poll(){
+  const res = await api("getJob",{ job_id });
+  if(!res || !res.ok){
+    $("st").textContent = "Takip edilemiyor: " + (res && (res.error||res.message) ? (res.error||res.message) : "hata");
+    return;
   }
-})();
+  const job = res.job;
+
+  $("st").textContent =
+    job.status==="searching" ? ((job.service_type==="courier")?"Kurye aranıyor…":"Sürücü aranıyor…") :
+    job.status==="assigned" ? "Sürücü atandı. Kabul bekleniyor…" :
+    job.status==="active" ? "Yolda…" :
+    job.status==="picked_up" ? "Alındı, teslimata gidiyor…" :
+    job.status==="done" ? "Tamamlandı" :
+    job.status==="cancelled" ? "İptal edildi" :
+    ("Durum: " + job.status);
+
+  const a = [Number(job.pickup_lat), Number(job.pickup_lng)];
+  const b = [Number(job.dropoff_lat), Number(job.dropoff_lng)];
+
+  if(!pickupMarker){
+    pickupMarker = L.marker(a, { icon: L.divIcon({ className:"", html:'<div class="vehIcon">🟡</div>', iconSize:[34,34], iconAnchor:[17,17] })}).addTo(map);
+    dropMarker = L.marker(b, { icon: L.divIcon({ className:"", html:'<div class="vehIcon">⚫</div>', iconSize:[34,34], iconAnchor:[17,17] })}).addTo(map);
+    line = L.polyline([a,b], { weight:4, opacity:.65 }).addTo(map);
+    map.fitBounds([a,b], { padding:[30,30] });
+  }
+
+  // live driver
+  const live = res.live;
+  if(live && live.lat && live.lng){
+    const p = [Number(live.lat), Number(live.lng)];
+    if(!driverMarker){
+      driverMarker = L.marker(p, { icon: iconOf(job.service_type) }).addTo(map);
+    }else{
+      driverMarker.setLatLng(p);
+      driverMarker.setIcon(iconOf(job.service_type));
+    }
+  }
+}
+
+init();
 </script>
 </body>
 </html>
