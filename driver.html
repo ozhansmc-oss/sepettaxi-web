@@ -249,6 +249,20 @@ function heartbeat(){
     }, ()=>{}, { enableHighAccuracy:true, timeout:6000, maximumAge:0 });
   }
 }
+(async function boot(){
+  try{
+    const r = await apiJSONP({ action:"ping" });
+    console.log("DRIVER PING OK", r);
+  }catch(e){
+    alert("Backend bağlantı hatası");
+    return;
+  }
+
+  loadDriver();
+  renderActive();
+  refreshJobs();
+  setInterval(heartbeat, 4000);
+})();
 
 loadDriver();
 renderActive();
