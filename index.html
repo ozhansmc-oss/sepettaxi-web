@@ -566,15 +566,7 @@ function bindUI(){
   });
 }
 
-(function boot(){
-try{
-    const resp = await apiJSONP({ action:"ping" });
-    console.log("PING OK:", resp);
-  }catch(e){
-    console.error("PING FAIL:", e);
-    alert("Backend bağlantı hatası");
-    return;
-  }  
+(function boot(){ 
   initMap();
   bindUI();
   requestGeolocation();
