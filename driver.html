@@ -70,6 +70,7 @@ header span{color:var(--y)}
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
+  const resp = await apiJSONP({ action:"ping" });
 
 let vehicleType = "taxi";
 let driver = null; // {driver_id, token}
@@ -82,14 +83,28 @@ function qs(params){
   Object.keys(params).forEach(k=>{ if(params[k]!==undefined && params[k]!==null) u.set(k,String(params[k])); });
   return u.toString();
 }
-async function apiGET(params){
-  const url = API + (API.includes("?")?"&":"?") + qs(params);
-  const res = await fetch(url);
-  const txt = await res.text();
-  let j=null; try{ j=JSON.parse(txt); }catch(_){}
-  if(!res.ok) throw new Error("HTTP_"+res.status);
-  return j;
+function apiJSONP(params){
+  return new Promise((resolve, reject)=>{
+    const cb = "cb_" + Math.random().toString(16).slice(2);
+    params.callback = cb;
+    const u = new URLSearchParams(params);
+    const s = document.createElement("script");
+    window[cb] = (data)=>{
+      try{ resolve(data); } finally{
+        delete window[cb];
+        s.remove();
+      }
+    };
+    s.onerror = ()=>{
+      delete window[cb];
+      s.remove();
+      reject(new Error("JSONP load failed"));
+    };
+    s.src = API + (API.includes("?") ? "&" : "?") + u.toString();
+    document.head.appendChild(s);
+  });
 }
+
 
 function setAuth(t){ $("auth").textContent = t; }
 
