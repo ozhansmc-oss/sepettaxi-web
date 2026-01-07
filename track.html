@@ -43,7 +43,8 @@ header span{color:var(--y)}
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
-const qs = new URLSearchParams(location.search);
+
+  const qs = new URLSearchParams(location.search);
 const jobId = qs.get("job_id") || localStorage.getItem("sepettaxi_last_job_id") || "";
 document.getElementById("jid").textContent = jobId || "—";
 
