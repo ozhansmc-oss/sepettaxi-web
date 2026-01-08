@@ -16,12 +16,11 @@ body{overflow:hidden}
 
 :root{
   --y:#f5c400;
-  --panel:#0f0f10;
-  --card:#141416;
   --line:rgba(255,255,255,.1);
+  --card:#141416;
 }
 
-/* === LAYOUT === */
+/* APP */
 .app{position:fixed;inset:0;display:flex;flex-direction:column}
 
 /* TOPBAR */
@@ -31,11 +30,18 @@ body{overflow:hidden}
   padding:0 14px;
   border-bottom:1px solid var(--line);
   background:#0f0f10;
-  z-index:30;
+  z-index:50;
 }
 .brand{font-weight:900}
 .brand b{color:var(--y)}
-.menuBtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#141416;color:#fff}
+.menuBtn{
+  width:40px;height:40px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:var(--card);
+  color:#fff;
+  font-size:18px;
+}
 
 /* MAP */
 #map{
@@ -45,7 +51,7 @@ body{overflow:hidden}
   z-index:1;
 }
 
-/* SHEET (SCROLLABLE) */
+/* SHEET */
 .sheet{
   flex:1 1 auto;
   overflow-y:auto;
@@ -53,15 +59,25 @@ body{overflow:hidden}
   background:#0f0f10;
   border-top:1px solid var(--line);
 }
-.card{
-  padding:12px;
-  min-height:100%;
-}
+.card{padding:12px}
 
 /* UI */
-.btn{height:46px;border-radius:14px;border:1px solid var(--line);background:#141416;color:#fff;font-weight:800}
+.btn{
+  height:46px;width:100%;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:var(--card);
+  color:#fff;
+  font-weight:800;
+}
 .btn.active{background:rgba(245,196,0,.2);border-color:var(--y)}
-.field{border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}
+
+.field{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px;
+  margin-bottom:10px;
+}
 .label{font-size:12px;opacity:.7}
 .value{font-size:14px;font-weight:800}
 
@@ -82,7 +98,6 @@ body{overflow:hidden}
 #callBtn{
   position:sticky;
   bottom:16px;
-  width:100%;
   background:var(--y);
   color:#111;
   font-weight:900;
@@ -90,21 +105,42 @@ body{overflow:hidden}
 }
 #callBtn.on{opacity:1}
 
+/* DRAWER */
+.drawerMask{
+  position:fixed;inset:0;
+  display:none;
+  background:rgba(0,0,0,.6);
+  z-index:1000;
+}
+.drawer{
+  position:absolute;right:0;top:0;
+  width:280px;height:100%;
+  background:#0f0f10;
+  border-left:1px solid var(--line);
+  padding:16px;
+}
+
 /* MODAL */
 .modalMask{
   position:fixed;inset:0;
   display:none;
   align-items:center;justify-content:center;
-  background:rgba(0,0,0,.65);
-  z-index:9000;
+  background:rgba(0,0,0,.7);
+  z-index:2000;
 }
 .modal{
-  width:92vw;max-width:420px;
+  width:90vw;max-width:420px;
   background:#141416;
-  border-radius:20px;
+  border-radius:18px;
   padding:16px;
 }
-.modal input{width:100%;height:44px;margin-bottom:10px;border-radius:12px;border:1px solid var(--line);background:#000;color:#fff;padding:0 10px}
+.modal input{
+  width:100%;height:44px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#000;color:#fff;
+  margin-bottom:10px;padding:0 10px;
+}
 
 /* SEARCHING */
 .searching{
@@ -112,7 +148,7 @@ body{overflow:hidden}
   display:none;
   align-items:center;justify-content:center;
   background:rgba(0,0,0,.7);
-  z-index:8000;
+  z-index:3000;
 }
 </style>
 </head>
@@ -122,7 +158,7 @@ body{overflow:hidden}
 
   <div class="topbar">
     <div class="brand">Sepet<b>Taxi</b></div>
-    <button class="menuBtn">☰</button>
+    <button id="menuBtn" class="menuBtn">☰</button>
   </div>
 
   <div id="map"></div>
@@ -130,10 +166,8 @@ body{overflow:hidden}
   <div class="sheet">
     <div class="card">
 
-      <div>
-        <button id="taxiBtn" class="btn active">Taksi</button>
-        <button id="courierBtn" class="btn">Kurye</button>
-      </div>
+      <button id="taxiBtn" class="btn active">Taksi</button>
+      <button id="courierBtn" class="btn">Kurye</button>
 
       <div class="field">
         <div class="label">Nereden</div>
@@ -156,6 +190,16 @@ body{overflow:hidden}
   </div>
 </div>
 
+<!-- DRAWER -->
+<div id="drawerMask" class="drawerMask">
+  <div class="drawer">
+    <h3>Menü</h3>
+    <a href="driver.html">Sürücü</a><br><br>
+    <a href="admin.html">Admin</a><br><br>
+    <button id="closeDrawer" class="btn">Kapat</button>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div id="regMask" class="modalMask">
   <div class="modal">
@@ -170,6 +214,9 @@ body{overflow:hidden}
 <div id="searching" class="searching">Sürücü aranıyor…</div>
 
 <script>
+document.addEventListener("DOMContentLoaded",()=>{
+
+/* BACKEND */
 const API="https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
 
 /* JSONP */
@@ -186,7 +233,7 @@ function apiJSONP(p){
 }
 
 /* STATE */
-let registered=false,from=null,to=null,km=0,price=0;
+let registered=false,from=null,to=null;
 
 /* MAP */
 const map=L.map("map",{zoomControl:false}).setView([40.195,29.06],15);
@@ -196,11 +243,10 @@ let marker=L.marker([40.195,29.06]).addTo(map);
 map.on("click",e=>{
   const {lat,lng}=e.latlng;
   fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json())
-    .then(j=>{
-      const addr=j.display_name||`${lat},${lng}`;
-      if(!from){from={lat,lng,addr};fromText.textContent=addr;}
-      else{to={lat,lng,addr};toText.textContent=addr;}
+    .then(r=>r.json()).then(j=>{
+      const a=j.display_name||`${lat},${lng}`;
+      if(!from){from={lat,lng,a};fromText.textContent=a;}
+      else{to={lat,lng,a};toText.textContent=a;}
       marker.setLatLng([lat,lng]);
       compute();
     });
@@ -208,18 +254,17 @@ map.on("click",e=>{
 
 /* GEO */
 navigator.geolocation.getCurrentPosition(p=>{
-  const {latitude,longitude}=p.coords;
-  map.setView([latitude,longitude],17);
-  marker.setLatLng([latitude,longitude]);
-  from={lat:latitude,lng:longitude,addr:"Mevcut konum"};
+  from={lat:p.coords.latitude,lng:p.coords.longitude,a:"Mevcut konum"};
   fromText.textContent="Mevcut konum";
+  map.setView([from.lat,from.lng],17);
+  marker.setLatLng([from.lat,from.lng]);
 });
 
 /* COMPUTE */
 function compute(){
   if(!registered||!from||!to)return;
-  km=Math.hypot(from.lat-to.lat,from.lng-to.lng)*111;
-  price=Math.round(55+km*16);
+  const km=Math.hypot(from.lat-to.lat,from.lng-to.lng)*111;
+  const price=Math.round(55+km*16);
   kmText.textContent=km.toFixed(1)+" km";
   priceText.textContent=price+" ₺";
   metrics.style.display="block";
@@ -234,7 +279,7 @@ regOk.onclick=()=>{
   compute();
 };
 
-/* SERVICE SELECT */
+/* SERVICE */
 taxiBtn.onclick=()=>{taxiBtn.classList.add("active");courierBtn.classList.remove("active");regMask.style.display="flex";}
 courierBtn.onclick=()=>{courierBtn.classList.add("active");taxiBtn.classList.remove("active");regMask.style.display="flex";}
 
@@ -247,56 +292,25 @@ callBtn.onclick=()=>{
     customer_first:fName.value,
     customer_last:lName.value,
     customer_phone:phone.value,
-    from_address:from.addr,
-    to_address:to.addr,
+    from_address:from.a,
+    to_address:to.a,
     pickup_lat:from.lat,
     pickup_lng:from.lng,
     dropoff_lat:to.lat,
     dropoff_lng:to.lng,
-    distance_km:km,
-    price:price
+    distance_km:"1",
+    price:"1"
   }).then(r=>{
     location.href="track.html?job_id="+r.data.job_id;
   });
 };
-  <!-- HAMBURGER DRAWER -->
-<div id="drawerMask" style="
-  position:fixed; inset:0;
-  background:rgba(0,0,0,.55);
-  display:none;
-  z-index:9500;
-">
-  <div style="
-    position:absolute; top:0; right:0;
-    width:280px; height:100%;
-    background:#0f0f10;
-    border-left:1px solid rgba(255,255,255,.1);
-    padding:16px;
-  ">
-    <h3>Menü</h3>
-    <a href="driver.html" style="display:block;color:#fff;margin-bottom:12px">Sürücü Girişi</a>
-    <a href="admin.html" style="display:block;color:#fff;margin-bottom:12px">Admin</a>
-    <a href="mailto:destek@sepettaxi.com" style="display:block;color:#fff;margin-bottom:12px">Destek</a>
-    <button id="closeDrawer" style="width:100%">Kapat</button>
-  </div>
-</div>
-  const menuBtn = document.querySelector(".menuBtn");
-const drawerMask = document.getElementById("drawerMask");
-const closeDrawer = document.getElementById("closeDrawer");
 
-menuBtn.onclick = () => {
-  drawerMask.style.display = "block";
-};
+/* HAMBURGER */
+menuBtn.onclick=()=>drawerMask.style.display="block";
+closeDrawer.onclick=()=>drawerMask.style.display="none";
+drawerMask.onclick=e=>{if(e.target===drawerMask)drawerMask.style.display="none";};
 
-drawerMask.onclick = (e) => {
-  if(e.target === drawerMask){
-    drawerMask.style.display = "none";
-  }
-};
-
-closeDrawer.onclick = () => {
-  drawerMask.style.display = "none";
-};
+});
 </script>
 </body>
 </html>
