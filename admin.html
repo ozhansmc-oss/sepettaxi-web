@@ -1,190 +1,200 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Admin</title>
-<meta name="theme-color" content="#f5c400" />
+<meta name="theme-color" content="#050506">
+
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#050506;color:#fff;overflow:hidden;font-family:system-ui}
-:root{--y:#f5c400;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.72);--mut2:rgba(255,255,255,.45);--card:rgba(255,255,255,.04)}
-header{height:56px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line);font-weight:950;position:relative}
-header .back{position:absolute;left:10px;top:8px;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;background:rgba(255,255,255,.03)}
-header span{color:var(--y)}
-.wrap{height:calc(100% - 56px);padding:12px;overflow:auto}
-.card{border:1px solid var(--line);background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px}
-.in{width:100%;padding:12px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:#fff;font-weight:900;outline:none;margin-top:8px}
-.row{display:flex;gap:8px;margin-top:8px}
-.btn{flex:1;padding:12px;border-radius:14px;border:0;background:var(--y);color:#000;font-weight:950;cursor:pointer}
-.btn2{flex:1;padding:12px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:#fff;font-weight:950;cursor:pointer}
-.small{font-size:12px;color:var(--mut2);margin-top:8px;line-height:1.35}
-.job{border:1px solid var(--line);border-radius:16px;padding:10px;margin-top:8px;background:rgba(0,0,0,.25)}
-.job b{display:block}
-.job span{display:block;color:var(--mut2);font-size:12px;margin-top:4px}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:system-ui,Arial}
+body{overflow:hidden}
+
+:root{
+  --y:#f5c400;
+  --line:rgba(255,255,255,.1);
+  --card:#141416;
+}
+
+.top{
+  height:56px;
+  display:flex;align-items:center;justify-content:center;
+  border-bottom:1px solid var(--line);
+  background:#0f0f10;
+  font-weight:900;
+}
+.top span{color:var(--y)}
+
+.main{
+  height:calc(100vh - 56px);
+  overflow-y:auto;
+  padding:12px;
+}
+
+.card{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:12px;
+  background:#0f0f10;
+}
+
+input,button,select{
+  width:100%;
+  height:44px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:var(--card);
+  color:#fff;
+  margin-bottom:10px;
+  padding:0 12px;
+  font-weight:800;
+}
+
+button.primary{
+  background:var(--y);
+  color:#111;
+}
+
+.job{
+  border:1px solid rgba(245,196,0,.3);
+  background:rgba(245,196,0,.1);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:10px;
+}
+.job b{color:var(--y)}
+.small{font-size:12px;opacity:.75}
 </style>
 </head>
+
 <body>
-<header>
-  <div class="back" onclick="location.href='index.html'">←</div>
-  Sepet<span>Taxi</span> Admin
-</header>
+<div class="top">Sepet<span>Taxi</span> • Admin</div>
 
-<div class="wrap">
-  <div class="card">
-    <div style="font-weight:950">Admin Giriş</div>
-    <div class="small">İlk kurulum için adminBootstrap çalıştırılabilir. Default PIN: 1234</div>
-    <input class="in" id="pin" placeholder="PIN">
-    <div class="row">
-      <button class="btn2" id="bootstrapBtn">Bootstrap</button>
-      <button class="btn" id="loginBtn">Giriş</button>
-    </div>
-    <div class="small">Durum: <b id="auth">—</b></div>
+<div class="main">
+
+  <!-- LOGIN -->
+  <div id="loginCard" class="card">
+    <h3>Admin Giriş</h3>
+    <input id="adminPin" placeholder="Admin PIN">
+    <button id="btnLogin" class="primary">Giriş</button>
   </div>
 
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div style="font-weight:950">İşler</div>
-      <button class="btn2" id="refreshBtn" style="width:auto">Yenile</button>
+  <!-- PANEL -->
+  <div id="panel" style="display:none">
+
+    <div class="card">
+      <h3>Canlı İşler</h3>
+      <button id="btnRefresh">Yenile</button>
     </div>
+
     <div id="jobs"></div>
+
   </div>
+
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
+/* BACKEND */
+const API="https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
 
-let admin = null; // {admin_id, token}
-
-const $ = (id)=>document.getElementById(id);
-
-function qs(params){
-  const u = new URLSearchParams();
-  Object.keys(params).forEach(k=>{ if(params[k]!==undefined && params[k]!==null) u.set(k,String(params[k])); });
-  return u.toString();
-}
-function apiJSONP(params){
-  return new Promise((resolve, reject)=>{
-    const cb = "cb_" + Math.random().toString(16).slice(2);
-    params.callback = cb;
-    const u = new URLSearchParams(params);
-    const s = document.createElement("script");
-    window[cb] = (data)=>{
-      try{ resolve(data); } finally{
-        delete window[cb];
-        s.remove();
-      }
-    };
-    s.onerror = ()=>{
-      delete window[cb];
-      s.remove();
-      reject(new Error("JSONP load failed"));
-    };
-    s.src = API + (API.includes("?") ? "&" : "?") + u.toString();
+/* JSONP */
+function apiJSONP(p){
+  return new Promise((res,rej)=>{
+    const cb="cb_"+Math.random().toString(16).slice(2);
+    p.callback=cb;
+    window[cb]=(d)=>{res(d);delete window[cb];s.remove();}
+    const s=document.createElement("script");
+    s.src=API+(API.includes("?")?"&":"?")+new URLSearchParams(p);
+    s.onerror=()=>{delete window[cb];s.remove();rej();}
     document.head.appendChild(s);
   });
 }
 
-function setAuth(t){ $("auth").textContent = t; }
+/* STATE */
+let admin=null;
 
-$("bootstrapBtn").onclick = async ()=>{
-  try{
-    const pin = $("pin").value.trim() || "1234";
-    const r = await apiGET({ action:"adminBootstrap", pin });
-    if(!r || r.ok !== true) throw new Error(r?.error || "bootstrap_failed");
-    alert("Bootstrap OK (admin varsa dokunmadı).");
-  }catch(e){
-    alert("Bootstrap hata: "+(e.message||e));
-  }
-};
-
-$("loginBtn").onclick = async ()=>{
-  try{
-    const pin = $("pin").value.trim();
-    if(!pin) return alert("PIN gerekli");
-    const r = await apiGET({ action:"adminLogin", pin });
-    if(!r || r.ok !== true) throw new Error(r?.error || "login_failed");
-    admin = { admin_id: r.data.admin_id, token: r.data.token };
-    localStorage.setItem("sepettaxi_admin", JSON.stringify(admin));
-    setAuth("OK");
-    refreshJobs();
-  }catch(e){
-    console.error(e);
-    alert("Giriş hata: "+(e.message||e));
-  }
-};
-
+/* STORAGE */
+function saveAdmin(a){ localStorage.setItem("sepettaxi_admin", JSON.stringify(a)); }
 function loadAdmin(){
-  try{
-    const s = localStorage.getItem("sepettaxi_admin");
-    admin = s ? JSON.parse(s) : null;
-    setAuth(admin ? "OK" : "—");
-  }catch(_){ admin=null; setAuth("—"); }
+  try{ return JSON.parse(localStorage.getItem("sepettaxi_admin")); }
+  catch(_){ return null; }
 }
+function clearAdmin(){ localStorage.removeItem("sepettaxi_admin"); }
 
-async function refreshJobs(){
-  const box = $("jobs");
-  box.innerHTML = "<div class='small'>Yükleniyor…</div>";
-  try{
-    const r = await apiGET({ action:"listOpenJobs" });
-    if(!r || r.ok !== true) throw new Error(r?.error || "list_failed");
-    const jobs = r.data.jobs || [];
-    if(!jobs.length){ box.innerHTML = "<div class='small'>Açık iş yok.</div>"; return; }
+/* LOGIN */
+btnLogin.onclick=()=>{
+  const pin=adminPin.value.trim();
+  if(pin.length<3){ alert("PIN gir"); return; }
 
-    box.innerHTML = "";
-    jobs.forEach(j=>{
-      const div = document.createElement("div");
-      div.className="job";
-      div.innerHTML = `
-        <b>${(j.service_type==="courier"?"Kurye":"Taksi")} • ${j.status}</b>
-        <span>Job: ${j.job_id}</span>
-        <span>Nereden: ${j.from_address || "-"}</span>
-        <span>Nereye: ${j.to_address || "-"}</span>
-        <span>Atanan sürücü: ${j.driver_id || "-"}</span>
-        <div class="row" style="margin-top:8px">
-          <input class="in" style="margin-top:0;flex:1" placeholder="driver_id" data-drv="">
-          <button class="btn" style="flex:1" data-asg="">Assign</button>
-        </div>
-      `;
-      const inp = div.querySelector("[data-drv]");
-      div.querySelector("[data-asg]").onclick = ()=>assign(j.job_id, inp.value.trim());
-      box.appendChild(div);
+  apiJSONP({ action:"adminLogin", pin })
+    .then(r=>{
+      if(!r.ok){ alert("Giriş başarısız"); return; }
+      admin={ admin_id:r.data.admin_id, token:r.data.token };
+      saveAdmin(admin);
+      initAdmin();
     });
-  }catch(e){
-    console.error(e);
-    box.innerHTML = "<div class='small'>Bağlantı hatası.</div>";
-  }
+};
+
+/* INIT */
+function initAdmin(){
+  loginCard.style.display="none";
+  panel.style.display="block";
+  refreshJobs();
 }
 
-async function assign(job_id, driver_id){
-  if(!admin) return alert("Önce admin giriş");
-  if(!driver_id) return alert("driver_id gerekli");
-  try{
-    const r = await apiGET({ action:"adminAssign", admin_id: admin.admin_id, token: admin.token, job_id, driver_id });
-    if(!r || r.ok !== true) throw new Error(r?.error || "assign_failed");
-    alert("Assign OK");
-    refreshJobs();
-  }catch(e){
-    console.error(e);
-    alert("Assign hata: "+(e.message||e));
-  }
+/* JOBS */
+btnRefresh.onclick=refreshJobs;
+
+function refreshJobs(){
+  apiJSONP({ action:"listOpenJobs" })
+    .then(r=>{
+      if(!r.ok){ jobs.innerHTML="Hata"; return; }
+      jobs.innerHTML="";
+      r.data.jobs.forEach(j=>{
+        const d=document.createElement("div");
+        d.className="job";
+        d.innerHTML=`
+          <div><b>${j.service_type}</b> • ${j.status}</div>
+          <div class="small">${j.from_address || ""}</div>
+          <div class="small">${j.to_address || ""}</div>
+          <input placeholder="Sürücü ID" id="drv_${j.job_id}">
+          <button>Manuel Ata</button>
+        `;
+        d.querySelector("button").onclick=()=>{
+          const driver_id=d.querySelector("input").value.trim();
+          if(!driver_id) return alert("Sürücü ID gir");
+          assign(j.job_id, driver_id);
+        };
+        jobs.appendChild(d);
+      });
+    });
 }
 
-$("refreshBtn").onclick = refreshJobs;
-  (async function boot(){
-  try{
-   apiJSONP({ action:"ping" })
-  .then(()=>{
-    loadAdmin();
-    if(admin) refreshJobs();
-  })
-  .catch(()=> alert("Backend bağlantı hatası"));
+function assign(job_id, driver_id){
+  apiJSONP({
+    action:"adminAssign",
+    admin_id:admin.admin_id,
+    token:admin.token,
+    job_id,
+    driver_id
+  }).then(r=>{
+    if(r.ok){
+      alert("Atandı");
+      refreshJobs();
+    }else{
+      alert("Atama başarısız");
+    }
+  });
+}
 
-
-  loadAdmin();
-  if(admin) refreshJobs();
-})();
-
+/* BOOT */
+const saved=loadAdmin();
+if(saved){
+  admin=saved;
+  initAdmin();
+}
 </script>
 </body>
 </html>
