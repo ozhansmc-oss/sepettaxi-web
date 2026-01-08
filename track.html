@@ -99,7 +99,20 @@ function showSearching(on){document.getElementById("searching").style.display=on
 /* map */
 const map=L.map("map",{zoomControl:false}).setView([40.195,29.060],14);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
-let pickup=null, dropoff=null, driver=null;
+
+let pickup=null, dropoff=null;
+let driverMarker=null;
+let lastDriverPos=null;
+
+/* icons */
+const taxiIcon=L.icon({
+  iconUrl:"https://cdn-icons-png.flaticon.com/512/61/61231.png",
+  iconSize:[36,36], iconAnchor:[18,18]
+});
+const courierIcon=L.icon({
+  iconUrl:"https://cdn-icons-png.flaticon.com/512/2972/2972185.png",
+  iconSize:[34,34], iconAnchor:[17,17]
+});
 
 /* job */
 const jobId=qs("job_id");
@@ -111,26 +124,34 @@ if(!jobId){
   setInterval(tick, 3000);
 }
 
+/* smooth move */
+function moveSmooth(marker, from, to, steps=10, delay=40){
+  let i=0;
+  const dLat=(to.lat-from.lat)/steps;
+  const dLng=(to.lng-from.lng)/steps;
+  const t=setInterval(()=>{
+    i++;
+    marker.setLatLng([from.lat+dLat*i, from.lng+dLng*i]);
+    if(i>=steps) clearInterval(t);
+  }, delay);
+}
+
 function tick(){
   apiJSONP({action:"getJob", job_id:jobId})
     .then((r)=>{
       if(!r || !r.ok){ setStatus("Takip hatası"); return; }
       const j=r.data;
 
-      // pins
-      if(j.pickup_lat && j.pickup_lng){
-        if(!pickup){
-          pickup=L.marker([j.pickup_lat, j.pickup_lng]).addTo(map);
-          map.setView([j.pickup_lat, j.pickup_lng], 14);
-        }
+      // pickup / dropoff
+      if(j.pickup_lat && j.pickup_lng && !pickup){
+        pickup=L.marker([j.pickup_lat, j.pickup_lng]).addTo(map);
+        map.setView([j.pickup_lat, j.pickup_lng], 14);
       }
-      if(j.dropoff_lat && j.dropoff_lng){
-        if(!dropoff){
-          dropoff=L.marker([j.dropoff_lat, j.dropoff_lng]).addTo(map);
-        }
+      if(j.dropoff_lat && j.dropoff_lng && !dropoff){
+        dropoff=L.marker([j.dropoff_lat, j.dropoff_lng]).addTo(map);
       }
 
-      // status flow
+      // status
       switch(String(j.status)){
         case "SEARCHING":
           setStatus("Sürücü aranıyor");
@@ -155,6 +176,20 @@ function tick(){
         default:
           setStatus(j.status || "—");
           showSearching(false);
+      }
+
+      // driver animation
+      if(j.driver_lat && j.driver_lng){
+        const pos={lat:+j.driver_lat, lng:+j.driver_lng};
+        const icon = (j.service_type==="courier") ? courierIcon : taxiIcon;
+
+        if(!driverMarker){
+          driverMarker=L.marker([pos.lat,pos.lng],{icon}).addTo(map);
+          lastDriverPos=pos;
+        }else{
+          moveSmooth(driverMarker, lastDriverPos, pos);
+          lastDriverPos=pos;
+        }
       }
     })
     .catch(()=> setStatus("Bağlantı hatası"));
