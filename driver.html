@@ -252,7 +252,7 @@ function heartbeat(){
   try{
     const r = await apiJSONP({ action:"ping" });
     console.log("DRIVER PING OK", r);
-  }catch(e){
+ .then(()=>{
     alert("Backend bağlantı hatası");
     return;
   }
@@ -262,7 +262,7 @@ function heartbeat(){
   refreshJobs();
   setInterval(heartbeat, 4000);
 })();
-
+  .catch(()=> alert("Backend bağlantı hatası"));
 </script>
 </body>
 </html>
