@@ -149,15 +149,13 @@ async function tick(){
       st==="DELIVERED" ? "Tamamlandı" :
       st==="CANCELLED" ? "İptal" : st;
 
-    setStatus(pretty);
-  }catch(e){
-    console.error(e);
-    setStatus("BAĞLANTI HATASI");
-  }
-}
+apiJSONP({ action:"ping" })
+  .then(()=> {
+    tick();
+    setInterval(tick, 2500);
+  })
+  .catch(()=> alert("Backend bağlantı hatası"));
 
-tick();
-setInterval(tick, 2500);
 </script>
 </body>
 </html>
