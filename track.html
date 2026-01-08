@@ -1,161 +1,164 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>SepetTaxi – Takip</title>
-<meta name="theme-color" content="#f5c400" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SepetTaxi – Canlı Takip</title>
+<meta name="theme-color" content="#050506">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#050506;color:#fff;overflow:hidden;font-family:system-ui}
-:root{--y:#f5c400;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.72);--mut2:rgba(255,255,255,.45)}
-header{
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:system-ui,Arial}
+body{overflow:hidden}
+
+:root{
+  --y:#f5c400;
+  --line:rgba(255,255,255,.1);
+}
+
+/* layout */
+.top{
   height:56px;display:flex;align-items:center;justify-content:center;
-  border-bottom:1px solid var(--line);font-weight:950;position:relative;
+  border-bottom:1px solid var(--line);
+  background:#0f0f10;
+  font-weight:900;
 }
-header .back{
-  position:absolute;left:10px;top:8px;width:40px;height:40px;border-radius:12px;
-  border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;background:rgba(255,255,255,.03)
-}
-header span{color:var(--y)}
-#map{height:calc(100% - 56px)}
-.pill{
+.top span{color:var(--y)}
+#map{height:calc(100vh - 56px);}
+
+/* overlays */
+.badge{
   position:fixed;left:50%;transform:translateX(-50%);
-  z-index:200;border-radius:999px;padding:8px 12px;font-size:12px;
-  border:1px solid var(--line);background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:var(--mut)
+  z-index:2000;
+  padding:8px 14px;border-radius:999px;
+  border:1px solid var(--line);
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(8px);
+  font-weight:800;
 }
-.p1{top:70px}
-.p2{top:110px}
-.badge{color:#fff;font-weight:900}
+.status{top:70px}
+.eta{top:112px;opacity:.85}
+
+.searching{
+  position:fixed;inset:0;z-index:3000;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(10px);
+}
+.searching .box{
+  width:min(360px,90vw);
+  border-radius:22px;border:1px solid var(--line);
+  background:rgba(15,15,16,.9);
+  padding:18px;
+}
+.loader{height:10px;border-radius:999px;overflow:hidden;background:#111;border:1px solid #222}
+.loader i{display:block;height:100%;width:40%;background:linear-gradient(90deg, rgba(245,196,0,.2), rgba(245,196,0,.95), rgba(245,196,0,.2));animation:m 1.1s infinite}
+@keyframes m{0%{transform:translateX(-60%)}100%{transform:translateX(260%)}}
 </style>
 </head>
-<body>
-<header>
-  <div class="back" onclick="location.href='index.html'">←</div>
-  Sepet<span>Taxi</span> Takip
-</header>
 
+<body>
+<div class="top">Sepet<span>Taxi</span> • Canlı Takip</div>
 <div id="map"></div>
-<div class="pill p1" id="statusPill">Durum: <span class="badge" id="st">—</span></div>
-<div class="pill p2" id="metaPill">İş: <span class="badge" id="jid">—</span></div>
+
+<div id="status" class="badge status">Hazırlanıyor…</div>
+<div id="eta" class="badge eta" style="display:none">ETA: —</div>
+
+<div id="searching" class="searching">
+  <div class="box">
+    <div style="font-weight:900;margin-bottom:8px">Sürücü aranıyor</div>
+    <div style="opacity:.8;margin-bottom:12px">En yakın sürücüye yönlendiriyoruz.</div>
+    <div class="loader"><i></i></div>
+  </div>
+</div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
+/* ===== BACKEND ===== */
+const API="https://script.google.com/macros/s/AKfycbxHqb_E0gCqHmxWuzmdHqLb_IR7pHUGixIRd3Hh3MnVqegTPJEdJ4zM5Gb0Tc96Qb8C/exec";
 
-  const qs = new URLSearchParams(location.search);
-const jobId = qs.get("job_id") || localStorage.getItem("sepettaxi_last_job_id") || "";
-document.getElementById("jid").textContent = jobId || "—";
-
-const map = L.map("map", { zoomControl:false }).setView([41.0082, 28.9784], 13);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:19 }).addTo(map);
-
-let pickupM=null, dropM=null, vehicleM=null;
-let serviceType = localStorage.getItem("sepettaxi_last_service") || "taxi";
-
-function iconEmoji(type){
-  const html = `<div style="font-size:26px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))">${type==="courier"?"🛵":"🚕"}</div>`;
-  return L.divIcon({ className:"", html, iconSize:[26,26], iconAnchor:[13,13] });
-}
-
-function apiJSONP(params){
-  return new Promise((resolve, reject)=>{
-    const cb = "cb_" + Math.random().toString(16).slice(2);
-    params.callback = cb;
-    const u = new URLSearchParams(params);
-    const s = document.createElement("script");
-    window[cb] = (data)=>{
-      try{ resolve(data); } finally{
-        delete window[cb];
-        s.remove();
-      }
-    };
-    s.onerror = ()=>{
-      delete window[cb];
-      s.remove();
-      reject(new Error("JSONP load failed"));
-    };
-    s.src = API + (API.includes("?") ? "&" : "?") + u.toString();
+/* JSONP */
+function apiJSONP(p){
+  return new Promise((res,rej)=>{
+    const cb="cb_"+Math.random().toString(16).slice(2);
+    p.callback=cb;
+    window[cb]=(d)=>{res(d);delete window[cb];s.remove();}
+    const s=document.createElement("script");
+    s.src=API+(API.includes("?")?"&":"?")+new URLSearchParams(p);
+    s.onerror=()=>{delete window[cb];s.remove();rej();}
     document.head.appendChild(s);
   });
 }
 
+/* helpers */
+function qs(k){return new URLSearchParams(location.search).get(k);}
+function setStatus(t){document.getElementById("status").textContent=t;}
+function showSearching(on){document.getElementById("searching").style.display=on?"flex":"none";}
 
-function setStatus(s){ document.getElementById("st").textContent = s || "—"; }
+/* map */
+const map=L.map("map",{zoomControl:false}).setView([40.195,29.060],14);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
+let pickup=null, dropoff=null, driver=null;
 
-function ensureMarkers(j){
-  const p = {lat:Number(j.pickup_lat), lng:Number(j.pickup_lng)};
-  const d = {lat:Number(j.dropoff_lat), lng:Number(j.dropoff_lng)};
-  if(isFinite(p.lat)&&isFinite(p.lng) && !pickupM){
-    pickupM = L.marker([p.lat,p.lng]).addTo(map).bindPopup("Nereden");
-  }
-  if(isFinite(d.lat)&&isFinite(d.lng) && !dropM){
-    dropM = L.marker([d.lat,d.lng]).addTo(map).bindPopup("Nereye");
-  }
-  if((pickupM||dropM) && !vehicleM){
-    const start = pickupM ? pickupM.getLatLng() : (dropM ? dropM.getLatLng() : map.getCenter());
-    vehicleM = L.marker(start, { icon: iconEmoji(serviceType) }).addTo(map);
-  }
-  if(pickupM && dropM){
-    const g = L.featureGroup([pickupM, dropM]);
-    map.fitBounds(g.getBounds().pad(0.25));
-  }
+/* job */
+const jobId=qs("job_id");
+if(!jobId){
+  setStatus("job_id bulunamadı");
+}else{
+  showSearching(true);
+  tick();
+  setInterval(tick, 3000);
 }
 
-function moveVehicle(j){
-  // driver ping varsa oraya; yoksa pickup üzerinde beklesin
-  const lat = Number(j.last_lat);
-  const lng = Number(j.last_lng);
-  if(vehicleM){
-    if(isFinite(lat)&&isFinite(lng)){
-      vehicleM.setLatLng([lat,lng]);
-    }else if(pickupM){
-      vehicleM.setLatLng(pickupM.getLatLng());
-    }
-  }
+function tick(){
+  apiJSONP({action:"getJob", job_id:jobId})
+    .then((r)=>{
+      if(!r || !r.ok){ setStatus("Takip hatası"); return; }
+      const j=r.data;
+
+      // pins
+      if(j.pickup_lat && j.pickup_lng){
+        if(!pickup){
+          pickup=L.marker([j.pickup_lat, j.pickup_lng]).addTo(map);
+          map.setView([j.pickup_lat, j.pickup_lng], 14);
+        }
+      }
+      if(j.dropoff_lat && j.dropoff_lng){
+        if(!dropoff){
+          dropoff=L.marker([j.dropoff_lat, j.dropoff_lng]).addTo(map);
+        }
+      }
+
+      // status flow
+      switch(String(j.status)){
+        case "SEARCHING":
+          setStatus("Sürücü aranıyor");
+          showSearching(true);
+          break;
+        case "ASSIGNED":
+          setStatus("Sürücü atandı");
+          showSearching(false);
+          break;
+        case "ACCEPTED":
+          setStatus("Sürücü yolda");
+          showSearching(false);
+          break;
+        case "PICKED_UP":
+          setStatus("Yola çıkıldı");
+          showSearching(false);
+          break;
+        case "DELIVERED":
+          setStatus("Teslim edildi");
+          showSearching(false);
+          break;
+        default:
+          setStatus(j.status || "—");
+          showSearching(false);
+      }
+    })
+    .catch(()=> setStatus("Bağlantı hatası"));
 }
-(async function boot(){
-  try{
-    const r = await apiJSONP({ action:"ping" });
-    console.log("TRACK PING OK", r);
-  }catch(e){
-    alert("Backend bağlantı hatası");
-    return;
-  }
-})();
-
-async function tick(){
-  if(!jobId){
-    setStatus("JOB_ID YOK");
-    return;
-  }
-  try{
-    const resp = await apiGET({ action:"getJob", job_id: jobId });
-    if(!resp || resp.ok !== true){ setStatus("BULUNAMADI"); return; }
-
-    const j = resp.data;
-    serviceType = j.service_type || serviceType;
-    ensureMarkers(j);
-    moveVehicle(j);
-
-    const st = j.status || "—";
-    // UX: net metin
-    const pretty =
-      st==="SEARCHING" ? "Sürücü aranıyor" :
-      st==="ASSIGNED"  ? "Sürücü atandı" :
-      st==="ACCEPTED"  ? "Sürücü kabul etti" :
-      st==="PICKED_UP" ? "Yolda" :
-      st==="DELIVERED" ? "Tamamlandı" :
-      st==="CANCELLED" ? "İptal" : st;
-
-apiJSONP({ action:"ping" })
-  .then(()=> {
-    tick();
-    setInterval(tick, 2500);
-  })
-  .catch(()=> alert("Backend bağlantı hatası"));
-
 </script>
 </body>
 </html>
