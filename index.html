@@ -259,6 +259,44 @@ callBtn.onclick=()=>{
     location.href="track.html?job_id="+r.data.job_id;
   });
 };
+  <!-- HAMBURGER DRAWER -->
+<div id="drawerMask" style="
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.55);
+  display:none;
+  z-index:9500;
+">
+  <div style="
+    position:absolute; top:0; right:0;
+    width:280px; height:100%;
+    background:#0f0f10;
+    border-left:1px solid rgba(255,255,255,.1);
+    padding:16px;
+  ">
+    <h3>Menü</h3>
+    <a href="driver.html" style="display:block;color:#fff;margin-bottom:12px">Sürücü Girişi</a>
+    <a href="admin.html" style="display:block;color:#fff;margin-bottom:12px">Admin</a>
+    <a href="mailto:destek@sepettaxi.com" style="display:block;color:#fff;margin-bottom:12px">Destek</a>
+    <button id="closeDrawer" style="width:100%">Kapat</button>
+  </div>
+</div>
+  const menuBtn = document.querySelector(".menuBtn");
+const drawerMask = document.getElementById("drawerMask");
+const closeDrawer = document.getElementById("closeDrawer");
+
+menuBtn.onclick = () => {
+  drawerMask.style.display = "block";
+};
+
+drawerMask.onclick = (e) => {
+  if(e.target === drawerMask){
+    drawerMask.style.display = "none";
+  }
+};
+
+closeDrawer.onclick = () => {
+  drawerMask.style.display = "none";
+};
 </script>
 </body>
 </html>
