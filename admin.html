@@ -173,12 +173,13 @@ async function assign(job_id, driver_id){
 $("refreshBtn").onclick = refreshJobs;
   (async function boot(){
   try{
-    const r = await apiJSONP({ action:"ping" });
-    console.log("ADMIN PING OK", r);
-  }catch(e){
-    alert("Backend bağlantı hatası");
-    return;
-  }
+   apiJSONP({ action:"ping" })
+  .then(()=>{
+    loadAdmin();
+    if(admin) refreshJobs();
+  })
+  .catch(()=> alert("Backend bağlantı hatası"));
+
 
   loadAdmin();
   if(admin) refreshJobs();
