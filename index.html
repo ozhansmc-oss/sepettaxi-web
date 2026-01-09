@@ -4,313 +4,105 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
-<meta name="theme-color" content="#f5c400">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:system-ui,Arial}
-body{overflow:hidden}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#000;color:#fff;overflow:hidden}
+#map{height:100%;width:100%;background:#111;display:flex;align-items:center;justify-content:center;color:#666}
 
-:root{
-  --y:#f5c400;
-  --line:rgba(255,255,255,.1);
-  --card:#141416;
+#bottom{
+  position:absolute;left:0;right:0;bottom:0;
+  background:#0f0f10;border-top:1px solid #222;
+  padding:14px
+}
+button{
+  width:100%;padding:14px;border:0;border-radius:10px;
+  background:#f5c400;color:#000;font-size:16px;font-weight:bold
 }
 
-/* APP */
-.app{position:fixed;inset:0;display:flex;flex-direction:column}
-
-/* TOPBAR */
-.topbar{
-  height:56px;flex:0 0 auto;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 14px;
-  border-bottom:1px solid var(--line);
-  background:#0f0f10;
-  z-index:50;
-}
-.brand{font-weight:900}
-.brand b{color:var(--y)}
-.menuBtn{
-  width:40px;height:40px;
-  border-radius:12px;
-  border:1px solid var(--line);
-  background:var(--card);
-  color:#fff;
-  font-size:18px;
-}
-
-/* MAP */
-#map{
-  height:45vh;
-  min-height:220px;
-  flex:0 0 auto;
-  z-index:1;
-}
-
-/* SHEET */
-.sheet{
-  flex:1 1 auto;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  background:#0f0f10;
-  border-top:1px solid var(--line);
-}
-.card{padding:12px}
-
-/* UI */
-.btn{
-  height:46px;width:100%;
-  border-radius:14px;
-  border:1px solid var(--line);
-  background:var(--card);
-  color:#fff;
-  font-weight:800;
-}
-.btn.active{background:rgba(245,196,0,.2);border-color:var(--y)}
-
-.field{
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:10px;
-  margin-bottom:10px;
-}
-.label{font-size:12px;opacity:.7}
-.value{font-size:14px;font-weight:800}
-
-/* METRICS */
-.metrics{
-  display:none;
-  position:sticky;
-  bottom:80px;
-  background:rgba(245,196,0,.15);
-  border:1px solid rgba(245,196,0,.3);
-  border-radius:14px;
-  padding:10px;
-  margin-bottom:10px;
-  z-index:10;
-}
-
-/* CTA */
-#callBtn{
-  position:sticky;
-  bottom:16px;
-  background:var(--y);
-  color:#111;
-  font-weight:900;
-  opacity:.4;
-}
-#callBtn.on{opacity:1}
-
-/* DRAWER */
-.drawerMask{
+#searchingOverlay{
   position:fixed;inset:0;
-  display:none;
-  background:rgba(0,0,0,.6);
-  z-index:1000;
-}
-.drawer{
-  position:absolute;right:0;top:0;
-  width:280px;height:100%;
-  background:#0f0f10;
-  border-left:1px solid var(--line);
-  padding:16px;
-}
-
-/* MODAL */
-.modalMask{
-  position:fixed;inset:0;
-  display:none;
-  align-items:center;justify-content:center;
-  background:rgba(0,0,0,.7);
-  z-index:2000;
-}
-.modal{
-  width:90vw;max-width:420px;
-  background:#141416;
-  border-radius:18px;
-  padding:16px;
-}
-.modal input{
-  width:100%;height:44px;
-  border-radius:12px;
-  border:1px solid var(--line);
-  background:#000;color:#fff;
-  margin-bottom:10px;padding:0 10px;
-}
-
-/* SEARCHING */
-.searching{
-  position:fixed;inset:0;
-  display:none;
-  align-items:center;justify-content:center;
-  background:rgba(0,0,0,.7);
-  z-index:3000;
+  background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center;
+  z-index:999
 }
 </style>
 </head>
 
 <body>
-<div class="app">
 
-  <div class="topbar">
-    <div class="brand">Sepet<b>Taxi</b></div>
-    <button id="menuBtn" class="menuBtn">☰</button>
-  </div>
+<div id="map">Harita</div>
 
-  <div id="map"></div>
-
-  <div class="sheet">
-    <div class="card">
-
-      <button id="taxiBtn" class="btn active">Taksi</button>
-      <button id="courierBtn" class="btn">Kurye</button>
-
-      <div class="field">
-        <div class="label">Nereden</div>
-        <div id="fromText" class="value">Konum alınıyor…</div>
-      </div>
-
-      <div class="field">
-        <div class="label">Nereye</div>
-        <div id="toText" class="value">Haritadan seç</div>
-      </div>
-
-      <div id="metrics" class="metrics">
-        <div>Mesafe: <b id="kmText"></b></div>
-        <div>Ücret: <b id="priceText"></b></div>
-      </div>
-
-      <button id="callBtn" class="btn">Çağır</button>
-
-    </div>
-  </div>
+<div id="bottom">
+  <button onclick="callDriver()">Taksi Çağır</button>
 </div>
 
-<!-- DRAWER -->
-<div id="drawerMask" class="drawerMask">
-  <div class="drawer">
-    <h3>Menü</h3>
-    <a href="driver.html">Sürücü</a><br><br>
-    <a href="admin.html">Admin</a><br><br>
-    <button id="closeDrawer" class="btn">Kapat</button>
-  </div>
+<div id="searchingOverlay">
+  <div>Sürücü aranıyor…</div>
 </div>
-
-<!-- MODAL -->
-<div id="regMask" class="modalMask">
-  <div class="modal">
-    <h3>Zorunlu Kayıt</h3>
-    <input id="fName" placeholder="Ad">
-    <input id="lName" placeholder="Soyad">
-    <input id="phone" placeholder="Telefon">
-    <button id="regOk" class="btn active">Kaydı Tamamla</button>
-  </div>
-</div>
-
-<div id="searching" class="searching">Sürücü aranıyor…</div>
 
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+/* ================= CONFIG ================= */
+const API = "https://script.google.com/macros/s/AKfycbwAKdSbXtKupy7Bp0gRIrB68bScvIvVjpSPFUYrDf6marNE43qm_DEHO_dPdTTroIDC/exec"; // .../exec
 
-/* BACKEND */
-const API="https://script.google.com/macros/s/AKfycbwAKdSbXtKupy7Bp0gRIrB68bScvIvVjpSPFUYrDf6marNE43qm_DEHO_dPdTTroIDC/exec";
+let searchingTimer = null;
 
-/* JSONP */
-function apiJSONP(p){
-  return new Promise((res,rej)=>{
-    const cb="cb"+Math.random();
-    p.callback=cb;
-    window[cb]=(d)=>{res(d);delete window[cb];s.remove();}
-    const s=document.createElement("script");
-    s.src=API+"?"+new URLSearchParams(p);
-    s.onerror=()=>rej();
-    document.body.appendChild(s);
-  });
+/* ================= CALL DRIVER ================= */
+function callDriver(){
+  fetch(API + "?action=createJob"
+    + "&service_type=taxi"
+    + "&pickup_lat=40.22"
+    + "&pickup_lng=28.94"
+    + "&dropoff_lat=40.23"
+    + "&dropoff_lng=28.95"
+  )
+  .then(r=>r.json())
+  .then(res=>{
+    if(!res.ok || !res.job_id) return;
+
+    // JOB ID'YI SABİTLE
+    localStorage.setItem("sepettaxi_job_id", res.job_id);
+
+    // Overlay aç
+    document.getElementById("searchingOverlay").style.display="flex";
+
+    // Polling başlat
+    searchingTimer = setInterval(pollJobStatus, 3000);
+  })
+  .catch(()=>{});
 }
 
-/* STATE */
-let registered=false,from=null,to=null;
+/* ================= POLLING ================= */
+function pollJobStatus(){
+  const jobId = localStorage.getItem("sepettaxi_job_id");
+  if(!jobId) return;
 
-/* MAP */
-const map=L.map("map",{zoomControl:false}).setView([40.195,29.06],15);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-let marker=L.marker([40.195,29.06]).addTo(map);
+  fetch(API + "?action=getJob&job_id=" + jobId)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d.ok || !d.data) return;
 
-map.on("click",e=>{
-  const {lat,lng}=e.latlng;
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json()).then(j=>{
-      const a=j.display_name||`${lat},${lng}`;
-      if(!from){from={lat,lng,a};fromText.textContent=a;}
-      else{to={lat,lng,a};toText.textContent=a;}
-      marker.setLatLng([lat,lng]);
-      compute();
-    });
-});
-
-/* GEO */
-navigator.geolocation.getCurrentPosition(p=>{
-  from={lat:p.coords.latitude,lng:p.coords.longitude,a:"Mevcut konum"};
-  fromText.textContent="Mevcut konum";
-  map.setView([from.lat,from.lng],17);
-  marker.setLatLng([from.lat,from.lng]);
-});
-
-/* COMPUTE */
-function compute(){
-  if(!registered||!from||!to)return;
-  const km=Math.hypot(from.lat-to.lat,from.lng-to.lng)*111;
-  const price=Math.round(55+km*16);
-  kmText.textContent=km.toFixed(1)+" km";
-  priceText.textContent=price+" ₺";
-  metrics.style.display="block";
-  callBtn.classList.add("on");
+      const st = String(d.data.status||"").toUpperCase();
+      if(st === "ASSIGNED"){
+        onDriverAssigned(d.data);
+      }
+    })
+    .catch(()=>{});
 }
 
-/* REGISTER */
-regOk.onclick=()=>{
-  if(!fName.value||!lName.value||!phone.value)return;
-  registered=true;
-  regMask.style.display="none";
-  compute();
-};
+/* ================= ASSIGNED ================= */
+function onDriverAssigned(job){
+  if(searchingTimer){
+    clearInterval(searchingTimer);
+    searchingTimer = null;
+  }
 
-/* SERVICE */
-taxiBtn.onclick=()=>{taxiBtn.classList.add("active");courierBtn.classList.remove("active");regMask.style.display="flex";}
-courierBtn.onclick=()=>{courierBtn.classList.add("active");taxiBtn.classList.remove("active");regMask.style.display="flex";}
+  document.getElementById("searchingOverlay").style.display="none";
 
-/* CALL */
-callBtn.onclick=()=>{
-  if(!callBtn.classList.contains("on"))return;
-  searching.style.display="flex";
-  apiJSONP({
-    action:"createJob",
-    customer_first:fName.value,
-    customer_last:lName.value,
-    customer_phone:phone.value,
-    from_address:from.a,
-    to_address:to.a,
-    pickup_lat:from.lat,
-    pickup_lng:from.lng,
-    dropoff_lat:to.lat,
-    dropoff_lng:to.lng,
-    distance_km:"1",
-    price:"1"
-  }).then(r=>{
-    location.href="track.html?job_id="+r.data.job_id;
-  });
-};
-
-/* HAMBURGER */
-menuBtn.onclick=()=>drawerMask.style.display="block";
-closeDrawer.onclick=()=>drawerMask.style.display="none";
-drawerMask.onclick=e=>{if(e.target===drawerMask)drawerMask.style.display="none";};
-
-});
+  // Track ekranına geç
+  window.location.href = "track.html?job_id=" + job.job_id;
+}
 </script>
+
 </body>
 </html>
