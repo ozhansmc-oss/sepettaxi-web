@@ -1,264 +1,731 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SepetTaxi</title>
-<meta name="theme-color" content="#f5c400">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>SepetTaxi</title>
+  <meta name="theme-color" content="#0b0b0c" />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<style>
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:system-ui,Arial}
-body{overflow:hidden}
+  <script src="config.js"></script>
 
-:root{
-  --y:#f5c400;
-  --panel:#0f0f10;
-  --card:#141416;
-  --line:rgba(255,255,255,.1);
-}
-
-/* === LAYOUT === */
-.app{position:fixed;inset:0;display:flex;flex-direction:column}
-
-/* TOPBAR */
-.topbar{
-  height:56px;flex:0 0 auto;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 14px;
-  border-bottom:1px solid var(--line);
-  background:#0f0f10;
-  z-index:30;
-}
-.brand{font-weight:900}
-.brand b{color:var(--y)}
-.menuBtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#141416;color:#fff}
-
-/* MAP */
-#map{
-  height:45vh;
-  min-height:220px;
-  flex:0 0 auto;
-  z-index:1;
-}
-
-/* SHEET (SCROLLABLE) */
-.sheet{
-  flex:1 1 auto;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  background:#0f0f10;
-  border-top:1px solid var(--line);
-}
-.card{
-  padding:12px;
-  min-height:100%;
-}
-
-/* UI */
-.btn{height:46px;border-radius:14px;border:1px solid var(--line);background:#141416;color:#fff;font-weight:800}
-.btn.active{background:rgba(245,196,0,.2);border-color:var(--y)}
-.field{border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}
-.label{font-size:12px;opacity:.7}
-.value{font-size:14px;font-weight:800}
-
-/* METRICS */
-.metrics{
-  display:none;
-  position:sticky;
-  bottom:80px;
-  background:rgba(245,196,0,.15);
-  border:1px solid rgba(245,196,0,.3);
-  border-radius:14px;
-  padding:10px;
-  margin-bottom:10px;
-  z-index:10;
-}
-
-/* CTA */
-#callBtn{
-  position:sticky;
-  bottom:16px;
-  width:100%;
-  background:var(--y);
-  color:#111;
-  font-weight:900;
-  opacity:.4;
-}
-#callBtn.on{opacity:1}
-
-/* MODAL */
-.modalMask{
-  position:fixed;inset:0;
-  display:none;
-  align-items:center;justify-content:center;
-  background:rgba(0,0,0,.65);
-  z-index:9000;
-}
-.modal{
-  width:92vw;max-width:420px;
-  background:#141416;
-  border-radius:20px;
-  padding:16px;
-}
-.modal input{width:100%;height:44px;margin-bottom:10px;border-radius:12px;border:1px solid var(--line);background:#000;color:#fff;padding:0 10px}
-
-/* SEARCHING */
-.searching{
-  position:fixed;inset:0;
-  display:none;
-  align-items:center;justify-content:center;
-  background:rgba(0,0,0,.7);
-  z-index:8000;
-}
-</style>
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --y:#f5c400;
+      --bg:#060607;
+      --panel:#0e0f12;
+      --card:#14161a;
+      --line:rgba(255,255,255,.10);
+      --mut:rgba(255,255,255,.66);
+      --mut2:rgba(255,255,255,.42);
+      --good:#34c759;
+      --bad:#ff3b30;
+      --shadow: 0 12px 40px rgba(0,0,0,.55);
+    }
+    html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
+    #app{position:fixed;inset:0;display:flex;flex-direction:column}
+    /* ===== TOPBAR ===== */
+    .topbar{
+      height:56px;flex:0 0 56px;display:flex;align-items:center;gap:10px;padding:0 12px;
+      background:linear-gradient(180deg, rgba(10,10,12,.92), rgba(10,10,12,.55));
+      border-bottom:1px solid var(--line);
+      backdrop-filter: blur(10px);
+      z-index:50;
+    }
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .logo{
+      width:34px;height:34px;border-radius:12px;background:rgba(245,196,0,.14);
+      display:grid;place-items:center;border:1px solid rgba(245,196,0,.25);
+    }
+    .brand b{font-size:14px;letter-spacing:.2px}
+    .brand span{font-size:11px;color:var(--mut2);display:block;margin-top:2px}
+    .spacer{flex:1}
+    .iconbtn{
+      width:40px;height:40px;border-radius:14px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);display:grid;place-items:center;color:#fff;
+      cursor:pointer; user-select:none;
+    }
+    .iconbtn:active{transform:scale(.98)}
+    .dot{width:8px;height:8px;border-radius:99px;background:var(--y);box-shadow:0 0 0 6px rgba(245,196,0,.14)}
+    /* ===== MAP AREA ===== */
+    #mapWrap{position:relative;flex:1;min-height:0}
+    #map{position:absolute;inset:0}
+    .leaflet-control-container{display:none} /* zoom + attribution kapalı (locked) */
+    /* ===== HAMBURGER DRAWER ===== */
+    .drawerBackdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;
+      transition:.18s;z-index:80;
+    }
+    .drawerBackdrop.on{opacity:1;pointer-events:auto}
+    .drawer{
+      position:fixed;top:0;right:-86vw;width:86vw;max-width:360px;height:100%;
+      background:linear-gradient(180deg, rgba(20,22,26,.98), rgba(14,15,18,.98));
+      border-left:1px solid var(--line);box-shadow:var(--shadow);transition:.22s;
+      z-index:90;padding:14px 14px 18px;display:flex;flex-direction:column;gap:10px;
+    }
+    .drawer.on{right:0}
+    .drawer h3{margin:8px 0 0;font-size:14px}
+    .menuItem{
+      display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:16px;
+      background:rgba(255,255,255,.04);border:1px solid var(--line);cursor:pointer;
+    }
+    .menuItem small{display:block;color:var(--mut2);margin-top:2px}
+    .pill{
+      margin-left:auto;font-size:11px;color:#111;background:var(--y);padding:4px 8px;border-radius:999px;font-weight:700;
+    }
+    /* ===== BOTTOM SHEET (3-state) ===== */
+    .sheet{
+      position:absolute;left:0;right:0;bottom:0;
+      height:72vh;transform:translateY(44vh); /* default HALF */
+      transition:transform .22s cubic-bezier(.2,.9,.2,1);
+      z-index:60;
+      pointer-events:auto;
+    }
+    .sheetInner{
+      height:100%;
+      background:linear-gradient(180deg, rgba(20,22,26,.96), rgba(12,12,14,.98));
+      border-top:1px solid var(--line);
+      border-radius:22px 22px 0 0;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(12px);
+      display:flex;flex-direction:column;
+      overflow:hidden;
+    }
+    .handleRow{
+      height:44px;display:flex;align-items:center;justify-content:center;
+      border-bottom:1px solid var(--line);
+    }
+    .handle{
+      width:54px;height:6px;border-radius:999px;background:rgba(255,255,255,.16);
+    }
+    .sheetBody{padding:12px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+    .seg{
+      display:flex;gap:10px;
+    }
+    .seg button{
+      flex:1;padding:12px 10px;border-radius:16px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);color:#fff;font-weight:700;cursor:pointer;
+    }
+    .seg button.on{border-color:rgba(245,196,0,.28);background:rgba(245,196,0,.12)}
+    .row{display:flex;gap:10px}
+    .card{
+      background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;
+      padding:12px;display:flex;flex-direction:column;gap:8px;
+    }
+    .field{
+      display:flex;align-items:center;gap:10px;
+      padding:12px;border-radius:16px;background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .field input{
+      width:100%;background:transparent;border:0;outline:0;color:#fff;font-size:14px;
+    }
+    .hint{font-size:12px;color:var(--mut2);line-height:1.2}
+    .metrics{display:flex;gap:10px}
+    .metric{
+      flex:1;padding:12px;border-radius:16px;background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+    }
+    .metric b{display:block;font-size:16px}
+    .metric span{display:block;margin-top:4px;font-size:11px;color:var(--mut2)}
+    .cta{
+      padding:14px 14px;border-radius:18px;border:1px solid rgba(245,196,0,.25);
+      background:linear-gradient(180deg, rgba(245,196,0,.22), rgba(245,196,0,.10));
+      color:#fff;font-weight:900;letter-spacing:.2px;cursor:pointer;
+    }
+    .cta[disabled]{opacity:.45;cursor:not-allowed}
+    .statusLine{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:12px}
+    /* ===== REGISTER MODAL ===== */
+    .modalBack{
+      position:fixed;inset:0;background:rgba(0,0,0,.64);
+      display:none;align-items:flex-end;justify-content:center;z-index:120;
+    }
+    .modalBack.on{display:flex}
+    .modal{
+      width:min(540px, 100%);
+      background:linear-gradient(180deg, rgba(20,22,26,.98), rgba(12,12,14,.98));
+      border:1px solid var(--line);border-radius:22px 22px 0 0;
+      box-shadow:var(--shadow);
+      padding:14px;
+    }
+    .modal h2{margin:4px 0 10px;font-size:16px}
+    .modal .row{gap:10px}
+    .modal .field{background:rgba(255,255,255,.04)}
+    .modal .actions{display:flex;gap:10px;margin-top:12px}
+    .btn{
+      flex:1;padding:12px;border-radius:16px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);color:#fff;font-weight:800;cursor:pointer;
+    }
+    .btn.primary{border-color:rgba(245,196,0,.25);background:rgba(245,196,0,.14)}
+    /* ===== SEARCHING OVERLAY (premium) ===== */
+    .searchOverlay{
+      position:fixed;inset:0;display:none;z-index:110;
+      background:radial-gradient(1200px 900px at 50% 30%, rgba(245,196,0,.10), rgba(0,0,0,.85));
+      backdrop-filter: blur(14px);
+      align-items:center;justify-content:center;flex-direction:column;gap:14px;
+    }
+    .searchOverlay.on{display:flex}
+    .badge{
+      padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      display:flex;align-items:center;gap:10px;
+    }
+    .pulse{
+      width:10px;height:10px;border-radius:99px;background:var(--y);
+      box-shadow:0 0 0 0 rgba(245,196,0,.55);
+      animation:pulse 1.2s infinite;
+    }
+    @keyframes pulse{
+      0%{box-shadow:0 0 0 0 rgba(245,196,0,.55)}
+      70%{box-shadow:0 0 0 18px rgba(245,196,0,0)}
+      100%{box-shadow:0 0 0 0 rgba(245,196,0,0)}
+    }
+    .searchOverlay h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .searchOverlay p{margin:0;color:var(--mut);font-size:12px;max-width:280px;text-align:center;line-height:1.35}
+    .cancel{
+      margin-top:6px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);color:#fff;font-weight:800;cursor:pointer;
+    }
+  </style>
 </head>
-
 <body>
-<div class="app">
-
+<div id="app">
   <div class="topbar">
-    <div class="brand">Sepet<b>Taxi</b></div>
-    <button class="menuBtn">☰</button>
+    <div class="iconbtn" id="hambBtn" aria-label="menu">
+      <!-- hamburger -->
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <div class="logo"><span class="dot"></span></div>
+      <div style="min-width:0">
+        <b id="brandName">SepetTaxi</b>
+        <span id="statusHint">Konum alınıyor…</span>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="iconbtn" id="locBtn" title="Konumuma git">
+      <!-- location -->
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2v3M12 19v3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M2 12h3M19 12h3M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" stroke="currentColor" stroke-width="2"/>
+      </svg>
+    </div>
   </div>
 
-  <div id="map"></div>
+  <div id="mapWrap">
+    <div id="map"></div>
 
-  <div class="sheet">
-    <div class="card">
+    <!-- Bottom Sheet -->
+    <div class="sheet" id="sheet">
+      <div class="sheetInner" id="sheetInner">
+        <div class="handleRow" id="handleRow"><div class="handle"></div></div>
+        <div class="sheetBody">
+          <div class="seg">
+            <button id="btnTaxi" class="on">TAG / Taksi</button>
+            <button id="btnCourier">Kurye</button>
+          </div>
 
-      <div>
-        <button id="taxiBtn" class="btn active">Taksi</button>
-        <button id="courierBtn" class="btn">Kurye</button>
+          <div class="card">
+            <div class="field">
+              <span style="color:var(--mut2);font-weight:800">Nereden</span>
+              <input id="fromInput" placeholder="Haritadan seç veya yaz" autocomplete="off">
+            </div>
+            <div class="field">
+              <span style="color:var(--mut2);font-weight:800">Nereye</span>
+              <input id="toInput" placeholder="Haritadan seç veya yaz" autocomplete="off">
+            </div>
+            <div class="hint" id="pickHint">
+              Haritaya dokunarak adres seçebilirsin. İlk dokunuş: Nereden, ikinci: Nereye.
+            </div>
+          </div>
+
+          <div class="metrics" id="metrics" style="display:none">
+            <div class="metric"><b id="kmText">–</b><span>Mesafe (km)</span></div>
+            <div class="metric"><b id="priceText">–</b><span>Tahmini Ücret</span></div>
+          </div>
+
+          <button class="cta" id="callBtn" disabled>Çağır</button>
+
+          <div class="statusLine">
+            <span style="width:10px;height:10px;border-radius:99px;background:rgba(255,255,255,.14)"></span>
+            <span id="fineStatus">Hazır</span>
+          </div>
+        </div>
       </div>
-
-      <div class="field">
-        <div class="label">Nereden</div>
-        <div id="fromText" class="value">Konum alınıyor…</div>
-      </div>
-
-      <div class="field">
-        <div class="label">Nereye</div>
-        <div id="toText" class="value">Haritadan seç</div>
-      </div>
-
-      <div id="metrics" class="metrics">
-        <div>Mesafe: <b id="kmText"></b></div>
-        <div>Ücret: <b id="priceText"></b></div>
-      </div>
-
-      <button id="callBtn" class="btn">Çağır</button>
-
     </div>
   </div>
 </div>
 
-<!-- MODAL -->
-<div id="regMask" class="modalMask">
-  <div class="modal">
-    <h3>Zorunlu Kayıt</h3>
-    <input id="fName" placeholder="Ad">
-    <input id="lName" placeholder="Soyad">
-    <input id="phone" placeholder="Telefon">
-    <button id="regOk" class="btn active">Kaydı Tamamla</button>
+<!-- Drawer -->
+<div class="drawerBackdrop" id="drawerBackdrop"></div>
+<div class="drawer" id="drawer">
+  <h3>Hızlı Menü</h3>
+
+  <div class="menuItem" id="mDriver">
+    <div class="iconbtn" style="width:38px;height:38px;border-radius:14px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="2"/>
+      </svg>
+    </div>
+    <div>
+      <b>Sürücü Paneli</b>
+      <small>Sürücü ol / Giriş yap</small>
+    </div>
+    <span class="pill">GO</span>
+  </div>
+
+  <div class="menuItem" id="mSupport">
+    <div class="iconbtn" style="width:38px;height:38px;border-radius:14px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <b>Destek</b>
+      <small>WhatsApp / E-posta</small>
+    </div>
+  </div>
+
+  <div class="menuItem" id="mAbout">
+    <div class="iconbtn" style="width:38px;height:38px;border-radius:14px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 16v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 8h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <b>Hakkımızda</b>
+      <small>Sözleşmeler yakında</small>
+    </div>
+  </div>
+
+  <div style="margin-top:auto;color:var(--mut2);font-size:11px;line-height:1.35">
+    © <span id="yr"></span> SepetTaxi – MVP
   </div>
 </div>
 
-<div id="searching" class="searching">Sürücü aranıyor…</div>
+<!-- Register Modal -->
+<div class="modalBack" id="regBack">
+  <div class="modal">
+    <h2>Kayıt (Zorunlu)</h2>
+    <div class="hint">Çağırmadan önce kısa kayıt gerekir. Ücret/mesafe bilgisi kayıt sonrasında görünür.</div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field"><input id="firstName" placeholder="Ad"></div>
+      <div class="field"><input id="lastName" placeholder="Soyad"></div>
+    </div>
+    <div class="field" style="margin-top:10px"><input id="phone" placeholder="Telefon (05xx...)" inputmode="tel"></div>
+
+    <div class="actions">
+      <button class="btn" id="regCancel">Vazgeç</button>
+      <button class="btn primary" id="regSave">Kaydı Tamamla</button>
+    </div>
+  </div>
+</div>
+
+<!-- Searching Overlay -->
+<div class="searchOverlay" id="searchOverlay">
+  <div class="badge">
+    <span class="pulse"></span>
+    <b>Sürücü aranıyor</b>
+  </div>
+  <h1>En yakın sürücüye bağlanıyoruz</h1>
+  <p>Konum doğrulandı. Sürücü kabul ettiğinde canlı takibe geçeceksin.</p>
+  <button class="cancel" id="cancelSearch">İptal</button>
+</div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbwAKdSbXtKupy7Bp0gRIrB68bScvIvVjpSPFUYrDf6marNE43qm_DEHO_dPdTTroIDC/exec";
-
-/* JSONP */
-function apiJSONP(p){
-  return new Promise((res,rej)=>{
-    const cb="cb"+Math.random();
-    p.callback=cb;
-    window[cb]=(d)=>{res(d);delete window[cb];s.remove();}
-    const s=document.createElement("script");
-    s.src=API+"?"+new URLSearchParams(p);
-    s.onerror=()=>rej();
-    document.body.appendChild(s);
+/* ============================
+   JSONP API CLIENT (CORS-proof)
+   ============================ */
+const CFG = window.SEPETTAXI || {};
+const API = (CFG.API_BASE || "").trim();
+function uid(prefix="id"){
+  return prefix + "_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+function qs(obj){
+  const p = new URLSearchParams();
+  Object.keys(obj||{}).forEach(k=>{
+    if(obj[k]===undefined || obj[k]===null) return;
+    p.set(k, String(obj[k]));
+  });
+  return p.toString();
+}
+function apiGet(action, params={}){
+  return new Promise((resolve, reject)=>{
+    if(!API || API.includes("PASTE_YOUR")) return reject(new Error("API_BASE yok / yanlış"));
+    const cb = "cb_" + uid("j");
+    window[cb] = (payload)=>{
+      try{ delete window[cb]; }catch(_){ window[cb]=undefined; }
+      script.remove();
+      if(payload && payload.ok) resolve(payload);
+      else reject(new Error((payload && payload.error) || "API error"));
+    };
+    const url = API + "?" + qs({action, callback: cb, ...params});
+    const script = document.createElement("script");
+    script.src = url;
+    script.onerror = ()=>{ try{ delete window[cb]; }catch(_){ } reject(new Error("Network/JSONP error")); };
+    document.body.appendChild(script);
   });
 }
 
-/* STATE */
-let registered=false,from=null,to=null,km=0,price=0;
+/* ========= STORAGE ========= */
+function saveCustomer(c){ localStorage.setItem("sepettaxi_customer", JSON.stringify(c)); }
+function loadCustomer(){ try{ const s=localStorage.getItem("sepettaxi_customer"); return s?JSON.parse(s):null;}catch(_){return null;} }
 
-/* MAP */
-const map=L.map("map",{zoomControl:false}).setView([40.195,29.06],15);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-let marker=L.marker([40.195,29.06]).addTo(map);
+/* ========= UI HELPERS ========= */
+const $ = (id)=>document.getElementById(id);
+$("yr").textContent = new Date().getFullYear();
+$("brandName").textContent = (CFG.BRAND && CFG.BRAND.name) ? CFG.BRAND.name : "SepetTaxi";
 
-map.on("click",e=>{
-  const {lat,lng}=e.latlng;
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-    .then(r=>r.json())
-    .then(j=>{
-      const addr=j.display_name||`${lat},${lng}`;
-      if(!from){from={lat,lng,addr};fromText.textContent=addr;}
-      else{to={lat,lng,addr};toText.textContent=addr;}
-      marker.setLatLng([lat,lng]);
-      compute();
-    });
-});
+let serviceType = "taxi"; // taxi | courier
+let fromPoint = null; // {lat,lng,address}
+let toPoint   = null;
+let lastKm = null;
+let lastPrice = null;
+let map, fromMarker, toMarker, meMarker;
 
-/* GEO */
-navigator.geolocation.getCurrentPosition(p=>{
-  const {latitude,longitude}=p.coords;
-  map.setView([latitude,longitude],17);
-  marker.setLatLng([latitude,longitude]);
-  from={lat:latitude,lng:longitude,addr:"Mevcut konum"};
-  fromText.textContent="Mevcut konum";
-});
+function setHint(t){ $("statusHint").textContent = t; }
+function setFine(t){ $("fineStatus").textContent = t; }
 
-/* COMPUTE */
-function compute(){
-  if(!registered||!from||!to)return;
-  km=Math.hypot(from.lat-to.lat,from.lng-to.lng)*111;
-  price=Math.round(55+km*16);
-  kmText.textContent=km.toFixed(1)+" km";
-  priceText.textContent=price+" ₺";
-  metrics.style.display="block";
-  callBtn.classList.add("on");
+function calcDistanceKm(a,b){
+  // Haversine
+  const R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLng=(b.lng-a.lng)*Math.PI/180;
+  const s1=Math.sin(dLat/2), s2=Math.sin(dLng/2);
+  const q = s1*s1 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*s2*s2;
+  return 2*R*Math.asin(Math.min(1, Math.sqrt(q)));
+}
+function priceFor(km){
+  const P = CFG.PRICING || {};
+  if(serviceType==="courier"){
+    return Math.round((P.courier_open + (P.courier_per_km*km))*1)/1;
+  }
+  return Math.round((P.taxi_open + (P.taxi_per_km*km))*1)/1;
+}
+function updateMetrics(){
+  const ready = (fromPoint && toPoint);
+  if(!ready){
+    $("metrics").style.display="none";
+    $("callBtn").disabled = true;
+    lastKm = lastPrice = null;
+    return;
+  }
+  const km = calcDistanceKm(fromPoint, toPoint);
+  const price = priceFor(km);
+  lastKm = Math.round(km*10)/10;
+  lastPrice = price;
+
+  const customer = loadCustomer();
+  // Kilitli akış: Ücret/mesafe kayıt öncesi görünmesin
+  $("metrics").style.display = customer ? "flex" : "none";
+  $("kmText").textContent = lastKm.toFixed(1);
+  $("priceText").textContent = (serviceType==="courier" ? "₺" : "₺") + lastPrice;
+
+  // Çağır butonu: adresler tamam + kayıt yoksa modal ile yöneteceğiz (buton enable)
+  $("callBtn").disabled = false;
 }
 
-/* REGISTER */
-regOk.onclick=()=>{
-  if(!fName.value||!lName.value||!phone.value)return;
-  registered=true;
-  regMask.style.display="none";
-  compute();
+/* ========= DRAWER ========= */
+function openDrawer(on){
+  $("drawerBackdrop").classList.toggle("on", on);
+  $("drawer").classList.toggle("on", on);
+}
+$("hambBtn").onclick = ()=>openDrawer(true);
+$("drawerBackdrop").onclick = ()=>openDrawer(false);
+$("mDriver").onclick = ()=>location.href="driver.html";
+$("mSupport").onclick = ()=>{
+  openDrawer(false);
+  // örnek iletişim – kendin güncelleyebilirsin
+  alert("Destek: WhatsApp / E-posta (yakında sabitlenecek)");
 };
+$("mAbout").onclick = ()=>{ openDrawer(false); alert("Hakkımızda / Sözleşmeler: yakında"); };
 
-/* SERVICE SELECT */
-taxiBtn.onclick=()=>{taxiBtn.classList.add("active");courierBtn.classList.remove("active");regMask.style.display="flex";}
-courierBtn.onclick=()=>{courierBtn.classList.add("active");taxiBtn.classList.remove("active");regMask.style.display="flex";}
+/* ========= SERVICE SELECT ========= */
+function setService(t){
+  serviceType = t;
+  $("btnTaxi").classList.toggle("on", t==="taxi");
+  $("btnCourier").classList.toggle("on", t==="courier");
+  $("callBtn").textContent = (t==="courier") ? "Kurye Çağır" : "TAG / Taksi Çağır";
+  updateMetrics();
+}
+$("btnTaxi").onclick = ()=>setService("taxi");
+$("btnCourier").onclick = ()=>setService("courier");
 
-/* CALL */
-callBtn.onclick=()=>{
-  if(!callBtn.classList.contains("on"))return;
-  searching.style.display="flex";
-  apiJSONP({
-    action:"createJob",
-    customer_first:fName.value,
-    customer_last:lName.value,
-    customer_phone:phone.value,
-    from_address:from.addr,
-    to_address:to.addr,
-    pickup_lat:from.lat,
-    pickup_lng:from.lng,
-    dropoff_lat:to.lat,
-    dropoff_lng:to.lng,
-    distance_km:km,
-    price:price
-  }).then(r=>{
-    location.href="track.html?job_id="+r.data.job_id;
+/* ========= SHEET 3-STATE ========= */
+const sheet = $("sheet");
+const inner = $("sheetInner");
+let sheetState = "half"; // collapsed | half | expanded
+function applySheet(){
+  const vh = window.innerHeight;
+  // translateY: expanded 0, half 44vh, collapsed 62vh
+  if(sheetState==="expanded") sheet.style.transform = "translateY(0vh)";
+  else if(sheetState==="collapsed") sheet.style.transform = "translateY(62vh)";
+  else sheet.style.transform = "translateY(44vh)";
+  // Leaflet resize
+  setTimeout(()=>{ try{ map && map.invalidateSize(); }catch(_){ } }, 240);
+}
+applySheet();
+
+(function sheetDrag(){
+  const handle = $("handleRow");
+  let startY=0, startT=0, dragging=false;
+
+  function getCurrentTranslateY(){
+    const m = sheet.style.transform.match(/translateY\(([-0-9.]+)vh\)/);
+    return m ? parseFloat(m[1]) : 44;
+  }
+
+  handle.addEventListener("touchstart",(e)=>{
+    dragging=true;
+    startY=e.touches[0].clientY;
+    startT=getCurrentTranslateY();
+    sheet.style.transition="none";
+  }, {passive:true});
+
+  handle.addEventListener("touchmove",(e)=>{
+    if(!dragging) return;
+    const dy = e.touches[0].clientY - startY;
+    const vh = window.innerHeight;
+    let next = startT + (dy / vh)*100;
+    next = Math.max(0, Math.min(70, next));
+    sheet.style.transform = `translateY(${next}vh)`;
+  }, {passive:true});
+
+  handle.addEventListener("touchend",()=>{
+    if(!dragging) return;
+    dragging=false;
+    sheet.style.transition="transform .22s cubic-bezier(.2,.9,.2,1)";
+    const t = getCurrentTranslateY();
+    // snap
+    if(t < 18) sheetState="expanded";
+    else if(t < 54) sheetState="half";
+    else sheetState="collapsed";
+    applySheet();
   });
+})();
+
+/* ========= MAP ========= */
+function markerHtml(kind){
+  // basit premium ikon (emoji değil) – inline SVG
+  const color = (kind==="from") ? "rgba(245,196,0,.95)" : "rgba(255,255,255,.92)";
+  const stroke = (kind==="from") ? "rgba(245,196,0,.55)" : "rgba(255,255,255,.32)";
+  const glyph = (serviceType==="courier") ? "M" : "T"; // Moto / Taxi
+  return `
+    <div style="
+      width:34px;height:34px;border-radius:14px;
+      display:grid;place-items:center;
+      background:rgba(10,10,12,.82);
+      border:1px solid ${stroke};
+      box-shadow:0 10px 22px rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      ">
+      <div style="
+        width:18px;height:18px;border-radius:8px;
+        background:${color};
+        display:grid;place-items:center;
+        color:#111;font-weight:900;font-size:11px;
+      ">${glyph}</div>
+    </div>
+  `;
+}
+function setMarker(which, latlng){
+  const icon = L.divIcon({className:"", html: markerHtml(which), iconSize:[34,34], iconAnchor:[17,17]});
+  if(which==="from"){
+    if(fromMarker) fromMarker.setLatLng(latlng).setIcon(icon);
+    else fromMarker = L.marker(latlng, {icon}).addTo(map);
+  }else{
+    if(toMarker) toMarker.setLatLng(latlng).setIcon(icon);
+    else toMarker = L.marker(latlng, {icon}).addTo(map);
+  }
+}
+async function reverseGeocode(lat,lng){
+  // Nominatim public – basit kullanım (rate limit’e dikkat)
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+  const r = await fetch(url, {headers:{'Accept':'application/json'}});
+  const j = await r.json();
+  return (j && (j.display_name || (j.address && (j.address.road||j.address.neighbourhood||j.address.city)))) || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+function initMap(){
+  map = L.map("map", {zoomControl:false, attributionControl:false});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19}).addTo(map);
+  map.setView([40.2, 29.06], 13);
+
+  map.on("click", async (e)=>{
+    try{
+      const lat=e.latlng.lat, lng=e.latlng.lng;
+      setFine("Adres seçiliyor…");
+      const addr = await reverseGeocode(lat,lng);
+
+      if(!fromPoint){
+        fromPoint = {lat,lng,address:addr};
+        $("fromInput").value = addr;
+        setMarker("from", e.latlng);
+        setHint("Nereye seçin…");
+      }else if(!toPoint){
+        toPoint = {lat,lng,address:addr};
+        $("toInput").value = addr;
+        setMarker("to", e.latlng);
+        setHint("Hazır");
+      }else{
+        // üçüncü tık: hedefi güncelle
+        toPoint = {lat,lng,address:addr};
+        $("toInput").value = addr;
+        setMarker("to", e.latlng);
+      }
+      updateMetrics();
+      setFine("Hazır");
+    }catch(err){
+      console.error(err);
+      setFine("Adres alınamadı");
+    }
+  });
+}
+
+async function locateMe(){
+  if(!navigator.geolocation){
+    setHint("Konum desteği yok");
+    return;
+  }
+  setHint("Konum alınıyor…");
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude;
+    map.setView([lat,lng], 16);
+    if(!meMarker){
+      meMarker = L.circleMarker([lat,lng], {radius:8, weight:2, color:"rgba(245,196,0,.8)", fillColor:"rgba(245,196,0,.25)", fillOpacity:1}).addTo(map);
+    }else meMarker.setLatLng([lat,lng]);
+    setHint("Konum hazır");
+  }, ()=>{
+    setHint("Konum izni gerekli");
+  }, {enableHighAccuracy:true, timeout:9000, maximumAge:2000});
+}
+$("locBtn").onclick = locateMe;
+
+/* ========= INPUT TYPING (light) ========= */
+$("fromInput").addEventListener("change", ()=>{ if($("fromInput").value.trim() && fromPoint){ fromPoint.address=$("fromInput").value.trim(); }});
+$("toInput").addEventListener("change", ()=>{ if($("toInput").value.trim() && toPoint){ toPoint.address=$("toInput").value.trim(); }});
+
+/* ========= REGISTER FLOW ========= */
+function openReg(on){
+  $("regBack").classList.toggle("on", on);
+}
+$("regCancel").onclick = ()=>openReg(false);
+$("regSave").onclick = async ()=>{
+  const first = $("firstName").value.trim();
+  const last  = $("lastName").value.trim();
+  const phone = $("phone").value.trim();
+  if(!first || !last || phone.length < 10){
+    alert("Lütfen ad/soyad/telefon gir.");
+    return;
+  }
+  try{
+    setFine("Kayıt tamamlanıyor…");
+    const r = await apiGet("registerCustomer", {first,last,phone});
+    saveCustomer({customer_id:r.customer_id, first,last,phone});
+    openReg(false);
+    setFine("Kayıt tamam");
+    // kayıt sonrası metrikleri göster
+    updateMetrics();
+    // ardından çağır akışı devam etsin:
+    await startCreateJob();
+  }catch(e){
+    console.error(e);
+    alert("Kayıt başarısız: " + e.message);
+    setFine("Kayıt hatası");
+  }
 };
+
+/* ========= JOB CREATE + AUTO MATCH ========= */
+let currentJobId = null;
+let pollTimer = null;
+
+function showSearching(on){
+  $("searchOverlay").classList.toggle("on", on);
+}
+$("cancelSearch").onclick = async ()=>{
+  showSearching(false);
+  if(pollTimer) clearInterval(pollTimer), pollTimer=null;
+  if(currentJobId){
+    try{ await apiGet("cancelJob", {job_id: currentJobId}); }catch(_){}
+  }
+  currentJobId=null;
+  setFine("İptal edildi");
+};
+
+async function startCreateJob(){
+  if(!fromPoint || !toPoint){ alert("Nereden / Nereye seç"); return; }
+  const c = loadCustomer();
+  if(!c){ openReg(true); return; }
+
+  try{
+    setFine("İş oluşturuluyor…");
+    const payload = {
+      service_type: serviceType,
+      customer_id: c.customer_id,
+      customer_first: c.first,
+      customer_last: c.last,
+      customer_phone: c.phone,
+      from_address: fromPoint.address,
+      to_address: toPoint.address,
+      pickup_lat: fromPoint.lat, pickup_lng: fromPoint.lng,
+      dropoff_lat: toPoint.lat, dropoff_lng: toPoint.lng,
+      distance_km: lastKm,
+      price: lastPrice
+    };
+
+    const r = await apiGet("createJob", payload);
+    currentJobId = r.job_id;
+
+    showSearching(true);
+    setFine("Sürücü aranıyor…");
+
+    // Auto-match poll
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(async ()=>{
+      try{
+        const st = await apiGet("getJob", {job_id: currentJobId});
+        if(st.job && st.job.status === "assigned"){
+          clearInterval(pollTimer); pollTimer=null;
+          showSearching(false);
+          // track
+          location.href = "track.html?job_id=" + encodeURIComponent(currentJobId);
+        }
+      }catch(_){}
+    }, 2000);
+
+  }catch(e){
+    console.error(e);
+    alert("Çağırma hatası: " + e.message);
+    setFine("Hata");
+    showSearching(false);
+  }
+}
+
+$("callBtn").onclick = async ()=>{
+  // Kilitli akış: çağır -> kayıt yoksa modal -> kayıt sonrası job
+  const c = loadCustomer();
+  if(!c){
+    openReg(true);
+    return;
+  }
+  await startCreateJob();
+};
+
+/* ========= BOOT ========= */
+(async function boot(){
+  initMap();
+  await locateMe().catch(()=>{});
+  setService("taxi");
+  setFine("Hazır");
+})();
 </script>
 </body>
 </html>
