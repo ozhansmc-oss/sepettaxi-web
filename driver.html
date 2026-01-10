@@ -52,7 +52,6 @@ background:rgba(245,196,0,.15);border:1px solid rgba(245,196,0,.35)
 <body>
 
 <div class="wrap">
-
   <h1>Sürücü Paneli</h1>
 
   <!-- ACTIVE JOB -->
@@ -67,12 +66,10 @@ background:rgba(245,196,0,.15);border:1px solid rgba(245,196,0,.35)
     <h2>Uygun İşler</h2>
     <div id="jobs"></div>
   </div>
-
 </div>
 
 <script>
 /* ================= KİLİTLİ KURAL ================= */
-// Kayıtlı sürücü yoksa → kayıt ekranına yönlendir
 const DRIVER_ID = localStorage.getItem("sepettaxi_driver");
 if(!DRIVER_ID){
   window.location.replace("driver-register.html");
@@ -83,8 +80,8 @@ const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGE
 
 /* ================= STATE ================= */
 let driverId = DRIVER_ID;
-let heartbeatTimer = null;
 let activeJobId = null;
+let heartbeatTimer = null;
 
 /* ================= HELPERS ================= */
 const $ = i => document.getElementById(i);
@@ -92,36 +89,33 @@ const $ = i => document.getElementById(i);
 function postForm(d){
   return fetch(API,{
     method:"POST",
-    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
     body:Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&")
   }).then(r=>r.json());
 }
 
-/* ================= HEARTBEAT ================= */
-function startHeartbeat(){
-  sendHeartbeat();
-  heartbeatTimer = setInterval(sendHeartbeat, 6000);
-}
+/* ================= HEARTBEAT (TEK VE DOĞRU) ================= */
+function startDriverHeartbeat(){
+  if(heartbeatTimer) return;
 
-async function sendHeartbeat(){
-  if(!driverId || !navigator.geolocation) return;
+  heartbeatTimer = setInterval(()=>{
+    if(!navigator.geolocation) return;
 
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    const r = await postForm({
-      action:"driverHeartbeat",
-      driver_id:driverId,
-      lat:pos.coords.latitude,
-      lng:pos.coords.longitude,
-      can_taxi:"true",
-      can_courier:"true"
+    navigator.geolocation.getCurrentPosition(pos=>{
+      postForm({
+        action:"driverHeartbeat",
+        driver_id:driverId,
+        lat:pos.coords.latitude,
+        lng:pos.coords.longitude
+      }).catch(()=>{});
     });
 
-    if(r && r.active_job_id){
-      activeJobId = r.active_job_id;
-      showActiveJob();
-    }
-  });
+  }, 3000);
 }
+
+window.addEventListener("beforeunload", ()=>{
+  if(heartbeatTimer) clearInterval(heartbeatTimer);
+});
 
 /* ================= JOB LIST ================= */
 async function loadJobs(){
@@ -199,53 +193,9 @@ $("finishBtn").onclick = async ()=>{
   $("jobsCard").style.display="block";
 };
 
-/* ================= BOOT ================= */
-startHeartbeat();
+/* ================= INIT ================= */
+startDriverHeartbeat();
 loadJobs();
-  <script>
-/* =========================
-   DRIVER HEARTBEAT (LIVE)
-========================= */
-
-let hbTimer = null;
-
-function startDriverHeartbeat(driverId){
-  if(hbTimer) return; // zaten çalışıyorsa tekrar başlatma
-
-  hbTimer = setInterval(()=>{
-    if(!navigator.geolocation) return;
-
-    navigator.geolocation.getCurrentPosition(pos=>{
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-
-      const body = [
-        "action=driverHeartbeat",
-        "driver_id=" + encodeURIComponent(driverId),
-        "lat=" + encodeURIComponent(lat),
-        "lng=" + encodeURIComponent(lng)
-      ].join("&");
-
-      fetch(API,{
-        method:"POST",
-        headers:{ "Content-Type":"application/x-www-form-urlencoded" },
-        body
-      }).catch(()=>{});
-
-    }, _=>{}, { enableHighAccuracy:true, maximumAge:0, timeout:5000 });
-
-  }, 3000); // 3 sn
-}
-
-function stopDriverHeartbeat(){
-  if(hbTimer){
-    clearInterval(hbTimer);
-    hbTimer = null;
-  }
-}
-
-/* Sayfa kapanırken durdur */
-window.addEventListener("beforeunload", stopDriverHeartbeat);
 </script>
 
 </body>
