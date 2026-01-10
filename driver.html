@@ -196,6 +196,72 @@ $("finishBtn").onclick = async ()=>{
 /* ================= INIT ================= */
 startDriverHeartbeat();
 loadJobs();
+<script>
+/* ======================================================
+   SepetTaxi – DRIVER HEARTBEAT (ADIM D)
+   API URL dosyadan okunur – çakışma yok
+   ====================================================== */
+
+(function(){
+  // ⚠️ API driver.html içinde zaten tanımlı olmalı
+  if(typeof API === "undefined"){
+    console.warn("SepetTaxi: API tanımlı değil, heartbeat iptal");
+    return;
+  }
+
+  // ⚠️ driverId de driver.html içinde olmalı
+  if(typeof driverId === "undefined"){
+    console.warn("SepetTaxi: driverId yok, heartbeat iptal");
+    return;
+  }
+
+  const HEARTBEAT_INTERVAL = 6000; // 6 sn
+  let hbTimer = null;
+
+  function post(action, data){
+    const body = new URLSearchParams(Object.assign({ action }, data));
+    return fetch(API, { method:"POST", body })
+      .then(r=>r.json())
+      .catch(()=>null);
+  }
+
+  function startHeartbeat(){
+    if(hbTimer) return;
+
+    hbTimer = setInterval(()=>{
+      if(!navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(pos=>{
+        post("driverHeartbeat",{
+          driver_id: driverId,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+      });
+    }, HEARTBEAT_INTERVAL);
+
+    console.log("SepetTaxi: heartbeat başladı");
+  }
+
+  function stopHeartbeat(){
+    if(hbTimer){
+      clearInterval(hbTimer);
+      hbTimer = null;
+      console.log("SepetTaxi: heartbeat durdu");
+    }
+  }
+
+  /* === ÇALIŞMA STRATEJİSİ ===
+     driver panel açıkken heartbeat çalışır
+     iş biterse durdurmak istersek event bağlarız
+  */
+
+  startHeartbeat();
+
+  // İleride istersek:
+  // document.addEventListener("jobCompleted", stopHeartbeat);
+
+})();
 </script>
 
 </body>
