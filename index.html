@@ -10,179 +10,256 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-/* === (CSS SENİN GÖNDERDİĞİN HALİYLE, DEĞİŞMEDİ) === */
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;background:#050506;color:#fff;overflow:hidden}
 :root{
 --y:#f5c400;--bg:#050506;--panel:#0f0f10;--card:#141416;
 --line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.65);--mut2:rgba(255,255,255,.42)
 }
-/* … (stil bloğunu KESMEDİM, aynen korudum – burada kısaltıyorum) … */
+
+/* TOPBAR */
+.topbar{
+position:fixed;left:0;right:0;top:0;height:56px;
+display:flex;align-items:center;justify-content:space-between;
+padding:0 12px;z-index:50;
+background:linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.10));
+backdrop-filter: blur(10px);
+border-bottom:1px solid rgba(255,255,255,.06);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900}
+.logo{
+width:28px;height:28px;border-radius:10px;
+background:radial-gradient(circle at 30% 30%, #ffe27a, #f5c400 55%, #b78d00 100%);
+}
+.actions{display:flex;gap:10px}
+.iconbtn{
+width:40px;height:40px;border-radius:14px;
+border:1px solid rgba(255,255,255,.10);
+background:rgba(20,20,22,.55);color:#fff
+}
+.hamb{display:flex;flex-direction:column;gap:4px}
+.hamb span{width:18px;height:2px;background:#fff;border-radius:2px}
+
+/* LAYOUT */
+.wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
+#map{flex:1 1 50%}
+.sheet{
+flex:1 1 50%;
+background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,12,.98));
+border-top:1px solid rgba(255,255,255,.08);
+padding:12px
+}
+
+/* UI */
+.row{display:flex;gap:10px}
+.pill{
+flex:1;border:1px solid rgba(255,255,255,.10);
+background:rgba(255,255,255,.04);
+border-radius:16px;padding:10px 12px;
+display:flex;gap:10px;align-items:center
+}
+.tag{font-size:12px;color:rgba(255,255,255,.62)}
+.val{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.serviceTabs{margin-top:10px;display:flex;gap:10px}
+.tab{
+flex:1;border-radius:18px;padding:12px;
+border:1px solid rgba(255,255,255,.10);
+background:rgba(255,255,255,.04);
+font-weight:900;text-align:center
+}
+.tab.active{
+border-color:rgba(245,196,0,.45);
+background:rgba(245,196,0,.10)
+}
+
+.metrics{display:flex;gap:10px;margin-top:10px}
+.metric{
+flex:1;background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.10);
+border-radius:18px;padding:12px
+}
+.metric .k{font-size:12px;color:rgba(255,255,255,.55)}
+.metric .v{font-size:18px;font-weight:950}
+
+.btn{
+margin-top:10px;width:100%;
+border:0;border-radius:18px;padding:14px;
+font-weight:950;
+background:linear-gradient(135deg, #f5c400, #ffd34d);
+color:#1a1400
+}
+.btn[disabled]{opacity:.45}
+
+/* OVERLAY */
+.overlay{
+position:fixed;inset:0;z-index:80;
+display:none;align-items:center;justify-content:center;
+background:rgba(0,0,0,.45);backdrop-filter:blur(10px)
+}
+.ovCard{
+background:rgba(20,20,22,.9);
+border-radius:26px;padding:18px;
+border:1px solid rgba(255,255,255,.12)
+}
+
+/* MODAL */
+.modal{
+position:fixed;inset:0;z-index:90;
+display:none;align-items:center;justify-content:center;
+background:rgba(0,0,0,.55)
+}
+.mCard{
+background:rgba(20,20,22,.92);
+border-radius:26px;padding:16px;width:90%
+}
+.inp{
+width:100%;padding:12px;border-radius:16px;
+border:1px solid rgba(255,255,255,.10);
+background:rgba(255,255,255,.04);color:#fff
+}
 </style>
 </head>
 
 <body>
 
-<!-- ================= UI (AYNEN) ================= -->
-<!-- topbar / map / sheet / overlay / drawer / modal -->
-<!-- (Senin verdiğin HTML birebir korundu, kesmedim) -->
+<div class="topbar">
+  <div class="brand"><div class="logo"></div>SepetTaxi</div>
+  <div class="actions">
+    <button class="iconbtn" id="menuBtn">
+      <div class="hamb"><span></span><span></span><span></span></div>
+    </button>
+  </div>
+</div>
 
-<!-- ================= SCRIPT ================= -->
+<div class="wrap">
+  <div id="map"></div>
+
+  <div class="sheet">
+    <div class="row">
+      <div class="pill"><span class="tag">Nereden</span><span class="val" id="fromTxt">Haritadan seç</span></div>
+      <div class="pill"><span class="tag">Nereye</span><span class="val" id="toTxt">Haritadan seç</span></div>
+    </div>
+
+    <div class="serviceTabs">
+      <div class="tab active" id="tabTaxi">Taksi</div>
+      <div class="tab" id="tabCourier">Kurye</div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="k">Mesafe</div><div class="v" id="kmTxt">—</div></div>
+      <div class="metric"><div class="k">Ücret</div><div class="v" id="priceTxt">—</div></div>
+    </div>
+
+    <button class="btn" id="callBtn" disabled>Taksi Çağır</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="ovCard">
+    <b>Sürücü aranıyor</b>
+    <div>Yakındaki sürücüler eşleştiriliyor…</div>
+  </div>
+</div>
+
+<div class="modal" id="regModal">
+  <div class="mCard">
+    <input class="inp" id="cFirst" placeholder="Ad">
+    <input class="inp" id="cLast" placeholder="Soyad">
+    <input class="inp" id="cPhone" placeholder="Telefon">
+    <button class="btn" id="regOk">Kaydet</button>
+  </div>
+</div>
+
 <script>
-/* ================= CONFIG ================= */
+/* ========= CONFIG ========= */
 const API = "https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec";
 
-/* ================= STATE ================= */
-let map, markerFrom, markerTo, line;
-let from=null, to=null;
-let serviceType="taxi";
-let lastDistanceKm=0, lastPrice=0;
+/* ========= STATE ========= */
+let map, from=null, to=null;
+let serviceType="taxi", lastDistanceKm=0, lastPrice=0;
 
-/* ================= HELPERS ================= */
-const $=id=>document.getElementById(id);
-function overlay(on,t,s){$("overlay").style.display=on?"flex":"none";if(t)$("ovTitle").textContent=t;if(s)$("ovSub").textContent=s}
-function hint(t){$("statusHint").textContent=t}
-
-/* ================= CUSTOMER STORAGE ================= */
-function loadCustomer(){
-  try{const s=localStorage.getItem("sepettaxi_customer");return s?JSON.parse(s):null}catch(_){return null}
-}
+/* ========= HELPERS ========= */
+const $=i=>document.getElementById(i);
+function overlay(on){$("overlay").style.display=on?"flex":"none"}
 function saveCustomer(o){localStorage.setItem("sepettaxi_customer",JSON.stringify(o))}
+function loadCustomer(){try{return JSON.parse(localStorage.getItem("sepettaxi_customer"))}catch(_){return null}}
 
-/* ================= MAP ================= */
+/* ========= MAP ========= */
 function initMap(){
   map=L.map("map",{zoomControl:false}).setView([40.195,29.060],13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:""}).addTo(map);
-
-  map.on("click",async e=>{
-    const a=await reverseGeocode(e.latlng.lat,e.latlng.lng);
-    if(!from){
-      from={lat:e.latlng.lat,lng:e.latlng.lng,address:a||"Seçildi"};
-      markerFrom&&markerFrom.remove(); markerFrom=L.marker(e.latlng).addTo(map);
-      hint("Nereye seç");
-    }else{
-      to={lat:e.latlng.lat,lng:e.latlng.lng,address:a||"Seçildi"};
-      markerTo&&markerTo.remove(); markerTo=L.marker(e.latlng).addTo(map);
-      drawLine(); await computeDistanceAndPrice();
-    }
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  map.on("click",e=>{
+    if(!from){from={lat:e.latlng.lat,lng:e.latlng.lng};}
+    else{to={lat:e.latlng.lat,lng:e.latlng.lng}; compute();}
     updateUI();
   });
-
-  locateOnce();
 }
 
-function drawLine(){
-  if(line) line.remove();
-  if(from&&to){
-    line=L.polyline([[from.lat,from.lng],[to.lat,to.lng]],{weight:5}).addTo(map);
-    map.fitBounds(line.getBounds(),{padding:[40,40]});
-  }
+/* ========= CALC ========= */
+function hav(a,b,c,d){
+  const R=6371,t=x=>x*Math.PI/180;
+  const dLat=t(c-a),dLng=t(d-b);
+  return 2*R*Math.asin(Math.sqrt(Math.sin(dLat/2)**2+
+    Math.cos(t(a))*Math.cos(t(c))*Math.sin(dLng/2)**2));
 }
-
-function locateOnce(){
-  navigator.geolocation?.getCurrentPosition(p=>{
-    map.setView([p.coords.latitude,p.coords.longitude],15);
-  });
-}
-
-async function reverseGeocode(lat,lng){
-  try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
-    const j=await r.json(); return j.display_name||"";
-  }catch(_){return ""}
-}
-
-/* ================= METRICS ================= */
-function haversineKm(a,b,c,d){
-  const R=6371,to=x=>x*Math.PI/180;
-  const dLat=to(c-a),dLng=to(d-b);
-  const q=Math.sin(dLat/2)**2+Math.cos(to(a))*Math.cos(to(c))*Math.sin(dLng/2)**2;
-  return 2*R*Math.asin(Math.sqrt(q));
-}
-async function computeDistanceAndPrice(){
-  if(!(from&&to)) return;
-  lastDistanceKm=haversineKm(from.lat,from.lng,to.lat,to.lng);
+function compute(){
+  lastDistanceKm=hav(from.lat,from.lng,to.lat,to.lng);
   lastPrice=serviceType==="courier"?Math.max(70,40+lastDistanceKm*18):Math.max(90,50+lastDistanceKm*22);
 }
 
-/* ================= UI ================= */
+/* ========= UI ========= */
 function updateUI(){
-  $("fromTxt").textContent=from?from.address:"Haritadan seç";
-  $("toTxt").textContent=to?to.address:"Haritadan seç";
+  $("fromTxt").textContent=from?"Seçildi":"Haritadan seç";
+  $("toTxt").textContent=to?"Seçildi":"Haritadan seç";
   $("kmTxt").textContent=from&&to?lastDistanceKm.toFixed(2)+" km":"—";
   $("priceTxt").textContent=from&&to?Math.round(lastPrice)+" ₺":"—";
   $("callBtn").disabled=!(from&&to);
 }
 
-/* ================= BACKEND POST (FORM) ================= */
-function postForm(data){
-  const body=Object.keys(data).map(k=>encodeURIComponent(k)+"="+encodeURIComponent(data[k])).join("&");
-  return fetch(API,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body}).then(r=>r.json());
+/* ========= API ========= */
+function postForm(d){
+  const b=Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&");
+  return fetch(API,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:b}).then(r=>r.json());
 }
 
-/* ================= CREATE JOB ================= */
+/* ========= CREATE JOB ========= */
 async function createJob(){
   const c=loadCustomer();
   if(!c){$("regModal").style.display="flex";return;}
-  overlay(true,"Sürücü aranıyor","Yakındaki sürücüler eşleştiriliyor…");
-
-  try{
-    await computeDistanceAndPrice();
-    const p={
-      action:"createJob",
-      service_type:serviceType,
-      customer_first:c.customer_first,
-      customer_last:c.customer_last,
-      customer_phone:c.customer_phone,
-      from_address:from.address,
-      to_address:to.address,
-      pickup_lat:from.lat,
-      pickup_lng:from.lng,
-      dropoff_lat:to.lat,
-      dropoff_lng:to.lng,
-      distance_km:lastDistanceKm,
-      price:lastPrice
-    };
-    if(serviceType==="courier"&&c.courier){
-      Object.assign(p,c.courier);
-    }
-    const res=await postForm(p);
-    if(!res.ok) throw new Error(res.error||"API error");
-    location.href=`track.html?job_id=${res.job_id}`;
-  }catch(e){
-    overlay(false); alert(e.message||e);
-  }
+  overlay(true);
+  const r=await postForm({
+    action:"createJob",
+    service_type:serviceType,
+    customer_first:c.customer_first,
+    customer_last:c.customer_last,
+    customer_phone:c.customer_phone,
+    pickup_lat:from.lat,
+    pickup_lng:from.lng,
+    dropoff_lat:to.lat,
+    dropoff_lng:to.lng,
+    distance_km:lastDistanceKm,
+    price:lastPrice
+  });
+  if(r.ok) location.href="track.html?job_id="+r.job_id;
+  else overlay(false);
 }
 
-/* ================= EVENTS ================= */
-$("callBtn").onclick=createJob;
-$("tabTaxi").onclick=()=>serviceType="taxi";
-$("tabCourier").onclick=()=>serviceType="courier";
-
-/* ================= REGISTER ================= */
-$("regOk").onclick=()=>{
-  const obj={
-    customer_first:$("cFirst").value.trim(),
-    customer_last:$("cLast").value.trim(),
-    customer_phone:$("cPhone").value.trim()
+/* ========= EVENTS ========= */
+document.addEventListener("DOMContentLoaded",()=>{
+  initMap();
+  $("callBtn").onclick=createJob;
+  $("tabTaxi").onclick=()=>{serviceType="taxi";$("callBtn").textContent="Taksi Çağır";}
+  $("tabCourier").onclick=()=>{serviceType="courier";$("callBtn").textContent="Kurye Çağır";}
+  $("regOk").onclick=()=>{
+    saveCustomer({
+      customer_first:$("cFirst").value,
+      customer_last:$("cLast").value,
+      customer_phone:$("cPhone").value
+    });
+    $("regModal").style.display="none";
   };
-  if(!obj.customer_first||!obj.customer_last||!obj.customer_phone){alert("Eksik bilgi");return;}
-  if(serviceType==="courier"){
-    obj.courier={
-      package_type:$("pType").value.trim(),
-      receiver_name:$("rName").value.trim(),
-      receiver_phone:$("rPhone").value.trim(),
-      package_note:$("pNote").value.trim()
-    };
-  }
-  saveCustomer(obj);
-  $("regModal").style.display="none";
-  hint("Kayıt tamamlandı");
-};
-
-/* ================= BOOT ================= */
-initMap();
-updateUI();
+});
 </script>
 </body>
 </html>
