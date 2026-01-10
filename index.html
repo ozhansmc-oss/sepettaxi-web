@@ -495,10 +495,9 @@ const r = await fetch(API, {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(payload)
 });
-
+ 
 const text = await r.text();
-alert(text);   // ⬅️ KRİTİK
-return;
+alert(text);   //
 
 /* ====== MANDATORY REGISTER FLOW ====== */
 function openRegister(){
@@ -533,12 +532,33 @@ function validateRegister(){
 async function createJob(){
   if(!(from && to)) return;
 
-  // mandatory register check
-  const existing = loadCustomer();
-  if(!existing){
-    openRegister();
-    return;
-  }
+  const payload = {
+    action: "createJob",
+    service_type: serviceType,
+    customer_first: "Test",
+    customer_last: "User",
+    customer_phone: "05000000000",
+    from_address: from.address,
+    to_address: to.address,
+    pickup_lat: from.lat,
+    pickup_lng: from.lng,
+    dropoff_lat: to.lat,
+    dropoff_lng: to.lng,
+    distance_km: lastDistanceKm,
+    price: lastPrice
+  };
+
+  const r = await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const text = await r.text();
+  alert(text);   // 🔥 SADECE BURADA
+  return;        // 🔥 SADECE BURADA
+}
+
 
   overlay(true, "Sürücü aranıyor", "Yakındaki sürücüler otomatik eşleştiriliyor…");
 
