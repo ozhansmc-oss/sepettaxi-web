@@ -1,6 +1,195 @@
 <!doctype html>
 <html lang="tr">
 <head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>SepetTaxi – Takip</title>
+<meta name="theme-color" content="#f5c400" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;overflow:hidden}
+  :root{--y:#f5c400;--line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.65)}
+  .top{
+    position:fixed;left:0;right:0;top:0;height:56px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 12px;z-index:30;
+    background:linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.10));
+    backdrop-filter: blur(10px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .title{font-weight:900}
+  .btn{
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.06);
+    color:#fff;
+    padding:10px 12px;border-radius:14px;
+    font-weight:900;
+  }
+  .wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
+  #map{flex:1 1 60%}
+  .panel{
+    flex:1 1 40%;
+    padding:12px;
+    background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,12,.98));
+    border-top:1px solid rgba(255,255,255,.08);
+  }
+  .card{
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.04);
+    border-radius:18px;
+    padding:12px;
+  }
+  .k{font-size:12px;color:rgba(255,255,255,.58)}
+  .v{margin-top:4px;font-size:14px;font-weight:900}
+  .row{display:flex;gap:10px;margin-top:10px}
+  .col{flex:1}
+  .status{
+    margin-top:10px;
+    display:flex;align-items:center;gap:10px;
+    padding:12px;border-radius:18px;
+    border:1px solid rgba(245,196,0,.22);
+    background:rgba(245,196,0,.10);
+    font-weight:900;
+  }
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--y);box-shadow:0 0 0 4px rgba(245,196,0,.18)}
+  .mut{color:rgba(255,255,255,.62);font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="title">Canlı Takip</div>
+  <button class="btn" id="refreshBtn">Yenile</button>
+</div>
+
+<div class="wrap">
+  <div id="map"></div>
+  <div class="panel">
+    <div class="card">
+      <div class="k">İş ID</div>
+      <div class="v" id="jobId">—</div>
+
+      <div class="row">
+        <div class="col">
+          <div class="k">Nereden</div>
+          <div class="v" id="fromTxt">—</div>
+        </div>
+        <div class="col">
+          <div class="k">Nereye</div>
+          <div class="v" id="toTxt">—</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <div class="k">Mesafe</div>
+          <div class="v" id="kmTxt">—</div>
+        </div>
+        <div class="col">
+          <div class="k">Ücret</div>
+          <div class="v" id="priceTxt">—</div>
+        </div>
+      </div>
+
+      <div class="status">
+        <div class="dot"></div>
+        <div>
+          <div id="statusTxt">Durum: —</div>
+          <div class="mut" id="statusSub">Sürücü eşleştirme / kabul / teslim…</div>
+        </div>
+      </div>
+
+      <div class="mut" id="autoInfo">Otomatik yenileme: 3 sn</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "PUT_YOUR_APPS_SCRIPT_WEBAPP_EXEC_URL_HERE";
+
+const $ = id => document.getElementById(id);
+function qp(name){
+  const u=new URL(location.href);
+  return u.searchParams.get(name);
+}
+const job_id = qp("job_id") || "";
+$("jobId").textContent = job_id || "—";
+
+let map, mFrom, mTo, mDriver, line;
+function initMap(){
+  map = L.map("map", { zoomControl:false }).setView([40.195,29.060], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ attribution:"" }).addTo(map);
+}
+initMap();
+
+async function apiGet(params){
+  const u = new URL(API);
+  Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r = await fetch(u.toString());
+  return await r.json();
+}
+
+function place(fromLat, fromLng, toLat, toLng){
+  if(mFrom) mFrom.remove();
+  if(mTo) mTo.remove();
+  if(line) line.remove();
+  mFrom = L.marker([fromLat, fromLng]).addTo(map);
+  mTo = L.marker([toLat, toLng]).addTo(map);
+  line = L.polyline([[fromLat,fromLng],[toLat,toLng]], { weight:5, opacity:.9 }).addTo(map);
+  map.fitBounds(line.getBounds(), { padding:[40,40] });
+}
+
+function setStatus(s){
+  const st = String(s||"").toUpperCase();
+  $("statusTxt").textContent = "Durum: " + st;
+  const mapTxt = {
+    "SEARCHING":"Sürücü aranıyor…",
+    "ASSIGNED":"Sürücü atandı…",
+    "ACCEPTED":"Sürücü kabul etti.",
+    "PICKED":"Yola çıktı / aldı.",
+    "COMPLETED":"Tamamlandı.",
+    "CANCELED":"İptal edildi."
+  };
+  $("statusSub").textContent = mapTxt[st] || "Güncelleniyor…";
+}
+
+async function refresh(){
+  if(!job_id) return;
+  try{
+    const res = await apiGet({ action:"getJob", job_id });
+    if(!res.ok) throw new Error(res.error || "API error");
+    const j = res.job;
+
+    $("fromTxt").textContent = j.from_address || "—";
+    $("toTxt").textContent = j.to_address || "—";
+    $("kmTxt").textContent = (j.distance_km ? Number(j.distance_km).toFixed(2) : "—") + " km";
+    $("priceTxt").textContent = (j.final_price || j.price || "—") + " ₺";
+    setStatus(j.status);
+
+    const pLat = Number(j.pickup_lat), pLng = Number(j.pickup_lng);
+    const dLat = Number(j.dropoff_lat), dLng = Number(j.dropoff_lng);
+    if(isFinite(pLat)&&isFinite(pLng)&&isFinite(dLat)&&isFinite(dLng)){
+      place(pLat,pLng,dLat,dLng);
+    }
+  }catch(e){
+    $("statusSub").textContent = "Hata: " + (e && e.message ? e.message : e);
+  }
+}
+
+$("refreshBtn").onclick = refresh;
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>
+<!doctype html>
+<html lang="tr">
+<head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>SepetTaxi – Canlı Takip</title>
