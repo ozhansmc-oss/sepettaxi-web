@@ -12,52 +12,217 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;overflow:hidden}
-:root{--y:#f5c400}
+:root{--y:#f5c400;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.62)}
 
-.top{padding:12px 16px}
-.badge{display:inline-block;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:900;background:rgba(245,196,0,.15);border:1px solid rgba(245,196,0,.35)}
-.sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:6px}
+.topbar{
+  position:fixed;left:0;right:0;top:0;height:56px;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+  background:linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.10));
+  backdrop-filter: blur(10px);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:950}
+.logo{
+  width:28px;height:28px;border-radius:10px;
+  background:radial-gradient(circle at 30% 30%, #ffe27a, #f5c400 55%, #b78d00 100%);
+  box-shadow:0 8px 18px rgba(245,196,0,.18);
+}
+.iconbtn{
+  width:40px;height:40px;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(20,20,22,.55);color:#fff;font-weight:900;
+}
+.iconbtn:active{transform:scale(.98)}
 
-#map{height:52vh}
-.panel{padding:12px 16px}
-.card{background:#141416;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:12px;margin-bottom:10px}
-.small{font-size:12px;color:rgba(255,255,255,.65)}
-.btn{width:100%;padding:14px;border-radius:16px;border:0;font-weight:900;background:linear-gradient(135deg,#f5c400,#ffd34d);color:#1a1400}
-.btn.sec{background:#222;color:#fff;border:1px solid rgba(255,255,255,.15)}
+.wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
+#map{flex:1}
+
+.sheet{
+  flex:0 0 auto;
+  background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,12,.98));
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:12px 14px;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:999px;
+  border:1px solid rgba(245,196,0,.35);
+  background:rgba(245,196,0,.12);
+  font-weight:950;font-size:12px;color:#fff;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--y);box-shadow:0 0 0 3px rgba(245,196,0,.18)}
+.sub{margin-top:6px;color:var(--mut);font-size:12px;min-height:18px}
+
+.card{
+  margin-top:10px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:18px;
+  padding:12px;
+}
+.small{font-size:12px;color:var(--mut);line-height:1.45}
+.grid{display:flex;gap:10px;margin-top:10px}
+.metric{
+  flex:1;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:18px;padding:12px;
+}
+.metric .k{font-size:12px;color:rgba(255,255,255,.55)}
+.metric .v{margin-top:4px;font-size:18px;font-weight:950}
+
+.btn{
+  width:100%;margin-top:10px;
+  border:0;border-radius:18px;padding:14px;
+  font-weight:950;background:linear-gradient(135deg, #f5c400, #ffd34d);
+  color:#1a1400;
+}
+.btn.sec{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.12)}
+.btn:active{transform:scale(.99)}
+
+/* Premium overlay */
+.overlay{
+  position:fixed;inset:0;z-index:90;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45);
+  backdrop-filter: blur(10px);
+}
+.ovCard{
+  width:min(360px,92vw);
+  background:rgba(20,20,22,.86);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:26px;
+  padding:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.55);
+  position:relative;overflow:hidden;
+}
+.glow{
+  position:absolute;inset:-80px -80px auto auto;
+  width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, rgba(245,196,0,.42), rgba(245,196,0,0) 70%);
+  filter:blur(2px);
+}
+.ovTitle{font-size:16px;font-weight:950}
+.ovSub{margin-top:6px;color:rgba(255,255,255,.62);font-size:13px}
+.loader{
+  margin-top:14px;height:10px;border-radius:999px;
+  background:rgba(255,255,255,.08);overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+}
+.bar{
+  height:100%;width:42%;
+  background:linear-gradient(90deg, rgba(245,196,0,.20), rgba(245,196,0,.95), rgba(245,196,0,.20));
+  animation:slide 1.15s infinite linear;
+}
+@keyframes slide{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+
+/* Status transitions */
+.fade{animation:fade .18s ease}
+@keyframes fade{from{opacity:.2;transform:translateY(2px)}to{opacity:1;transform:none}}
+
+/* Rating modal */
+.modal{
+  position:fixed;inset:0;z-index:95;display:none;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(10px);
+  align-items:center;justify-content:center;padding:16px;
+}
+.mCard{
+  width:min(420px,94vw);
+  background:rgba(20,20,22,.92);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:26px;
+  padding:16px;
+}
+.mHead{display:flex;align-items:center;justify-content:space-between}
+.mHead b{font-size:15px;font-weight:950}
+.xbtn{border:0;background:transparent;color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.stars{display:flex;gap:8px;margin-top:12px}
+.star{
+  width:44px;height:44px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);
+  display:grid;place-items:center;
+  font-weight:950;cursor:pointer;
+}
+.star.active{border-color:rgba(245,196,0,.45);background:rgba(245,196,0,.12)}
+.txtarea{
+  margin-top:12px;width:100%;
+  border-radius:16px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  color:#fff;padding:12px;font-weight:800;outline:none;
+  min-height:88px;resize:none;
+}
 </style>
 </head>
 
 <body>
 
-<div class="top">
-  <div id="statusBadge" class="badge">Yükleniyor…</div>
-  <div id="statusText" class="sub">İş bilgisi alınıyor</div>
+<div class="topbar">
+  <div class="brand"><div class="logo"></div><div>SepetTaxi</div></div>
+  <button class="iconbtn" id="homeBtn" title="Ana Sayfa">⌂</button>
 </div>
 
-<div id="map"></div>
+<div class="wrap">
+  <div id="map"></div>
 
-<div class="panel">
-  <div class="card">
-    <b>İş Bilgileri</b>
-    <div class="small" id="jobInfo">—</div>
+  <div class="sheet">
+    <div class="badge" id="statusBadge"><span class="dot"></span><span id="statusTitle">Yükleniyor…</span></div>
+    <div class="sub" id="statusText">İş bilgisi alınıyor</div>
+
+    <div class="grid">
+      <div class="metric"><div class="k">Mesafe</div><div class="v" id="kmTxt">—</div></div>
+      <div class="metric"><div class="k">Ücret</div><div class="v" id="priceTxt">—</div></div>
+    </div>
+
+    <div class="card">
+      <b>Rota</b>
+      <div class="small" id="routeTxt" style="margin-top:6px">—</div>
+    </div>
+
+    <div class="card" id="driverCard" style="display:none">
+      <b>Sürücü</b>
+      <div class="small" id="driverTxt" style="margin-top:6px">—</div>
+    </div>
+
+    <button class="btn sec" id="backBtn">Ana Sayfaya Dön</button>
   </div>
+</div>
 
-  <div class="card" id="driverCard" style="display:none">
-    <b>Sürücü</b>
-    <div class="small" id="driverInfo">—</div>
+<!-- Premium overlay -->
+<div class="overlay" id="overlay">
+  <div class="ovCard">
+    <div class="glow"></div>
+    <div class="ovTitle" id="ovTitle">Sürücü aranıyor</div>
+    <div class="ovSub" id="ovSub">Yakındaki sürücüler otomatik eşleştiriliyor…</div>
+    <div class="loader"><div class="bar"></div></div>
+    <div class="badge" style="margin-top:10px"><span class="dot"></span>Canlı eşleştirme</div>
   </div>
+</div>
 
-  <button class="btn sec" id="backBtn">Ana Sayfaya Dön</button>
+<!-- Rating modal -->
+<div class="modal" id="rateModal">
+  <div class="mCard">
+    <div class="mHead">
+      <b>Deneyimini değerlendir</b>
+      <button class="xbtn" id="rateClose">×</button>
+    </div>
+    <div class="small" style="margin-top:8px">Bu iş için sürücüyü puanla.</div>
+
+    <div class="stars" id="stars"></div>
+
+    <textarea class="txtarea" id="rateNote" placeholder="Kısa yorum (opsiyonel)"></textarea>
+
+    <button class="btn" id="rateSend">Gönder</button>
+    <button class="btn sec" id="rateSkip">Atla</button>
+  </div>
 </div>
 
 <script>
 /* ================= KİLİTLİ KURAL ================= */
-const qs=new URLSearchParams(location.search);
-const JOB_ID=qs.get("job_id");
+const qs = new URLSearchParams(location.search);
+const JOB_ID = qs.get("job_id");
 if(!JOB_ID){ location.replace("index.html"); }
 
 /* ================= CONFIG ================= */
-const API="https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec";
+const API = "https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec";
 
 /* ================= HELPERS ================= */
 const $=i=>document.getElementById(i);
@@ -68,80 +233,199 @@ function postForm(d){
     body:Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&")
   }).then(r=>r.json());
 }
+function overlay(show, title, sub){
+  $("overlay").style.display = show ? "flex" : "none";
+  if(title) $("ovTitle").textContent = title;
+  if(sub) $("ovSub").textContent = sub;
+}
+function setFade(el){ el.classList.remove("fade"); void el.offsetHeight; el.classList.add("fade"); }
 
 /* ================= MAP ================= */
-let map=L.map("map",{zoomControl:false}).setView([40.195,29.060],13);
+const map = L.map("map",{zoomControl:false}).setView([40.195,29.060],13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:""}).addTo(map);
 
-let mPickup,mDrop,mDriver;
+let mPickup=null, mDrop=null, mDriver=null, routeLine=null;
+let lastDriverLL=null;
+
+function pinIcon(label){
+  return L.divIcon({
+    className:"",
+    html:`<div style="
+      width:34px;height:34px;border-radius:14px;
+      border:1px solid rgba(255,255,255,.20);
+      background:rgba(20,20,22,.92);
+      display:grid;place-items:center;
+      box-shadow:0 10px 24px rgba(0,0,0,.35);
+      color:#fff;font-weight:950;font-size:12px;">${label}</div>`,
+    iconSize:[34,34],iconAnchor:[17,17]
+  });
+}
+
+function driverIcon(type){
+  const emoji = (type==="courier") ? "🛵" : "🚕";
+  return L.divIcon({
+    className:"",
+    html:`<div style="
+      width:40px;height:40px;border-radius:18px;
+      border:1px solid rgba(245,196,0,.35);
+      background:rgba(245,196,0,.12);
+      display:grid;place-items:center;
+      box-shadow:0 10px 26px rgba(245,196,0,.12);
+      font-size:18px;">${emoji}</div>`,
+    iconSize:[40,40],iconAnchor:[20,20]
+  });
+}
+
 function setPickup(lat,lng){
   if(mPickup) mPickup.remove();
-  mPickup=L.marker([lat,lng]).addTo(map);
+  mPickup = L.marker([lat,lng],{icon:pinIcon("A")}).addTo(map);
 }
 function setDrop(lat,lng){
   if(mDrop) mDrop.remove();
-  mDrop=L.marker([lat,lng]).addTo(map);
+  mDrop = L.marker([lat,lng],{icon:pinIcon("B")}).addTo(map);
 }
-function setDriver(lat,lng){
-  if(mDriver){ mDriver.setLatLng([lat,lng]); return; }
-  mDriver=L.marker([lat,lng]).addTo(map);
+function drawRoute(){
+  if(routeLine) routeLine.remove();
+  if(mPickup && mDrop){
+    routeLine = L.polyline([mPickup.getLatLng(), mDrop.getLatLng()],{weight:5,opacity:.9}).addTo(map);
+  }
+}
+function setDriver(lat,lng, serviceType){
+  const ll = L.latLng(lat,lng);
+  if(!mDriver){
+    mDriver = L.marker(ll,{icon:driverIcon(serviceType)}).addTo(map);
+    lastDriverLL = ll;
+    return;
+  }
+  // smooth-ish: small interpolation steps
+  const from = lastDriverLL || mDriver.getLatLng();
+  const steps = 6;
+  let i=0;
+  const t = setInterval(()=>{
+    i++;
+    const k=i/steps;
+    const il = L.latLng(from.lat + (ll.lat-from.lat)*k, from.lng + (ll.lng-from.lng)*k);
+    mDriver.setLatLng(il);
+    if(i>=steps){ clearInterval(t); lastDriverLL = ll; }
+  }, 90);
 }
 
-/* ================= STATUS UI ================= */
-function setStatus(s){
-  const m={
-    searching:["Sürücü aranıyor","Yakındaki sürücüler eşleştiriliyor…"],
-    assigned:["Sürücü bulundu","Sürücü yolculuğa hazırlanıyor"],
-    onroute:["Yolda","Sürücü adresine geliyor"],
-    completed:["Tamamlandı","İş başarıyla tamamlandı"]
+/* ================= UI STATUS ================= */
+function setStatus(status){
+  const mapS = {
+    searching:{t:"Sürücü aranıyor",s:"Yakındaki sürücüler eşleştiriliyor…",ov:true},
+    assigned:{t:"Sürücü bulundu",s:"Sürücü hazırlanıyor",ov:false},
+    onroute:{t:"Yolda",s:"Sürücü adresine geliyor",ov:false},
+    completed:{t:"Tamamlandı",s:"İş tamamlandı",ov:false}
   };
-  const o=m[s]||["Bilinmeyen",""];
-  $("statusBadge").textContent=o[0];
-  $("statusText").textContent=o[1];
+  const o = mapS[status] || {t:"Bilinmeyen",s:"",ov:false};
+  $("statusTitle").textContent = o.t;
+  $("statusText").textContent = o.s;
+  setFade($("statusBadge"));
+  setFade($("statusText"));
+  overlay(!!o.ov, "Sürücü aranıyor", "Yakındaki sürücüler otomatik eşleştiriliyor…");
 }
 
-/* ================= LOAD ================= */
-async function loadJob(){
+/* ================= RATING ================= */
+let rating = 0;
+function openRating(){
+  $("rateModal").style.display="flex";
+}
+function closeRating(){
+  $("rateModal").style.display="none";
+}
+function renderStars(){
+  const box = $("stars");
+  box.innerHTML = "";
+  for(let i=1;i<=5;i++){
+    const b = document.createElement("div");
+    b.className = "star" + (i<=rating ? " active" : "");
+    b.textContent = "★";
+    b.onclick = ()=>{ rating=i; renderStars(); };
+    box.appendChild(b);
+  }
+}
+renderStars();
+
+$("rateClose").onclick = closeRating;
+$("rateSkip").onclick = ()=>{ closeRating(); setTimeout(()=>location.replace("index.html"),400); };
+$("rateSend").onclick = async ()=>{
+  if(rating<=0){ alert("Puan seç"); return; }
+  $("rateSend").disabled = true;
   try{
-    const r=await postForm({action:"getJob",job_id:JOB_ID});
-    if(!r||!r.ok){ $("statusBadge").textContent="Hata"; return; }
+    await postForm({
+      action:"submitRating",
+      job_id: JOB_ID,
+      rating: String(rating),
+      note: $("rateNote").value.trim()
+    });
+  }catch(_){}
+  closeRating();
+  setTimeout(()=>location.replace("index.html"),400);
+};
 
-    const j=r.job;
-    setStatus(j.status);
-
-    $("jobInfo").innerHTML=`
-      <div>${j.from_address||""} → ${j.to_address||""}</div>
-      <div>${j.distance_km||""} km · ${j.price||""} ₺</div>
-    `;
-
-    if(j.pickup_lat&&j.pickup_lng){ setPickup(j.pickup_lat,j.pickup_lng); }
-    if(j.dropoff_lat&&j.dropoff_lng){ setDrop(j.dropoff_lat,j.dropoff_lng); }
-
-    if(j.driver_lat&&j.driver_lng){
-      setDriver(j.driver_lat,j.driver_lng);
-      $("driverCard").style.display="block";
-      $("driverInfo").textContent=(j.driver_name||"")+" "+(j.driver_phone||"");
-    }
-
-    const bounds=[];
-    if(mPickup) bounds.push(mPickup.getLatLng());
-    if(mDrop) bounds.push(mDrop.getLatLng());
-    if(mDriver) bounds.push(mDriver.getLatLng());
-    if(bounds.length){ map.fitBounds(bounds,{padding:[40,40]}); }
-
-    if(j.status==="completed"){
-      setTimeout(()=>location.replace("index.html"),2500);
+/* ================= LOAD JOB (poll) ================= */
+let done=false;
+async function loadJob(){
+  if(done) return;
+  try{
+    const r = await postForm({action:"getJob", job_id: JOB_ID});
+    if(!r || !r.ok){
+      $("statusTitle").textContent="Hata";
+      $("statusText").textContent="İş bulunamadı";
+      overlay(false);
       return;
     }
-    setTimeout(loadJob,5000);
-  }catch(_){
+
+    const j = r.job;
+    const st = j.status || "searching";
+    setStatus(st);
+
+    // route
+    $("routeTxt").textContent = `${j.from_address||""} → ${j.to_address||""}`;
+    $("kmTxt").textContent = (j.distance_km ? Number(j.distance_km).toFixed(2) : "—") + " km";
+    $("priceTxt").textContent = (j.price ? Math.round(Number(j.price)) : "—") + " ₺";
+
+    if(j.pickup_lat && j.pickup_lng) setPickup(Number(j.pickup_lat), Number(j.pickup_lng));
+    if(j.dropoff_lat && j.dropoff_lng) setDrop(Number(j.dropoff_lat), Number(j.dropoff_lng));
+    drawRoute();
+
+    // driver info + live marker (if backend sends)
+    if(j.driver_name || j.driver_phone || (j.driver_lat && j.driver_lng)){
+      $("driverCard").style.display="block";
+      $("driverTxt").textContent = `${j.driver_name||"Sürücü"} ${j.driver_phone||""}`.trim();
+      if(j.driver_lat && j.driver_lng){
+        setDriver(Number(j.driver_lat), Number(j.driver_lng), j.service_type || "taxi");
+      }
+    }
+
+    // fit bounds
+    const pts = [];
+    if(mPickup) pts.push(mPickup.getLatLng());
+    if(mDrop) pts.push(mDrop.getLatLng());
+    if(mDriver) pts.push(mDriver.getLatLng());
+    if(pts.length >= 2) map.fitBounds(pts,{padding:[40,40]});
+    else if(pts.length === 1) map.setView(pts[0], 15);
+
+    if(st === "completed"){
+      done = true;
+      overlay(false);
+      // Rating modal (ADIM 3 entegre)
+      openRating();
+      return;
+    }
+
+    setTimeout(loadJob, 5000);
+  }catch(e){
     $("statusText").textContent="Bağlantı hatası";
-    setTimeout(loadJob,5000);
+    overlay(false);
+    setTimeout(loadJob, 5000);
   }
 }
 
-/* ================= EVENTS ================= */
-$("backBtn").onclick=()=>location.replace("index.html");
+/* ================= NAV ================= */
+$("homeBtn").onclick = ()=> location.replace("index.html");
+$("backBtn").onclick = ()=> location.replace("index.html");
 
 /* ================= BOOT ================= */
 loadJob();
