@@ -490,13 +490,15 @@ function locateOnce(){
 
 /* ====== API ====== */
 async function apiPost(payload){
-  const r = await fetch(API, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(payload)
-  });
-  return await r.json();
-}
+const r = await fetch(API, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload)
+});
+
+const text = await r.text();
+alert(text);   // ⬅️ KRİTİK
+return;
 
 /* ====== MANDATORY REGISTER FLOW ====== */
 function openRegister(){
