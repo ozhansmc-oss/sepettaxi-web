@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SepetTaxi – Kurye</title>
+<meta name="theme-color" content="#f5c400">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;overflow:hidden}
+:root{
+  --y:#f5c400;
+  --panel:#0f0f10;
+  --card:#141416;
+  --line:rgba(255,255,255,.12);
+  --mut:rgba(255,255,255,.65);
+}
+
+/* ===== TOPBAR ===== */
+.topbar{
+  position:fixed;top:10px;left:10px;right:10px;z-index:50;
+  height:54px;display:flex;align-items:center;gap:10px;
+  padding:0 14px;
+  background:rgba(12,12,14,.75);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:18px;
+  backdrop-filter:blur(12px);
+}
+.back{
+  font-size:22px;font-weight:900;cursor:pointer
+}
+.brand{font-weight:1000}
+
+/* ===== MAP ===== */
+#map{position:fixed;inset:0;z-index:1}
+.leaflet-control-container{display:none}
+
+/* ===== PANEL ===== */
+.panel{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  height:60vh;
+  background:linear-gradient(180deg,rgba(20,20,22,.95),rgba(8,8,10,.98));
+  border-top-left-radius:24px;border-top-right-radius:24px;
+  border-top:1px solid rgba(255,255,255,.12);
+  padding:14px;
+  display:flex;flex-direction:column;gap:10px;
+}
+
+.row{display:flex;gap:10px}
+.card{
+  flex:1;padding:10px 12px;border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.10)
+}
+.label{font-size:11px;color:var(--mut);font-weight:800}
+.value{font-size:13px;font-weight:900;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.select, .input{
+  width:100%;padding:12px;border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.12);
+  color:#fff;outline:none
+}
+
+.checkbox{
+  display:flex;gap:10px;align-items:flex-start;
+  font-size:12px;color:var(--mut)
+}
+.checkbox input{margin-top:3px}
+
+.metrics{display:flex;gap:10px}
+.metric{
+  flex:1;padding:12px;border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.10)
+}
+.metric .k{font-size:11px;color:var(--mut);font-weight:800}
+.metric .v{font-size:18px;font-weight:1000;margin-top:4px}
+
+.btn{
+  width:100%;padding:14px;border-radius:18px;
+  border:0;font-weight:1000;
+  background:linear-gradient(135deg,#f5c400,#ffd34d);
+  color:#1a1400
+}
+.btn[disabled]{opacity:.45}
+
+.hint{font-size:12px;color:var(--mut)}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div class="back" onclick="history.back()">‹</div>
+  <div class="brand">SepetTaxi · Kurye</div>
+</div>
+
+<div id="map"></div>
+
+<div class="panel">
+
+  <div class="row">
+    <div class="card">
+      <div class="label">Nereden</div>
+      <div class="value" id="fromTxt">Konum alınıyor…</div>
+    </div>
+    <div class="card">
+      <div class="label">Nereye</div>
+      <div class="value" id="toTxt">Haritadan seç</div>
+    </div>
+  </div>
+
+  <select class="select" id="pkgType">
+    <option value="">📦 Paket Türü Seç</option>
+    <option>Evrak</option>
+    <option>Küçük Paket</option>
+    <option>Koli</option>
+    <option>Hassas</option>
+  </select>
+
+  <input class="input" id="recvName" placeholder="Alıcı Adı">
+  <input class="input" id="recvPhone" placeholder="Alıcı Telefon">
+
+  <label class="checkbox">
+    <input type="checkbox" id="agree">
+    <span>Gönderi; yasaklı, tehlikeli veya hukuka aykırı içerik içermemektedir.</span>
+  </label>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="k">Mesafe</div>
+      <div class="v" id="distTxt">—</div>
+    </div>
+    <div class="metric">
+      <div class="k">Ücret</div>
+      <div class="v" id="priceTxt">Detaylardan sonra</div>
+    </div>
+  </div>
+
+  <button class="btn" id="callBtn" disabled>Kurye Çağır</button>
+  <div class="hint" id="hint">Lütfen tüm alanları doldurun.</div>
+
+</div>
+
+<script>
+/* ===== CONFIG ===== */
+const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
+
+/* ===== STATE ===== */
+let map, from=null, to=null, distKm=0, price=0;
+let pickM=null, dropM=null;
+
+/* ===== CUSTOMER ===== */
+function loadCustomer(){
+  try{ return JSON.parse(localStorage.getItem("sepettaxi_customer")); }
+  catch(_){ return null; }
+}
+const customer = loadCustomer();
+if(!customer){ location.href="index.html"; }
+
+/* ===== MAP ===== */
+function haversine(a,b){
+  const R=6371;
+  const dLat=(b.lat-a.lat)*Math.PI/180;
+  const dLng=(b.lng-a.lng)*Math.PI/180;
+  const q=Math.sin(dLat/2)**2+
+    Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*
+    Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(q));
+}
+function calcPrice(km){ return Math.round(50+14*Math.max(.5,km)); }
+
+function initMap(){
+  map=L.map("map",{zoomControl:false,attributionControl:false})
+    .setView([40.195,29.060],13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+  map.on("click",async e=>{
+    to={lat:e.latlng.lat,lng:e.latlng.lng};
+    document.getElementById("toTxt").textContent=
+      `${to.lat.toFixed(5)}, ${to.lng.toFixed(5)}`;
+    if(dropM) dropM.remove();
+    dropM=L.marker([to.lat,to.lng]).addTo(map);
+    update();
+  });
+
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(p=>{
+      from={lat:p.coords.latitude,lng:p.coords.longitude};
+      document.getElementById("fromTxt").textContent="Mevcut Konum";
+      map.setView([from.lat,from.lng],15);
+      pickM=L.marker([from.lat,from.lng]).addTo(map);
+    });
+  }
+}
+
+/* ===== UPDATE ===== */
+function update(){
+  const pkg=pkgType.value;
+  const rn=recvName.value.trim();
+  const rp=recvPhone.value.trim();
+  const ok=from&&to&&pkg&&rn&&rp&&agree.checked;
+
+  if(from&&to){
+    distKm=haversine(from,to);
+    price=calcPrice(distKm);
+    distTxt.textContent=distKm.toFixed(1)+" km";
+    priceTxt.textContent= ok ? price+" ₺" : "Detaylardan sonra";
+  }
+
+  callBtn.disabled=!ok;
+  hint.textContent= ok ? "Hazır." : "Lütfen tüm alanları doldurun.";
+}
+
+/* ===== CALL ===== */
+async function post(action,data){
+  const body=new URLSearchParams(Object.assign({action},data));
+  const r=await fetch(API,{method:"POST",body});
+  return r.json();
+}
+
+callBtn.onclick=async ()=>{
+  const toText=
+`Adres: ${toTxt.textContent}
+Alıcı: ${recvName.value} – ${recvPhone.value}
+Paket: ${pkgType.value}
+Taahhüt: Gönderi yasal ve güvenlidir`;
+
+  const res=await post("createJob",{
+    service_type:"courier",
+    customer_first:customer.first,
+    customer_last:customer.last,
+    customer_phone:customer.phone,
+    from_address:"Mevcut Konum",
+    to_address:toText,
+    pickup_lat:from.lat,
+    pickup_lng:from.lng,
+    dropoff_lat:to.lat,
+    dropoff_lng:to.lng,
+    distance_km:distKm.toFixed(2),
+    price:String(price)
+  });
+
+  if(res.ok&&res.job_id){
+    localStorage.setItem("st_job_started_at",Date.now());
+    location.href="track.html?job_id="+res.job_id;
+  }else{
+    alert("Kurye oluşturulamadı");
+  }
+};
+
+/* ===== BIND ===== */
+["pkgType","recvName","recvPhone","agree"].forEach(id=>{
+  document.getElementById(id).oninput=update;
+});
+
+initMap();
+</script>
+</body>
+</html>
