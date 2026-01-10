@@ -1,189 +1,168 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>SepetTaxi – Takip</title>
-<meta name="theme-color" content="#f5c400" />
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SepetTaxi – Canlı Takip</title>
+<meta name="theme-color" content="#f5c400">
 
 <style>
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;overflow:hidden}
-  :root{--y:#f5c400;--line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.65)}
-  .top{
-    position:fixed;left:0;right:0;top:0;height:56px;
-    display:flex;align-items:center;justify-content:space-between;
-    padding:0 12px;z-index:30;
-    background:linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.10));
-    backdrop-filter: blur(10px);
-    border-bottom:1px solid rgba(255,255,255,.06);
-  }
-  .title{font-weight:900}
-  .btn{
-    border:1px solid rgba(255,255,255,.12);
-    background:rgba(255,255,255,.06);
-    color:#fff;
-    padding:10px 12px;border-radius:14px;
-    font-weight:900;
-  }
-  .wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
-  #map{flex:1 1 60%}
-  .panel{
-    flex:1 1 40%;
-    padding:12px;
-    background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,12,.98));
-    border-top:1px solid rgba(255,255,255,.08);
-  }
-  .card{
-    border:1px solid rgba(255,255,255,.10);
-    background:rgba(255,255,255,.04);
-    border-radius:18px;
-    padding:12px;
-  }
-  .k{font-size:12px;color:rgba(255,255,255,.58)}
-  .v{margin-top:4px;font-size:14px;font-weight:900}
-  .row{display:flex;gap:10px;margin-top:10px}
-  .col{flex:1}
-  .status{
-    margin-top:10px;
-    display:flex;align-items:center;gap:10px;
-    padding:12px;border-radius:18px;
-    border:1px solid rgba(245,196,0,.22);
-    background:rgba(245,196,0,.10);
-    font-weight:900;
-  }
-  .dot{width:10px;height:10px;border-radius:50%;background:var(--y);box-shadow:0 0 0 4px rgba(245,196,0,.18)}
-  .mut{color:rgba(255,255,255,.62);font-size:12px;margin-top:10px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto}
+:root{--y:#f5c400}
+
+.wrap{padding:16px;max-width:560px;margin:0 auto}
+h1{font-size:18px;margin:6px 0 12px}
+
+.card{
+background:#141416;
+border:1px solid rgba(255,255,255,.12);
+border-radius:20px;
+padding:16px;
+margin-bottom:12px
+}
+
+.badge{
+display:inline-block;padding:8px 12px;border-radius:999px;
+font-size:12px;font-weight:900;
+background:rgba(245,196,0,.15);
+border:1px solid rgba(245,196,0,.35)
+}
+
+.small{font-size:12px;color:rgba(255,255,255,.6)}
+
+.mapbox{
+height:260px;border-radius:16px;
+background:rgba(255,255,255,.05);
+display:flex;align-items:center;justify-content:center;
+color:rgba(255,255,255,.4);margin-bottom:12px
+}
+
+.btn{
+width:100%;padding:14px;border-radius:16px;
+border:0;font-weight:900;
+background:linear-gradient(135deg,#f5c400,#ffd34d);
+color:#1a1400;margin-top:10px
+}
+.btn.sec{
+background:#222;color:#fff;border:1px solid rgba(255,255,255,.15)
+}
 </style>
 </head>
+
 <body>
 
-<div class="top">
-  <div class="title">Canlı Takip</div>
-  <button class="btn" id="refreshBtn">Yenile</button>
-</div>
-
 <div class="wrap">
-  <div id="map"></div>
-  <div class="panel">
-    <div class="card">
-      <div class="k">İş ID</div>
-      <div class="v" id="jobId">—</div>
 
-      <div class="row">
-        <div class="col">
-          <div class="k">Nereden</div>
-          <div class="v" id="fromTxt">—</div>
-        </div>
-        <div class="col">
-          <div class="k">Nereye</div>
-          <div class="v" id="toTxt">—</div>
-        </div>
-      </div>
+  <h1>Canlı Takip</h1>
 
-      <div class="row">
-        <div class="col">
-          <div class="k">Mesafe</div>
-          <div class="v" id="kmTxt">—</div>
-        </div>
-        <div class="col">
-          <div class="k">Ücret</div>
-          <div class="v" id="priceTxt">—</div>
-        </div>
-      </div>
-
-      <div class="status">
-        <div class="dot"></div>
-        <div>
-          <div id="statusTxt">Durum: —</div>
-          <div class="mut" id="statusSub">Sürücü eşleştirme / kabul / teslim…</div>
-        </div>
-      </div>
-
-      <div class="mut" id="autoInfo">Otomatik yenileme: 3 sn</div>
-    </div>
+  <div class="card">
+    <div id="statusBadge" class="badge">Yükleniyor…</div>
+    <div class="small" id="statusText" style="margin-top:6px">İş bilgisi alınıyor</div>
   </div>
+
+  <div class="mapbox" id="mapBox">
+    Harita / Canlı konum
+  </div>
+
+  <div class="card">
+    <b>İş Bilgileri</b>
+    <div class="small" id="jobInfo" style="margin-top:6px">—</div>
+  </div>
+
+  <div class="card" id="driverCard" style="display:none">
+    <b>Sürücü</b>
+    <div class="small" id="driverInfo" style="margin-top:6px">—</div>
+  </div>
+
+  <button class="btn sec" id="backBtn">Ana Sayfaya Dön</button>
+
 </div>
 
 <script>
-const API = "https://sepettaxi-api.vercel.app/api";
+/* ================= KİLİTLİ KURAL ================= */
+const qs = new URLSearchParams(location.search);
+const JOB_ID = qs.get("job_id");
 
-const $ = id => document.getElementById(id);
-function qp(name){
-  const u=new URL(location.href);
-  return u.searchParams.get(name);
-}
-const job_id = qp("job_id") || "";
-$("jobId").textContent = job_id || "—";
-
-let map, mFrom, mTo, mDriver, line;
-function initMap(){
-  map = L.map("map", { zoomControl:false }).setView([40.195,29.060], 13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ attribution:"" }).addTo(map);
-}
-initMap();
-
-async function apiGet(params){
-  const u = new URL(API);
-  Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
-  const r = await fetch(u.toString());
-  return await r.json();
+if(!JOB_ID){
+  window.location.replace("index.html");
 }
 
-function place(fromLat, fromLng, toLat, toLng){
-  if(mFrom) mFrom.remove();
-  if(mTo) mTo.remove();
-  if(line) line.remove();
-  mFrom = L.marker([fromLat, fromLng]).addTo(map);
-  mTo = L.marker([toLat, toLng]).addTo(map);
-  line = L.polyline([[fromLat,fromLng],[toLat,toLng]], { weight:5, opacity:.9 }).addTo(map);
-  map.fitBounds(line.getBounds(), { padding:[40,40] });
+/* ================= CONFIG ================= */
+const API = "https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec";
+
+/* ================= HELPERS ================= */
+const $ = i => document.getElementById(i);
+
+function postForm(d){
+  return fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&")
+  }).then(r=>r.json());
 }
 
-function setStatus(s){
-  const st = String(s||"").toUpperCase();
-  $("statusTxt").textContent = "Durum: " + st;
-  const mapTxt = {
-    "SEARCHING":"Sürücü aranıyor…",
-    "ASSIGNED":"Sürücü atandı…",
-    "ACCEPTED":"Sürücü kabul etti.",
-    "PICKED":"Yola çıktı / aldı.",
-    "COMPLETED":"Tamamlandı.",
-    "CANCELED":"İptal edildi."
+/* ================= STATUS UI ================= */
+function setStatus(status){
+  const map = {
+    searching:{t:"Sürücü aranıyor",s:"Yakındaki sürücüler eşleştiriliyor…"},
+    assigned:{t:"Sürücü bulundu",s:"Sürücü yolculuğa hazırlanıyor"},
+    onroute:{t:"Yolda",s:"Sürücü adresine geliyor"},
+    completed:{t:"Tamamlandı",s:"İş başarıyla tamamlandı"}
   };
-  $("statusSub").textContent = mapTxt[st] || "Güncelleniyor…";
+  const o = map[status] || {t:"Bilinmeyen",s:""};
+  $("statusBadge").textContent=o.t;
+  $("statusText").textContent=o.s;
 }
 
-async function refresh(){
-  if(!job_id) return;
+/* ================= LOAD JOB ================= */
+async function loadJob(){
   try{
-    const res = await apiGet({ action:"getJob", job_id });
-    if(!res.ok) throw new Error(res.error || "API error");
-    const j = res.job;
+    const r = await postForm({
+      action:"getJob",
+      job_id:JOB_ID
+    });
 
-    $("fromTxt").textContent = j.from_address || "—";
-    $("toTxt").textContent = j.to_address || "—";
-    $("kmTxt").textContent = (j.distance_km ? Number(j.distance_km).toFixed(2) : "—") + " km";
-    $("priceTxt").textContent = (j.final_price || j.price || "—") + " ₺";
+    if(!r || !r.ok){
+      $("statusBadge").textContent="Hata";
+      $("statusText").textContent="İş bulunamadı";
+      return;
+    }
+
+    const j = r.job;
     setStatus(j.status);
 
-    const pLat = Number(j.pickup_lat), pLng = Number(j.pickup_lng);
-    const dLat = Number(j.dropoff_lat), dLng = Number(j.dropoff_lng);
-    if(isFinite(pLat)&&isFinite(pLng)&&isFinite(dLat)&&isFinite(dLng)){
-      place(pLat,pLng,dLat,dLng);
+    $("jobInfo").innerHTML = `
+      <div>${j.from_address || ""} → ${j.to_address || ""}</div>
+      <div>${j.distance_km || ""} km · ${j.price || ""} ₺</div>
+    `;
+
+    if(j.driver_name || j.driver_phone){
+      $("driverCard").style.display="block";
+      $("driverInfo").textContent =
+        (j.driver_name||"") + " " + (j.driver_phone||"");
     }
+
+    if(j.status === "completed"){
+      setTimeout(()=>{
+        window.location.replace("index.html");
+      }, 2500);
+      return;
+    }
+
+    setTimeout(loadJob, 5000);
+
   }catch(e){
-    $("statusSub").textContent = "Hata: " + (e && e.message ? e.message : e);
+    $("statusText").textContent="Bağlantı hatası";
   }
 }
 
-$("refreshBtn").onclick = refresh;
+/* ================= EVENTS ================= */
+$("backBtn").onclick = ()=> window.location.replace("index.html");
 
-refresh();
-setInterval(refresh, 3000);
+/* ================= BOOT ================= */
+loadJob();
 </script>
+
 </body>
 </html>
