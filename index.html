@@ -613,26 +613,26 @@ async function createJob(){
   try{
     await computeDistanceAndPrice();
 
-    const payload = {
-      action:"createJob",
-      service_type: serviceType,
+   const payload = {
+  action: "createJob",   // ⬅️ KRİTİK SATIR
 
-      customer_first: c.customer_first,
-      customer_last: c.customer_last,
-      customer_phone: c.customer_phone,
+  service_type: serviceType,
 
-      from_address: from.address,
-      to_address: to.address,
+  customer_first: c.customer_first,
+  customer_last: c.customer_last,
+  customer_phone: c.customer_phone,
 
-      pickup_lat: from.lat,
-      pickup_lng: from.lng,
-      dropoff_lat: to.lat,
-      dropoff_lng: to.lng,
+  from_address: from.address,
+  to_address: to.address,
 
-      distance_km: lastDistanceKm,
-      price: lastPrice
-    };
+  pickup_lat: from.lat,
+  pickup_lng: from.lng,
+  dropoff_lat: to.lat,
+  dropoff_lng: to.lng,
 
+  distance_km: lastDistanceKm,
+  price: lastPrice
+};
     if(serviceType==="courier" && c.courier){
       payload.package_type = c.courier.package_type;
       payload.receiver_name = c.courier.receiver_name;
