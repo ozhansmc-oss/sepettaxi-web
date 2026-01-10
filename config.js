@@ -1,7 +1,7 @@
 /* SepetTaxi – CONFIG (tek yerden) */
 window.SEPETTAXI = {
   // Google Apps Script Web App URL (Deploy > Web app URL)
-  API_BASE: "PASTE_YOUR_GAS_WEBAPP_URL_HERE",
+  API_BASE: "https://script.google.com/macros/s/AKfycbyUDK7nZCPLw6R6ml1mGeUyuNCZCuZ2hPWtjmrsBwXm7JFyHKwr_MKZqDjsoT9jVoJGsg/exec",
 
   BRAND: {
     name: "SepetTaxi",
