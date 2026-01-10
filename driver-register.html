@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SepetTaxi – Sürücü Başvurusu</title>
+<meta name="theme-color" content="#f5c400">
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto}
+:root{--y:#f5c400}
+
+.wrap{padding:16px;max-width:520px;margin:0 auto}
+h1{font-size:20px;margin:6px 0 12px}
+.sub{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:14px}
+
+.card{
+background:#141416;
+border:1px solid rgba(255,255,255,.12);
+border-radius:20px;
+padding:16px;
+margin-bottom:14px
+}
+
+.fld{margin-bottom:10px}
+.fld label{display:block;font-size:12px;color:rgba(255,255,255,.6);margin:0 0 6px 2px}
+.inp{
+width:100%;padding:12px;border-radius:14px;
+border:1px solid rgba(255,255,255,.12);
+background:#050506;color:#fff;font-weight:700
+}
+
+.row{display:flex;gap:10px}
+.row .fld{flex:1}
+
+.chk{
+display:flex;gap:10px;align-items:flex-start;
+font-size:12px;color:rgba(255,255,255,.75)
+}
+.chk input{margin-top:3px}
+
+.btn{
+width:100%;padding:14px;border-radius:16px;
+border:0;font-weight:900;
+background:linear-gradient(135deg,#f5c400,#ffd34d);
+color:#1a1400;margin-top:10px
+}
+.btn[disabled]{opacity:.45}
+
+.link{
+color:#f5c400;text-decoration:none;font-weight:800
+}
+
+.modal{
+position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+background:rgba(0,0,0,.65);z-index:90;padding:16px
+}
+.modal .card{max-height:80vh;overflow:auto}
+
+.toast{
+position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+background:#141416;border:1px solid rgba(255,255,255,.15);
+border-radius:999px;padding:10px 14px;font-size:12px;display:none
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+  <h1>Sürücü Ol</h1>
+  <div class="sub">
+    SepetTaxi sürücüsü olmak için başvuru formunu doldur.
+    Başvurun incelendikten sonra tarafına dönüş yapılacaktır.
+  </div>
+
+  <div class="card">
+
+    <div class="fld">
+      <label>Ad</label>
+      <input class="inp" id="dFirst" placeholder="Ad">
+    </div>
+
+    <div class="fld">
+      <label>Soyad</label>
+      <input class="inp" id="dLast" placeholder="Soyad">
+    </div>
+
+    <div class="fld">
+      <label>Telefon</label>
+      <input class="inp" id="dPhone" placeholder="05xx..." inputmode="tel">
+    </div>
+
+    <div class="fld">
+      <label>E-posta</label>
+      <input class="inp" id="dMail" placeholder="ornek@mail.com" inputmode="email">
+    </div>
+
+    <div class="row">
+      <div class="fld">
+        <label>Araç Tipi</label>
+        <select class="inp" id="vehicleType">
+          <option value="">Seçiniz</option>
+          <option value="taxi">Taksi</option>
+          <option value="motor">Moto Kurye</option>
+          <option value="both">Taksi + Kurye</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Şehir</label>
+        <input class="inp" id="city" placeholder="Bursa">
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Deneyim (yıl)</label>
+      <input class="inp" id="experience" placeholder="Örn. 3">
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="chk">
+      <input type="checkbox" id="kvkkOk">
+      <div>
+        <a href="#" class="link" id="kvkkLink">KVKK Aydınlatma Metni</a>
+        ’ni okudum ve kabul ediyorum.
+      </div>
+    </div>
+    <div class="chk" style="margin-top:8px">
+      <input type="checkbox" id="contractOk">
+      <div>
+        <a href="#" class="link" id="contractLink">Sürücü Adayı Sözleşmesi</a>
+        ’ni okudum ve kabul ediyorum.
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="submitBtn">Başvuruyu Gönder</button>
+
+</div>
+
+<!-- TEXT MODAL -->
+<div class="modal" id="textModal">
+  <div class="card">
+    <h3 id="textTitle"></h3>
+    <div id="textBody" style="white-space:pre-wrap;font-size:13px;line-height:1.5"></div>
+    <button class="btn" id="textClose">Kapat</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const API = "https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec";
+
+/* ================= HELPERS ================= */
+const $=i=>document.getElementById(i);
+function toast(t){
+  $("toast").textContent=t;
+  $("toast").style.display="block";
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>$("toast").style.display="none",2200);
+}
+
+function postForm(d){
+  return fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&")
+  }).then(r=>r.json());
+}
+
+/* ================= TEXTS ================= */
+const KVKK_TEXT =
+`KVKK AYDINLATMA METNİ (Özet)
+SepetTaxi, sürücü adaylarına ait kişisel verileri başvuru,
+değerlendirme ve iletişim amacıyla işler.
+Bu veriler üçüncü kişilerle paylaşılmaz.
+Aday, dilediği zaman başvurusunu geri çekebilir.`;
+
+const CONTRACT_TEXT =
+`SÜRÜCÜ ADAYI SÖZLEŞMESİ (Özet)
+Bu başvuru bir iş akdi değildir.
+SepetTaxi, başvuruyu reddetme hakkını saklı tutar.
+Başvurunun kabulü ek belgeler ve onaylara tabidir.`;
+
+/* ================= MODAL ================= */
+function openText(title, body){
+  $("textTitle").textContent=title;
+  $("textBody").textContent=body;
+  $("textModal").style.display="flex";
+}
+$("textClose").onclick=()=>$("textModal").style.display="none";
+$("kvkkLink").onclick=e=>{e.preventDefault();openText("KVKK",KVKK_TEXT)};
+$("contractLink").onclick=e=>{e.preventDefault();openText("Sürücü Adayı Sözleşmesi",CONTRACT_TEXT)};
+
+/* ================= SUBMIT ================= */
+$("submitBtn").onclick = async ()=>{
+  const data = {
+    action:"createDriverCandidate",
+    first:$("dFirst").value.trim(),
+    last:$("dLast").value.trim(),
+    phone:$("dPhone").value.trim(),
+    email:$("dMail").value.trim(),
+    vehicle:$("vehicleType").value,
+    city:$("city").value.trim(),
+    experience:$("experience").value.trim()
+  };
+
+  if(!data.first||!data.last||!data.phone){
+    toast("Ad, soyad ve telefon zorunlu");
+    return;
+  }
+  if(!$("kvkkOk").checked || !$("contractOk").checked){
+    toast("KVKK ve sözleşme onayı zorunlu");
+    return;
+  }
+
+  $("submitBtn").disabled=true;
+
+  try{
+    const res = await postForm(data);
+    if(!res.ok){
+      toast(res.error||"Başvuru alınamadı");
+      $("submitBtn").disabled=false;
+      return;
+    }
+
+    // driver_id kaydet
+    localStorage.setItem("sepettaxi_driver", res.driver_id);
+    toast("Başvuru alındı");
+
+    // driver paneline yönlendir
+    setTimeout(()=>{
+      window.location.href="driver.html";
+    },1200);
+
+  }catch(e){
+    toast("Bağlantı hatası");
+    $("submitBtn").disabled=false;
+  }
+};
+</script>
+
+</body>
+</html>
