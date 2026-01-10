@@ -347,7 +347,7 @@
    JSONP API CLIENT (CORS-proof)
    ============================ */
 const CFG = window.SEPETTAXI || {};
-const API = (CFG.API_BASE || "").trim();
+const API = (CFG.API_BASE || "https://script.google.com/macros/s/AKfycbyUDK7nZCPLw6R6ml1mGeUyuNCZCuZ2hPWtjmrsBwXm7JFyHKwr_MKZqDjsoT9jVoJGsg/exec").trim();
 function uid(prefix="id"){
   return prefix + "_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
 }
