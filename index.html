@@ -24,7 +24,7 @@
     --bad:#ff5a6a;
   }
 
-  /* Topbar */
+  /* Topbar (global, single hamburger) */
   .topbar{
     position:fixed;left:0;right:0;top:0;height:56px;
     display:flex;align-items:center;justify-content:space-between;
@@ -33,7 +33,7 @@
     backdrop-filter: blur(10px);
     border-bottom:1px solid rgba(255,255,255,.06);
   }
-  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.2px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.2px}
   .logo{
     width:28px;height:28px;border-radius:10px;
     background:radial-gradient(circle at 30% 30%, #ffe27a, #f5c400 55%, #b78d00 100%);
@@ -51,7 +51,7 @@
   .hamb{display:flex;flex-direction:column;gap:4px}
   .hamb span{width:18px;height:2px;background:#fff;border-radius:2px;opacity:.9}
 
-  /* Layout */
+  /* Layout (no scroll; map 50% + bottom card 50%) */
   .wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
   #map{flex:1 1 50%;min-height:50%}
   .sheet{
@@ -76,54 +76,44 @@
     border:1px solid rgba(255,255,255,.08);
     white-space:nowrap;
   }
-  .pill .val{font-weight:700;font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pill .val{font-weight:800;font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .hint{margin:10px 2px 0;color:rgba(255,255,255,.58);font-size:12px}
 
-  .serviceTabs{
-    margin-top:10px;
-    display:flex;gap:10px;
-  }
+  .serviceTabs{margin-top:10px;display:flex;gap:10px}
   .tab{
-    flex:1;
-    border-radius:18px;
-    padding:12px;
+    flex:1;border-radius:18px;padding:12px;
     border:1px solid rgba(255,255,255,.10);
     background:rgba(255,255,255,.04);
     display:flex;align-items:center;justify-content:space-between;
-    font-weight:800;
+    font-weight:900;
   }
-  .tab small{font-weight:700;color:rgba(255,255,255,.58)}
+  .tab small{font-weight:800;color:rgba(255,255,255,.58)}
   .tab.active{
     border-color:rgba(245,196,0,.45);
     background:rgba(245,196,0,.10);
     box-shadow:0 10px 22px rgba(245,196,0,.10);
   }
 
-  .metrics{
-    display:flex;gap:10px;margin-top:10px;
-  }
+  .metrics{display:flex;gap:10px;margin-top:10px}
   .metric{
     flex:1;background:rgba(255,255,255,.04);
     border:1px solid rgba(255,255,255,.10);
     border-radius:18px;padding:12px;
   }
   .metric .k{font-size:12px;color:rgba(255,255,255,.55)}
-  .metric .v{margin-top:4px;font-size:18px;font-weight:900}
+  .metric .v{margin-top:4px;font-size:18px;font-weight:950}
 
   .btn{
-    margin-top:10px;
-    width:100%;
-    border:0;
-    border-radius:18px;
-    padding:14px 14px;
-    font-weight:900;
+    margin-top:10px;width:100%;
+    border:0;border-radius:18px;padding:14px 14px;
+    font-weight:950;
     background:linear-gradient(135deg, #f5c400, #ffd34d);
     color:#1a1400;
   }
   .btn[disabled]{opacity:.45}
   .btn:active{transform:scale(.99)}
 
-  /* Overlay premium searching */
+  /* premium searching overlay */
   .overlay{
     position:fixed;inset:0;z-index:80;
     display:none;align-items:center;justify-content:center;
@@ -137,8 +127,7 @@
     border-radius:26px;
     padding:18px;
     box-shadow:0 20px 60px rgba(0,0,0,.55);
-    position:relative;
-    overflow:hidden;
+    position:relative;overflow:hidden;
   }
   .glow{
     position:absolute;inset:-80px -80px auto auto;
@@ -146,7 +135,7 @@
     background:radial-gradient(circle at 30% 30%, rgba(245,196,0,.42), rgba(245,196,0,0) 70%);
     filter:blur(2px);
   }
-  .ovTitle{font-size:16px;font-weight:900}
+  .ovTitle{font-size:16px;font-weight:950}
   .ovSub{margin-top:6px;color:rgba(255,255,255,.62);font-size:13px}
   .loader{
     margin-top:14px;height:10px;border-radius:999px;
@@ -156,7 +145,6 @@
   .bar{
     height:100%;width:42%;
     background:linear-gradient(90deg, rgba(245,196,0,.20), rgba(245,196,0,.95), rgba(245,196,0,.20));
-    filter:saturate(1.2);
     animation:slide 1.15s infinite linear;
   }
   @keyframes slide{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
@@ -165,7 +153,7 @@
     padding:8px 10px;border-radius:999px;
     border:1px solid rgba(245,196,0,.35);
     background:rgba(245,196,0,.12);
-    font-weight:900;font-size:12px;color:#fff;
+    font-weight:950;font-size:12px;color:#fff;
   }
 
   /* Drawer */
@@ -180,7 +168,7 @@
     padding:14px;
   }
   .drawer.open{transform:translateX(0)}
-  .dTitle{font-weight:900;font-size:14px;margin:4px 4px 12px}
+  .dTitle{font-weight:950;font-size:14px;margin:4px 4px 12px}
   .dItem{
     display:flex;align-items:center;justify-content:space-between;
     padding:12px;border-radius:16px;
@@ -188,12 +176,12 @@
     background:rgba(255,255,255,.04);
     margin-bottom:10px;
     text-decoration:none;color:#fff;
-    font-weight:800;
+    font-weight:900;
   }
-  .dItem small{font-weight:700;color:rgba(255,255,255,.58)}
+  .dItem small{font-weight:800;color:rgba(255,255,255,.58)}
   .dWarn{color:rgba(255,255,255,.55);font-size:12px;margin-top:10px}
 
-  /* Modal register */
+  /* Modal register (mandatory) */
   .modal{
     position:fixed;inset:0;z-index:95;display:none;
     background:rgba(0,0,0,.55);backdrop-filter:blur(10px);
@@ -208,7 +196,7 @@
     padding:16px;
   }
   .mHead{display:flex;align-items:center;justify-content:space-between}
-  .mHead b{font-size:15px}
+  .mHead b{font-size:15px;font-weight:950}
   .xbtn{border:0;background:transparent;color:#fff;font-size:22px;line-height:1}
   .fld{margin-top:10px}
   .fld label{display:block;font-size:12px;color:rgba(255,255,255,.58);margin:0 0 6px 2px}
@@ -219,18 +207,33 @@
     background:rgba(255,255,255,.04);
     color:#fff;
     padding:12px 12px;
-    font-weight:700;
+    font-weight:800;
     outline:none;
   }
   .mBtnRow{display:flex;gap:10px;margin-top:12px}
   .mBtn{
-    flex:1;border:0;border-radius:16px;padding:12px;font-weight:900;
+    flex:1;border:0;border-radius:16px;padding:12px;font-weight:950;
     background:rgba(255,255,255,.08);color:#fff;
     border:1px solid rgba(255,255,255,.12);
   }
   .mBtn.primary{
     background:linear-gradient(135deg, #f5c400, #ffd34d);
     color:#1a1400;border:0;
+  }
+
+  /* Debug panel (hidden by default) */
+  .dbg{
+    position:fixed;left:10px;right:10px;bottom:10px;z-index:110;
+    display:none;
+    background:rgba(0,0,0,.65);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;
+    padding:10px;
+    font-size:12px;
+    color:rgba(255,255,255,.85);
+    white-space:pre-wrap;
+    max-height:28vh;
+    overflow:auto;
   }
 </style>
 </head>
@@ -284,7 +287,7 @@
 
     <button class="btn" id="callBtn" disabled>Taksi Çağır</button>
 
-    <div class="hint">İpucu: Haritada bir noktaya dokun → adres seç. İlk dokunuş “Nereden”, ikinci dokunuş “Nereye”.</div>
+    <div class="hint">Haritada dokun → ilk dokunuş “Nereden”, ikinci dokunuş “Nereye”.</div>
   </div>
 </div>
 
@@ -311,12 +314,12 @@
   <div class="dWarn">Not: Admin erişimi PIN ile korumalıdır.</div>
 </div>
 
-<!-- register modal (mandatory before createJob) -->
+<!-- mandatory register modal -->
 <div class="modal" id="regModal">
   <div class="mCard">
     <div class="mHead">
       <b>Zorunlu Kayıt</b>
-      <button class="xbtn" id="regClose">×</button>
+      <button class="xbtn" id="regClose" title="Kapat">×</button>
     </div>
 
     <div class="fld">
@@ -353,55 +356,61 @@
 
     <div class="mBtnRow">
       <button class="mBtn" id="regCancel">Vazgeç</button>
-      <button class="mBtn primary" id="regOk">Devam</button>
+      <button class="mBtn primary" id="regOk">Kaydet</button>
     </div>
   </div>
 </div>
 
-<script>
-/* ====== CONFIG ====== */
-const API = "https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec"; // .../exec
+<div class="dbg" id="dbg"></div>
 
-/* ====== STATE ====== */
+<script>
+/* =========================
+   CONFIG (LIVE BACKEND)
+========================= */
+const API = "https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec";
+
+/* Turn on only if you need raw debugging on-screen */
+const DEBUG_PANEL = false;
+
+/* =========================
+   STATE
+========================= */
 let map, markerFrom, markerTo, line;
 let from = null, to = null;
 let serviceType = "taxi";
 let lastDistanceKm = 0;
 let lastPrice = 0;
-let geoWatchId = null;
 
-/* ====== STORAGE ====== */
-function loadCustomer(){
-  try{ const s = localStorage.getItem("sepettaxi_customer"); return s?JSON.parse(s):null; }catch(_){ return null; }
-}
-function saveCustomer(c){ localStorage.setItem("sepettaxi_customer", JSON.stringify(c)); }
-
-/* ====== UI ====== */
+/* =========================
+   HELPERS
+========================= */
 const $ = id => document.getElementById(id);
-function hint(t){ $("statusHint").textContent = t; }
-function setService(type){
-  serviceType = type;
-  $("tabTaxi").classList.toggle("active", type==="taxi");
-  $("tabCourier").classList.toggle("active", type==="courier");
-  $("callBtn").textContent = (type==="courier") ? "Kurye Çağır" : "Taksi Çağır";
-  // courier fields only in mandatory registration modal
-  $("courierFields").style.display = (type==="courier") ? "block" : "none";
+
+function dbg(text){
+  if(!DEBUG_PANEL) return;
+  const el = $("dbg");
+  el.style.display = "block";
+  el.textContent = String(text || "");
 }
+
+function hint(t){ $("statusHint").textContent = t; }
+
 function drawer(open){
   $("drawer").classList.toggle("open", !!open);
 }
+
 function overlay(show, title, sub){
   $("overlay").style.display = show ? "flex" : "none";
   if(title) $("ovTitle").textContent = title;
   if(sub) $("ovSub").textContent = sub;
 }
+
 function updatePills(){
   $("fromTxt").textContent = from ? from.address : "Haritadan seç";
   $("toTxt").textContent = to ? to.address : "Haritadan seç";
 }
+
 function updateMetrics(){
-  // KİLİTLİ KARAR: mesafe+ücret, adres seçimi tamamlanınca görünür; kayıt öncesi de görünebilir mi?
-  // Bu sürümde: adresler seçilince görünür (kayıt modalı çağırdan önce).
   if(from && to){
     $("kmTxt").textContent = (lastDistanceKm ? lastDistanceKm.toFixed(2) : "—") + " km";
     $("priceTxt").textContent = (lastPrice ? Math.round(lastPrice) : "—") + " ₺";
@@ -412,17 +421,46 @@ function updateMetrics(){
   $("callBtn").disabled = !(from && to);
 }
 
-/* ====== MAP + GEO ====== */
+function setService(type, {forceRegisterPrompt=false} = {}){
+  serviceType = type;
+  $("tabTaxi").classList.toggle("active", type==="taxi");
+  $("tabCourier").classList.toggle("active", type==="courier");
+  $("callBtn").textContent = (type==="courier") ? "Kurye Çağır" : "Taksi Çağır";
+  $("courierFields").style.display = (type==="courier") ? "block" : "none";
+
+  // ZORUNLU KAYIT: hizmet seçimi anında
+  if(forceRegisterPrompt && !loadCustomer()){
+    openRegister();
+  }
+
+  computeDistanceAndPrice().then(updateMetrics);
+}
+
+/* =========================
+   STORAGE (Customer)
+========================= */
+function loadCustomer(){
+  try{
+    const s = localStorage.getItem("sepettaxi_customer");
+    return s ? JSON.parse(s) : null;
+  }catch(_){ return null; }
+}
+function saveCustomer(obj){
+  localStorage.setItem("sepettaxi_customer", JSON.stringify(obj));
+}
+
+/* =========================
+   MAP + GEO
+========================= */
 function initMap(){
   map = L.map("map", { zoomControl:false }).setView([40.195,29.060], 13);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-    attribution:""
-  }).addTo(map);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution:"" }).addTo(map);
 
   map.on("click", async (ev)=>{
     const latlng = ev.latlng;
     const addr = await reverseGeocode(latlng.lat, latlng.lng);
+
     if(!from){
       from = { lat:latlng.lat, lng:latlng.lng, address: addr || `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}` };
       if(markerFrom) markerFrom.remove();
@@ -435,12 +473,15 @@ function initMap(){
       drawLine();
       await computeDistanceAndPrice();
     }
-    updatePills(); updateMetrics();
+
+    updatePills();
+    updateMetrics();
   });
 
   hint("Konum alınıyor… İzin vermezsen haritadan seçim yapabilirsin.");
   locateOnce();
 }
+
 function drawLine(){
   if(line) line.remove();
   if(from && to){
@@ -448,30 +489,14 @@ function drawLine(){
     map.fitBounds(line.getBounds(), { padding:[40,40] });
   }
 }
+
 async function reverseGeocode(lat,lng){
   try{
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
-    const r = await fetch(url, { headers: { "Accept":"application/json" }});
+    const r = await fetch(url, { headers:{ "Accept":"application/json" }});
     const j = await r.json();
     return j && j.display_name ? j.display_name : "";
   }catch(_){ return ""; }
-}
-function haversineKm(aLat,aLng,bLat,bLng){
-  const R=6371;
-  const toRad=x=>x*Math.PI/180;
-  const dLat=toRad(bLat-aLat), dLng=toRad(bLng-aLng);
-  const sa=Math.sin(dLat/2), sb=Math.sin(dLng/2);
-  const q=sa*sa + Math.cos(toRad(aLat))*Math.cos(toRad(bLat))*sb*sb;
-  return 2*R*Math.asin(Math.min(1,Math.sqrt(q)));
-}
-async function computeDistanceAndPrice(){
-  lastDistanceKm = haversineKm(from.lat, from.lng, to.lat, to.lng);
-  // simple local pricing (must match backend fallback behavior)
-  if(serviceType==="courier"){
-    lastPrice = Math.max(70, 40 + lastDistanceKm*18);
-  }else{
-    lastPrice = Math.max(90, 50 + lastDistanceKm*22);
-  }
 }
 
 function locateOnce(){
@@ -483,24 +508,63 @@ function locateOnce(){
     const lat = pos.coords.latitude, lng = pos.coords.longitude;
     map.setView([lat,lng], 15);
     hint("Konum alındı. Haritadan ‘Nereden’ seçebilirsin.");
-  }, err=>{
+  }, _=>{
     hint("Konum alınamadı. Haritadan seçim yapabilirsin.");
   }, { enableHighAccuracy:true, timeout:8000, maximumAge:0 });
 }
 
-/* ====== API ====== */
+function haversineKm(aLat,aLng,bLat,bLng){
+  const R=6371, toRad=x=>x*Math.PI/180;
+  const dLat=toRad(bLat-aLat), dLng=toRad(bLng-aLng);
+  const sa=Math.sin(dLat/2), sb=Math.sin(dLng/2);
+  const q=sa*sa + Math.cos(toRad(aLat))*Math.cos(toRad(bLat))*sb*sb;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(q)));
+}
+
+async function computeDistanceAndPrice(){
+  if(!(from && to)){
+    lastDistanceKm = 0; lastPrice = 0; return;
+  }
+  lastDistanceKm = haversineKm(from.lat, from.lng, to.lat, to.lng);
+  if(serviceType==="courier"){
+    lastPrice = Math.max(70, 40 + lastDistanceKm*18);
+  }else{
+    lastPrice = Math.max(90, 50 + lastDistanceKm*22);
+  }
+}
+
+/* =========================
+   API (robust JSON handling)
+========================= */
 async function apiPost(payload){
   const r = await fetch(API, {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify(payload)
   });
-  return await r.json();
+
+  const text = await r.text();
+  dbg(text);
+
+  // If HTML came back, show it clearly instead of JSON parse crash
+  const t = (text || "").trim();
+  if(t.startsWith("<")){
+    throw new Error("Backend JSON yerine HTML döndürdü. (Yanıt panelde gösterildi) \n\n" + t.slice(0,240));
+  }
+
+  let obj = null;
+  try{ obj = JSON.parse(text); }
+  catch(e){
+    throw new Error("Backend JSON parse edilemedi: " + (e && e.message ? e.message : e) + "\n\n" + t.slice(0,240));
+  }
+
+  return obj;
 }
 
-/* ====== MANDATORY REGISTER FLOW ====== */
+/* =========================
+   MANDATORY REGISTER
+========================= */
 function openRegister(){
-  // show modal and enforce completion before createJob
   $("regModal").style.display = "flex";
 }
 function closeRegister(){
@@ -510,7 +574,10 @@ function validateRegister(){
   const first = $("cFirst").value.trim();
   const last  = $("cLast").value.trim();
   const phone = $("cPhone").value.trim();
-  if(!first || !last || !phone) return { ok:false, error:"Lütfen ad, soyad ve telefonu gir." };
+
+  if(!first || !last || !phone){
+    return { ok:false, error:"Lütfen ad, soyad ve telefonu gir." };
+  }
 
   const base = { customer_first:first, customer_last:last, customer_phone:phone };
 
@@ -524,16 +591,19 @@ function validateRegister(){
     }
     return { ok:true, customer:base, courier:{ package_type, receiver_name, receiver_phone, package_note } };
   }
+
   return { ok:true, customer:base, courier:null };
 }
 
-/* ====== CREATE JOB ====== */
+/* =========================
+   CREATE JOB (working)
+========================= */
 async function createJob(){
   if(!(from && to)) return;
 
-  // mandatory register check
-  const existing = loadCustomer();
-  if(!existing){
+  // mandatory customer must exist before createJob
+  const c = loadCustomer();
+  if(!c){
     openRegister();
     return;
   }
@@ -541,20 +611,24 @@ async function createJob(){
   overlay(true, "Sürücü aranıyor", "Yakındaki sürücüler otomatik eşleştiriliyor…");
 
   try{
-    // refresh distance/price
     await computeDistanceAndPrice();
 
-    const c = loadCustomer();
     const payload = {
       action:"createJob",
       service_type: serviceType,
+
       customer_first: c.customer_first,
       customer_last: c.customer_last,
       customer_phone: c.customer_phone,
+
       from_address: from.address,
       to_address: to.address,
-      pickup_lat: from.lat, pickup_lng: from.lng,
-      dropoff_lat: to.lat, dropoff_lng: to.lng,
+
+      pickup_lat: from.lat,
+      pickup_lng: from.lng,
+      dropoff_lat: to.lat,
+      dropoff_lng: to.lng,
+
       distance_km: lastDistanceKm,
       price: lastPrice
     };
@@ -567,41 +641,45 @@ async function createJob(){
     }
 
     const res = await apiPost(payload);
-    if(!res.ok) throw new Error(res.error || "API error");
+    if(!res || !res.ok) throw new Error((res && res.error) ? res.error : "API error");
 
-    // redirect to track
+    // success → track
     window.location.href = `track.html?job_id=${encodeURIComponent(res.job_id)}`;
+
   }catch(e){
     overlay(false);
     hint("Hata: " + (e && e.message ? e.message : e));
-    alert("İşlem başarısız: " + (e && e.message ? e.message : e));
+    alert("İşlem başarısız:\n" + (e && e.message ? e.message : e));
   }
 }
 
-/* ====== Events ====== */
-$("tabTaxi").onclick = ()=>{ setService("taxi"); computeDistanceAndPrice().then(updateMetrics); };
-$("tabCourier").onclick = ()=>{ setService("courier"); computeDistanceAndPrice().then(updateMetrics); };
-
+/* =========================
+   EVENTS
+========================= */
 $("menuBtn").onclick = ()=> drawer(!$("drawer").classList.contains("open"));
 $("locBtn").onclick = ()=> locateOnce();
 
+$("tabTaxi").onclick = ()=> setService("taxi", { forceRegisterPrompt:true });
+$("tabCourier").onclick = ()=> setService("courier", { forceRegisterPrompt:true });
+
 $("callBtn").onclick = ()=> createJob();
 
-// modal events
+// modal
 $("regClose").onclick = closeRegister;
-$("regCancel").onclick = ()=>{ closeRegister(); };
+$("regCancel").onclick = closeRegister;
 $("regOk").onclick = ()=>{
   const v = validateRegister();
   if(!v.ok){ alert(v.error); return; }
+
   const obj = { ...v.customer, service_type: serviceType };
   if(v.courier) obj.courier = v.courier;
+
   saveCustomer(obj);
   closeRegister();
-  // after register, proceed to create job immediately
-  createJob();
+  hint("Kayıt tamam. Adresleri seçip çağırabilirsin.");
 };
 
-// close drawer when click outside
+// close drawer when clicking outside
 document.addEventListener("click",(ev)=>{
   const d = $("drawer");
   if(!d.classList.contains("open")) return;
@@ -609,9 +687,15 @@ document.addEventListener("click",(ev)=>{
   if(!inside) drawer(false);
 });
 
+/* =========================
+   BOOT
+========================= */
 initMap();
-setService("taxi");
-updatePills(); updateMetrics();
+setService("taxi", { forceRegisterPrompt: false }); // boot default
+updatePills();
+updateMetrics();
+
+// Eğer müşteri yoksa: ilk hizmet seçimine dokununca zorunlu kayıt açılacak (kilitli karar)
 </script>
 </body>
 </html>
