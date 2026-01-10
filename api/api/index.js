@@ -11,7 +11,10 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     if (req.query?.action === "ping") {
-      return res.status(200).json({ ok: true, ts: new Date().toISOString() });
+      return res.status(200).json({
+        ok: true,
+        ts: new Date().toISOString()
+      });
     }
     return res.status(405).json({ error: "Method Not Allowed" });
   }
@@ -20,13 +23,16 @@ export default async function handler(req, res) {
     try {
       const r = await fetch(GAS_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
         body: JSON.stringify(req.body || {})
       });
 
       const text = await r.text();
       res.setHeader("Content-Type", "application/json");
       return res.status(200).send(text);
+
     } catch (e) {
       return res.status(500).json({ ok: false, error: String(e) });
     }
