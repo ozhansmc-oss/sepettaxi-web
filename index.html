@@ -537,29 +537,31 @@ async function computeDistanceAndPrice(){
    API (robust JSON handling)
 ========================= */
 async function apiPost(payload){
+  // Ekranda kanıt: giden payload
+  const pretty = JSON.stringify(payload, null, 2);
+  document.getElementById("statusHint").textContent = "Gönderilen payload hazır.";
+  alert("GİDEN PAYLOAD:\n" + pretty);
+
   const r = await fetch(API, {
-    method:"POST",
-  headers: { 
-   "Content-Type": "text/plain;charset=utf-8" 
-  },
-body: JSON.stringify(payload)
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify(payload) // ⚠️ MUTLAKA stringify
   });
 
   const text = await r.text();
-  dbg(text);
+  alert("GELEN YANIT (RAW):\n" + text.slice(0, 1200));
 
-  // If HTML came back, show it clearly instead of JSON parse crash
+  // HTML geldiyse (backend’e gitmiyor / fallback)
   const t = (text || "").trim();
-  if(t.startsWith("<")){
-    throw new Error("Backend JSON yerine HTML döndürdü. (Yanıt panelde gösterildi) \n\n" + t.slice(0,240));
-  }
+  if(t.startsWith("<")) throw new Error("HTML döndü (JSON bekleniyordu).");
 
-  let obj = null;
-  try{ obj = JSON.parse(text); }
-  catch(e){
-    throw new Error("Backend JSON parse edilemedi: " + (e && e.message ? e.message : e) + "\n\n" + t.slice(0,240));
-  }
-
+  // JSON parse
+  let obj;
+  try{ obj = JSON.parse(text); }catch(e){ throw new Error("JSON parse edilemedi."); }
   return obj;
 }
 
@@ -615,9 +617,8 @@ async function createJob(){
   try{
     await computeDistanceAndPrice();
 
-   const payload = {
-  action: "createJob",   // ⬅️ KRİTİK SATIR
-
+const payload = {
+  action: "createJob",              // ⬅️ KRİTİK (ilk satır)
   service_type: serviceType,
 
   customer_first: c.customer_first,
@@ -635,6 +636,7 @@ async function createJob(){
   distance_km: lastDistanceKm,
   price: lastPrice
 };
+
     if(serviceType==="courier" && c.courier){
       payload.package_type = c.courier.package_type;
       payload.receiver_name = c.courier.receiver_name;
