@@ -1,190 +1,225 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>SepetTaxi – Admin</title>
-  <meta name="theme-color" content="#0b0b0c" />
-  <script src="config.js"></script>
-  <style>
-    *{box-sizing:border-box}
-    :root{
-      --y:#f5c400; --bg:#060607; --line:rgba(255,255,255,.10);
-      --mut:rgba(255,255,255,.66); --mut2:rgba(255,255,255,.42); --shadow:0 12px 40px rgba(0,0,0,.55);
-    }
-    html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
-    .wrap{height:100%;overflow:auto;padding:12px}
-    .card{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:20px;padding:12px;box-shadow:var(--shadow);margin-bottom:12px}
-    h1{margin:0 0 10px;font-size:16px}
-    .field{display:flex;align-items:center;gap:10px;padding:12px;border-radius:16px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);margin-bottom:10px}
-    .field input{width:100%;background:transparent;border:0;outline:0;color:#fff;font-size:14px}
-    .btn{padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;font-weight:900;cursor:pointer}
-    .btn.primary{border-color:rgba(245,196,0,.25);background:rgba(245,196,0,.14)}
-    .tabs{display:flex;gap:10px;margin-bottom:10px}
-    .tab{flex:1}
-    .hint{font-size:12px;color:var(--mut2);line-height:1.35}
-    .item{padding:12px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.03);margin-top:10px}
-    .item b{display:block}
-    .item small{display:block;margin-top:4px;color:var(--mut2);line-height:1.35}
-    .row{display:flex;gap:10px;margin-top:10px}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>SepetTaxi – Admin</title>
+<meta name="theme-color" content="#f5c400" />
+
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;overflow:hidden}
+  :root{--y:#f5c400;--line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.65)}
+  .top{
+    position:fixed;left:0;right:0;top:0;height:56px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 12px;z-index:10;
+    background:linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.10));
+    backdrop-filter: blur(10px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .title{font-weight:900}
+  .wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
+  .panel{
+    padding:12px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,12,.98));
+  }
+  .card{
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.04);
+    border-radius:18px;
+    padding:12px;
+  }
+  .inp{
+    width:100%;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.04);
+    color:#fff;
+    padding:12px;
+    font-weight:800;
+    outline:none;
+    margin-top:8px;
+  }
+  .btn{
+    width:100%;
+    border:0;border-radius:16px;
+    padding:12px;font-weight:900;
+    margin-top:10px;
+    background:linear-gradient(135deg,#f5c400,#ffd34d);
+    color:#1a1400;
+  }
+  .btn2{
+    border-radius:14px;
+    padding:10px 12px;font-weight:900;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.06);
+    color:#fff;
+  }
+  .tabs{display:flex;gap:10px;margin-top:10px}
+  .tab{flex:1;text-align:center;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);font-weight:900}
+  .tab.active{border-color:rgba(245,196,0,.45);background:rgba(245,196,0,.10)}
+  .list{flex:1;overflow:auto;padding:12px}
+  .item{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:18px;padding:12px;margin-bottom:10px}
+  .mut{color:rgba(255,255,255,.62);font-size:12px;margin-top:6px;line-height:1.35}
+  .row{display:flex;gap:10px;align-items:center;margin-top:10px}
+</style>
 </head>
 <body>
+
+<div class="top">
+  <div class="title">Admin</div>
+  <button class="btn2" id="logoutBtn">Çıkış</button>
+</div>
+
 <div class="wrap">
-  <div class="card" id="loginCard">
-    <h1>Admin Giriş</h1>
-    <div class="hint">PIN backend’de doğrulanır. Doğru PIN ile token alınır ve admin işlemleri aktif olur.</div>
-    <div class="field"><input id="pin" placeholder="PIN" inputmode="numeric" maxlength="8"></div>
-    <button class="btn primary" id="login">Giriş</button>
-    <div class="hint" id="st" style="margin-top:10px">Hazır</div>
+  <div class="panel" id="loginPanel">
+    <div class="card">
+      <div><b>Admin PIN</b></div>
+      <input class="inp" id="pin" placeholder="PIN" inputmode="numeric" />
+      <button class="btn" id="loginBtn">Giriş</button>
+      <div class="mut" id="loginHint">PIN, Apps Script properties içindeki ADMIN_PIN ile eşleşmelidir.</div>
+    </div>
   </div>
 
-  <div class="card" id="panel" style="display:none">
-    <h1>Admin Panel</h1>
+  <div class="panel" id="mainPanel" style="display:none">
     <div class="tabs">
-      <button class="btn tab primary" id="tJobs">İşler</button>
-      <button class="btn tab" id="tDrivers">Sürücüler</button>
+      <div class="tab active" id="tJobs">Jobs</div>
+      <div class="tab" id="tDrivers">Drivers</div>
     </div>
-    <div id="list"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn2" id="refreshBtn" style="flex:1">Yenile</button>
+      <button class="btn2" id="clearBtn" style="flex:1">Token Sil</button>
+    </div>
   </div>
+
+  <div class="list" id="list"></div>
 </div>
 
 <script>
-const CFG = window.SEPETTAXI || {};
-const API = (CFG.API_BASE || "https://script.google.com/macros/s/AKfycbyUDK7nZCPLw6R6ml1mGeUyuNCZCuZ2hPWtjmrsBwXm7JFyHKwr_MKZqDjsoT9jVoJGsg/exec").trim();
-const $ = (id)=>document.getElementById(id);
+const API = "PUT_YOUR_APPS_SCRIPT_WEBAPP_EXEC_URL_HERE";
+const $ = id => document.getElementById(id);
 
-function apiGet(action, params={}){
-  return new Promise((resolve, reject)=>{
-    if(!API || API.includes("PASTE_YOUR")) return reject(new Error("API_BASE yok / yanlış"));
-    const cb = "cb_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
-    window[cb] = (payload)=>{
-      try{ delete window[cb]; }catch(_){ window[cb]=undefined; }
-      script.remove();
-      if(payload && payload.ok) resolve(payload); else reject(new Error((payload && payload.error) || "API error"));
-    };
-    const p = new URLSearchParams({action, callback: cb, ...params}).toString();
-    const script = document.createElement("script");
-    script.src = API + "?" + p;
-    script.onerror = ()=>{ try{ delete window[cb]; }catch(_){ } reject(new Error("Network/JSONP error")); };
-    document.body.appendChild(script);
-  });
+function saveAdminToken(t){ localStorage.setItem("sepettaxi_admin_token", t); }
+function loadAdminToken(){ return localStorage.getItem("sepettaxi_admin_token") || ""; }
+function clearAdminToken(){ localStorage.removeItem("sepettaxi_admin_token"); }
+
+async function apiPost(payload){
+  const r = await fetch(API, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+  return await r.json();
 }
-function setSt(t){ $("st").textContent=t; }
+async function apiGet(params){
+  const u = new URL(API);
+  Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r = await fetch(u.toString());
+  return await r.json();
+}
 
-let adminToken = localStorage.getItem("sepettaxi_admin_token") || "";
 let tab = "jobs";
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+function setUI(logged){
+  $("loginPanel").style.display = logged ? "none":"block";
+  $("mainPanel").style.display = logged ? "block":"none";
+  $("list").innerHTML = "";
 }
 
-async function load(){
-  $("list").innerHTML = `<div class="hint">Yükleniyor…</div>`;
+function setTab(name){
+  tab = name;
+  $("tJobs").classList.toggle("active", tab==="jobs");
+  $("tDrivers").classList.toggle("active", tab==="drivers");
+  refresh();
+}
+
+$("tJobs").onclick = ()=> setTab("jobs");
+$("tDrivers").onclick = ()=> setTab("drivers");
+
+function renderJobs(items){
+  const el = $("list");
+  el.innerHTML = "";
+  items.slice(0,200).forEach(j=>{
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div><b>${(j.service_type||"").toUpperCase()} • ${j.job_id}</b></div>
+      <div class="mut">
+        <div><b>Durum:</b> ${j.status}</div>
+        <div><b>Driver:</b> ${j.driver_id||"-"}</div>
+        <div><b>Nereden:</b> ${j.from_address||"-"}</div>
+        <div><b>Nereye:</b> ${j.to_address||"-"}</div>
+        <div><b>Mesafe:</b> ${Number(j.distance_km||0).toFixed(2)} km • <b>Ücret:</b> ${(j.final_price||j.price||"-")} ₺</div>
+        <div><b>Oluşturma:</b> ${j.created_at||"-"}</div>
+      </div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function renderDrivers(items){
+  const el = $("list");
+  el.innerHTML = "";
+  items.slice(0,200).forEach(d=>{
+    const div = document.createElement("div");
+    div.className = "item";
+    const active = String(d.active).toUpperCase()==="TRUE";
+    div.innerHTML = `
+      <div><b>${d.driver_id} • ${String(d.vehicle_type||"").toUpperCase()}</b></div>
+      <div class="mut">
+        <div><b>Ad:</b> ${d.first||""} ${d.last||""}</div>
+        <div><b>Tel:</b> ${d.phone||"-"} • <b>Plaka:</b> ${d.plate||"-"}</div>
+        <div><b>Aktif:</b> ${active ? "TRUE":"FALSE"} • <b>Radius:</b> ${d.radius_km||5} km</div>
+        <div><b>Son konum:</b> ${d.last_lat||"-"}, ${d.last_lng||"-"}</div>
+        <div><b>Son seen:</b> ${d.last_seen_at||"-"}</div>
+      </div>
+      <div class="row">
+        <button class="btn2" data-act="on" style="flex:1">Aktif</button>
+        <button class="btn2" data-act="off" style="flex:1">Pasif</button>
+      </div>
+    `;
+    div.querySelector('[data-act="on"]').onclick = ()=> setActive(d.driver_id, true);
+    div.querySelector('[data-act="off"]').onclick = ()=> setActive(d.driver_id, false);
+    el.appendChild(div);
+  });
+}
+
+async function setActive(driver_id, active){
+  const token = loadAdminToken();
+  const res = await apiPost({ action:"adminSetDriverActive", token, driver_id, active: active ? "TRUE":"FALSE" });
+  if(!res.ok) return alert("İşlem başarısız: " + (res.error||""));
+  refresh();
+}
+
+async function refresh(){
+  const token = loadAdminToken();
+  if(!token) return;
   if(tab==="jobs"){
-    const r = await apiGet("adminListJobs", {token: adminToken});
-    renderJobs(r.jobs||[]);
+    const res = await apiGet({ action:"adminJobs", token });
+    if(!res.ok) return alert("Yetkisiz: " + (res.error||""));
+    renderJobs(res.jobs||[]);
   }else{
-    const r = await apiGet("adminListDrivers", {token: adminToken});
-    renderDrivers(r.drivers||[]);
+    const res = await apiGet({ action:"adminDrivers", token });
+    if(!res.ok) return alert("Yetkisiz: " + (res.error||""));
+    renderDrivers(res.drivers||[]);
   }
 }
-function renderJobs(list){
-  const root = $("list");
-  if(!list.length){ root.innerHTML = `<div class="item"><b>İş yok</b></div>`; return; }
-  root.innerHTML="";
-  list.forEach(j=>{
-    const el=document.createElement("div");
-    el.className="item";
-    el.innerHTML = `
-      <b>${escapeHtml(j.job_id)} • ${escapeHtml(j.status)} • ₺${escapeHtml(j.price||"-")}</b>
-      <small><b>Tür:</b> ${escapeHtml(j.service_type||"-")}</small>
-      <small><b>Nereden:</b> ${escapeHtml(j.from_address||"-")}</small>
-      <small><b>Nereye:</b> ${escapeHtml(j.to_address||"-")}</small>
-      <small><b>Sürücü:</b> ${escapeHtml(j.driver_id||"-")}</small>
-      <div class="row">
-        <button class="btn" data-cancel="${j.job_id}">İptal</button>
-        <button class="btn primary" data-force="${j.job_id}">Assigned→OnRoute</button>
-      </div>
-    `;
-    root.appendChild(el);
-  });
-  root.querySelectorAll("[data-cancel]").forEach(b=>{
-    b.onclick=async ()=>{
-      const job_id=b.getAttribute("data-cancel");
-      b.disabled=true;
-      try{ await apiGet("adminCancelJob",{token:adminToken, job_id}); await load(); }catch(e){ alert(e.message); b.disabled=false; }
-    };
-  });
-  root.querySelectorAll("[data-force]").forEach(b=>{
-    b.onclick=async ()=>{
-      const job_id=b.getAttribute("data-force");
-      b.disabled=true;
-      try{ await apiGet("adminSetStatus",{token:adminToken, job_id, status:"onroute"}); await load(); }catch(e){ alert(e.message); b.disabled=false; }
-    };
-  });
-}
-function renderDrivers(list){
-  const root = $("list");
-  if(!list.length){ root.innerHTML = `<div class="item"><b>Sürücü yok</b></div>`; return; }
-  root.innerHTML="";
-  list.forEach(d=>{
-    const el=document.createElement("div");
-    el.className="item";
-    el.innerHTML=`
-      <b>${escapeHtml(d.driver_id)} • ${escapeHtml(d.name||"-")}</b>
-      <small><b>Telefon:</b> ${escapeHtml(d.phone||"-")} • <b>Plaka:</b> ${escapeHtml(d.plate||"-")}</small>
-      <small><b>Aktif:</b> ${escapeHtml(String(d.active))} • <b>Radius:</b> ${escapeHtml(String(d.radius_km||"-"))} km</small>
-      <div class="row">
-        <button class="btn" data-off="${d.driver_id}">Pasif</button>
-        <button class="btn primary" data-on="${d.driver_id}">Aktif</button>
-      </div>
-    `;
-    root.appendChild(el);
-  });
-  root.querySelectorAll("[data-off]").forEach(b=>{
-    b.onclick=async ()=>{
-      const driver_id=b.getAttribute("data-off");
-      b.disabled=true;
-      try{ await apiGet("adminUpdateDriver",{token:adminToken, driver_id, active:"false"}); await load(); }catch(e){ alert(e.message); b.disabled=false; }
-    };
-  });
-  root.querySelectorAll("[data-on]").forEach(b=>{
-    b.onclick=async ()=>{
-      const driver_id=b.getAttribute("data-on");
-      b.disabled=true;
-      try{ await apiGet("adminUpdateDriver",{token:adminToken, driver_id, active:"true"}); await load(); }catch(e){ alert(e.message); b.disabled=false; }
-    };
-  });
-}
 
-/* Tabs */
-$("tJobs").onclick=()=>{ tab="jobs"; $("tJobs").classList.add("primary"); $("tDrivers").classList.remove("primary"); load(); };
-$("tDrivers").onclick=()=>{ tab="drivers"; $("tDrivers").classList.add("primary"); $("tJobs").classList.remove("primary"); load(); };
-
-$("login").onclick = async ()=>{
+$("loginBtn").onclick = async ()=>{
   const pin = $("pin").value.trim();
-  if(pin.length<4){ alert("PIN gir"); return; }
-  try{
-    setSt("Giriş…");
-    const r = await apiGet("adminLogin", {pin});
-    adminToken = r.token;
-    localStorage.setItem("sepettaxi_admin_token", adminToken);
-    $("loginCard").style.display="none";
-    $("panel").style.display="block";
-    await load();
-  }catch(e){
-    setSt("PIN hatalı");
-    alert("Giriş başarısız: " + e.message);
-  }
+  const res = await apiPost({ action:"adminLogin", pin });
+  if(!res.ok) return alert("Giriş yok: " + (res.error||""));
+  saveAdminToken(res.token);
+  setUI(true);
+  refresh();
 };
 
-(async function boot(){
-  if(adminToken){
-    $("loginCard").style.display="none";
-    $("panel").style.display="block";
-    await load().catch(()=>{});
-  }
+$("refreshBtn").onclick = refresh;
+$("clearBtn").onclick = ()=>{ clearAdminToken(); setUI(false); };
+$("logoutBtn").onclick = ()=>{ clearAdminToken(); setUI(false); };
+
+(function boot(){
+  const t = loadAdminToken();
+  if(t){ setUI(true); refresh(); }
+  else setUI(false);
 })();
 </script>
 </body>
