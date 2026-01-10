@@ -1,200 +1,191 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SepetTaxi – Admin</title>
-<meta name="theme-color" content="#050506">
-
-<style>
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:system-ui,Arial}
-body{overflow:hidden}
-
-:root{
-  --y:#f5c400;
-  --line:rgba(255,255,255,.1);
-  --card:#141416;
-}
-
-.top{
-  height:56px;
-  display:flex;align-items:center;justify-content:center;
-  border-bottom:1px solid var(--line);
-  background:#0f0f10;
-  font-weight:900;
-}
-.top span{color:var(--y)}
-
-.main{
-  height:calc(100vh - 56px);
-  overflow-y:auto;
-  padding:12px;
-}
-
-.card{
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:14px;
-  margin-bottom:12px;
-  background:#0f0f10;
-}
-
-input,button,select{
-  width:100%;
-  height:44px;
-  border-radius:12px;
-  border:1px solid var(--line);
-  background:var(--card);
-  color:#fff;
-  margin-bottom:10px;
-  padding:0 12px;
-  font-weight:800;
-}
-
-button.primary{
-  background:var(--y);
-  color:#111;
-}
-
-.job{
-  border:1px solid rgba(245,196,0,.3);
-  background:rgba(245,196,0,.1);
-  border-radius:14px;
-  padding:12px;
-  margin-bottom:10px;
-}
-.job b{color:var(--y)}
-.small{font-size:12px;opacity:.75}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>SepetTaxi – Admin</title>
+  <meta name="theme-color" content="#0b0b0c" />
+  <script src="config.js"></script>
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --y:#f5c400; --bg:#060607; --line:rgba(255,255,255,.10);
+      --mut:rgba(255,255,255,.66); --mut2:rgba(255,255,255,.42); --shadow:0 12px 40px rgba(0,0,0,.55);
+    }
+    html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
+    .wrap{height:100%;overflow:auto;padding:12px}
+    .card{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:20px;padding:12px;box-shadow:var(--shadow);margin-bottom:12px}
+    h1{margin:0 0 10px;font-size:16px}
+    .field{display:flex;align-items:center;gap:10px;padding:12px;border-radius:16px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);margin-bottom:10px}
+    .field input{width:100%;background:transparent;border:0;outline:0;color:#fff;font-size:14px}
+    .btn{padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;font-weight:900;cursor:pointer}
+    .btn.primary{border-color:rgba(245,196,0,.25);background:rgba(245,196,0,.14)}
+    .tabs{display:flex;gap:10px;margin-bottom:10px}
+    .tab{flex:1}
+    .hint{font-size:12px;color:var(--mut2);line-height:1.35}
+    .item{padding:12px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.03);margin-top:10px}
+    .item b{display:block}
+    .item small{display:block;margin-top:4px;color:var(--mut2);line-height:1.35}
+    .row{display:flex;gap:10px;margin-top:10px}
+  </style>
 </head>
-
 <body>
-<div class="top">Sepet<span>Taxi</span> • Admin</div>
-
-<div class="main">
-
-  <!-- LOGIN -->
-  <div id="loginCard" class="card">
-    <h3>Admin Giriş</h3>
-    <input id="adminPin" placeholder="Admin PIN">
-    <button id="btnLogin" class="primary">Giriş</button>
+<div class="wrap">
+  <div class="card" id="loginCard">
+    <h1>Admin Giriş</h1>
+    <div class="hint">PIN backend’de doğrulanır. Doğru PIN ile token alınır ve admin işlemleri aktif olur.</div>
+    <div class="field"><input id="pin" placeholder="PIN" inputmode="numeric" maxlength="8"></div>
+    <button class="btn primary" id="login">Giriş</button>
+    <div class="hint" id="st" style="margin-top:10px">Hazır</div>
   </div>
 
-  <!-- PANEL -->
-  <div id="panel" style="display:none">
-
-    <div class="card">
-      <h3>Canlı İşler</h3>
-      <button id="btnRefresh">Yenile</button>
+  <div class="card" id="panel" style="display:none">
+    <h1>Admin Panel</h1>
+    <div class="tabs">
+      <button class="btn tab primary" id="tJobs">İşler</button>
+      <button class="btn tab" id="tDrivers">Sürücüler</button>
     </div>
-
-    <div id="jobs"></div>
-
+    <div id="list"></div>
   </div>
-
 </div>
 
 <script>
-/* BACKEND */
-const API="https://script.google.com/macros/s/AKfycbwAKdSbXtKupy7Bp0gRIrB68bScvIvVjpSPFUYrDf6marNE43qm_DEHO_dPdTTroIDC/exec";
+const CFG = window.SEPETTAXI || {};
+const API = (CFG.API_BASE || "").trim();
+const $ = (id)=>document.getElementById(id);
 
-/* JSONP */
-function apiJSONP(p){
-  return new Promise((res,rej)=>{
-    const cb="cb_"+Math.random().toString(16).slice(2);
-    p.callback=cb;
-    window[cb]=(d)=>{res(d);delete window[cb];s.remove();}
-    const s=document.createElement("script");
-    s.src=API+(API.includes("?")?"&":"?")+new URLSearchParams(p);
-    s.onerror=()=>{delete window[cb];s.remove();rej();}
-    document.head.appendChild(s);
+function apiGet(action, params={}){
+  return new Promise((resolve, reject)=>{
+    if(!API || API.includes("PASTE_YOUR")) return reject(new Error("API_BASE yok / yanlış"));
+    const cb = "cb_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+    window[cb] = (payload)=>{
+      try{ delete window[cb]; }catch(_){ window[cb]=undefined; }
+      script.remove();
+      if(payload && payload.ok) resolve(payload); else reject(new Error((payload && payload.error) || "API error"));
+    };
+    const p = new URLSearchParams({action, callback: cb, ...params}).toString();
+    const script = document.createElement("script");
+    script.src = API + "?" + p;
+    script.onerror = ()=>{ try{ delete window[cb]; }catch(_){ } reject(new Error("Network/JSONP error")); };
+    document.body.appendChild(script);
+  });
+}
+function setSt(t){ $("st").textContent=t; }
+
+let adminToken = localStorage.getItem("sepettaxi_admin_token") || "";
+let tab = "jobs";
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
+async function load(){
+  $("list").innerHTML = `<div class="hint">Yükleniyor…</div>`;
+  if(tab==="jobs"){
+    const r = await apiGet("adminListJobs", {token: adminToken});
+    renderJobs(r.jobs||[]);
+  }else{
+    const r = await apiGet("adminListDrivers", {token: adminToken});
+    renderDrivers(r.drivers||[]);
+  }
+}
+function renderJobs(list){
+  const root = $("list");
+  if(!list.length){ root.innerHTML = `<div class="item"><b>İş yok</b></div>`; return; }
+  root.innerHTML="";
+  list.forEach(j=>{
+    const el=document.createElement("div");
+    el.className="item";
+    el.innerHTML = `
+      <b>${escapeHtml(j.job_id)} • ${escapeHtml(j.status)} • ₺${escapeHtml(j.price||"-")}</b>
+      <small><b>Tür:</b> ${escapeHtml(j.service_type||"-")}</small>
+      <small><b>Nereden:</b> ${escapeHtml(j.from_address||"-")}</small>
+      <small><b>Nereye:</b> ${escapeHtml(j.to_address||"-")}</small>
+      <small><b>Sürücü:</b> ${escapeHtml(j.driver_id||"-")}</small>
+      <div class="row">
+        <button class="btn" data-cancel="${j.job_id}">İptal</button>
+        <button class="btn primary" data-force="${j.job_id}">Assigned→OnRoute</button>
+      </div>
+    `;
+    root.appendChild(el);
+  });
+  root.querySelectorAll("[data-cancel]").forEach(b=>{
+    b.onclick=async ()=>{
+      const job_id=b.getAttribute("data-cancel");
+      b.disabled=true;
+      try{ await apiGet("adminCancelJob",{token:adminToken, job_id}); await load(); }catch(e){ alert(e.message); b.disabled=false; }
+    };
+  });
+  root.querySelectorAll("[data-force]").forEach(b=>{
+    b.onclick=async ()=>{
+      const job_id=b.getAttribute("data-force");
+      b.disabled=true;
+      try{ await apiGet("adminSetStatus",{token:adminToken, job_id, status:"onroute"}); await load(); }catch(e){ alert(e.message); b.disabled=false; }
+    };
+  });
+}
+function renderDrivers(list){
+  const root = $("list");
+  if(!list.length){ root.innerHTML = `<div class="item"><b>Sürücü yok</b></div>`; return; }
+  root.innerHTML="";
+  list.forEach(d=>{
+    const el=document.createElement("div");
+    el.className="item";
+    el.innerHTML=`
+      <b>${escapeHtml(d.driver_id)} • ${escapeHtml(d.name||"-")}</b>
+      <small><b>Telefon:</b> ${escapeHtml(d.phone||"-")} • <b>Plaka:</b> ${escapeHtml(d.plate||"-")}</small>
+      <small><b>Aktif:</b> ${escapeHtml(String(d.active))} • <b>Radius:</b> ${escapeHtml(String(d.radius_km||"-"))} km</small>
+      <div class="row">
+        <button class="btn" data-off="${d.driver_id}">Pasif</button>
+        <button class="btn primary" data-on="${d.driver_id}">Aktif</button>
+      </div>
+    `;
+    root.appendChild(el);
+  });
+  root.querySelectorAll("[data-off]").forEach(b=>{
+    b.onclick=async ()=>{
+      const driver_id=b.getAttribute("data-off");
+      b.disabled=true;
+      try{ await apiGet("adminUpdateDriver",{token:adminToken, driver_id, active:"false"}); await load(); }catch(e){ alert(e.message); b.disabled=false; }
+    };
+  });
+  root.querySelectorAll("[data-on]").forEach(b=>{
+    b.onclick=async ()=>{
+      const driver_id=b.getAttribute("data-on");
+      b.disabled=true;
+      try{ await apiGet("adminUpdateDriver",{token:adminToken, driver_id, active:"true"}); await load(); }catch(e){ alert(e.message); b.disabled=false; }
+    };
   });
 }
 
-/* STATE */
-let admin=null;
+/* Tabs */
+$("tJobs").onclick=()=>{ tab="jobs"; $("tJobs").classList.add("primary"); $("tDrivers").classList.remove("primary"); load(); };
+$("tDrivers").onclick=()=>{ tab="drivers"; $("tDrivers").classList.add("primary"); $("tJobs").classList.remove("primary"); load(); };
 
-/* STORAGE */
-function saveAdmin(a){ localStorage.setItem("sepettaxi_admin", JSON.stringify(a)); }
-function loadAdmin(){
-  try{ return JSON.parse(localStorage.getItem("sepettaxi_admin")); }
-  catch(_){ return null; }
-}
-function clearAdmin(){ localStorage.removeItem("sepettaxi_admin"); }
-
-/* LOGIN */
-btnLogin.onclick=()=>{
-  const pin=adminPin.value.trim();
-  if(pin.length<3){ alert("PIN gir"); return; }
-
-  apiJSONP({ action:"adminLogin", pin })
-    .then(r=>{
-      if(!r.ok){ alert("Giriş başarısız"); return; }
-      admin={ admin_id:r.data.admin_id, token:r.data.token };
-      saveAdmin(admin);
-      initAdmin();
-    });
+$("login").onclick = async ()=>{
+  const pin = $("pin").value.trim();
+  if(pin.length<4){ alert("PIN gir"); return; }
+  try{
+    setSt("Giriş…");
+    const r = await apiGet("adminLogin", {pin});
+    adminToken = r.token;
+    localStorage.setItem("sepettaxi_admin_token", adminToken);
+    $("loginCard").style.display="none";
+    $("panel").style.display="block";
+    await load();
+  }catch(e){
+    setSt("PIN hatalı");
+    alert("Giriş başarısız: " + e.message);
+  }
 };
 
-/* INIT */
-function initAdmin(){
-  loginCard.style.display="none";
-  panel.style.display="block";
-  refreshJobs();
-}
-
-/* JOBS */
-btnRefresh.onclick=refreshJobs;
-
-function refreshJobs(){
-  apiJSONP({ action:"listOpenJobs" })
-    .then(r=>{
-      if(!r.ok){ jobs.innerHTML="Hata"; return; }
-      jobs.innerHTML="";
-      r.data.jobs.forEach(j=>{
-        const d=document.createElement("div");
-        d.className="job";
-        d.innerHTML=`
-          <div><b>${j.service_type}</b> • ${j.status}</div>
-          <div class="small">${j.from_address || ""}</div>
-          <div class="small">${j.to_address || ""}</div>
-          <input placeholder="Sürücü ID" id="drv_${j.job_id}">
-          <button>Manuel Ata</button>
-        `;
-        d.querySelector("button").onclick=()=>{
-          const driver_id=d.querySelector("input").value.trim();
-          if(!driver_id) return alert("Sürücü ID gir");
-          assign(j.job_id, driver_id);
-        };
-        jobs.appendChild(d);
-      });
-    });
-}
-
-function assign(job_id, driver_id){
-  apiJSONP({
-    action:"adminAssign",
-    admin_id:admin.admin_id,
-    token:admin.token,
-    job_id,
-    driver_id
-  }).then(r=>{
-    if(r.ok){
-      alert("Atandı");
-      refreshJobs();
-    }else{
-      alert("Atama başarısız");
-    }
-  });
-}
-
-/* BOOT */
-const saved=loadAdmin();
-if(saved){
-  admin=saved;
-  initAdmin();
-}
+(async function boot(){
+  if(adminToken){
+    $("loginCard").style.display="none";
+    $("panel").style.display="block";
+    await load().catch(()=>{});
+  }
+})();
 </script>
 </body>
 </html>
