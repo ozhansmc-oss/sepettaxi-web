@@ -202,6 +202,50 @@ $("finishBtn").onclick = async ()=>{
 /* ================= BOOT ================= */
 startHeartbeat();
 loadJobs();
+  <script>
+/* =========================
+   DRIVER HEARTBEAT (LIVE)
+========================= */
+
+let hbTimer = null;
+
+function startDriverHeartbeat(driverId){
+  if(hbTimer) return; // zaten çalışıyorsa tekrar başlatma
+
+  hbTimer = setInterval(()=>{
+    if(!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      const body = [
+        "action=driverHeartbeat",
+        "driver_id=" + encodeURIComponent(driverId),
+        "lat=" + encodeURIComponent(lat),
+        "lng=" + encodeURIComponent(lng)
+      ].join("&");
+
+      fetch(API,{
+        method:"POST",
+        headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+        body
+      }).catch(()=>{});
+
+    }, _=>{}, { enableHighAccuracy:true, maximumAge:0, timeout:5000 });
+
+  }, 3000); // 3 sn
+}
+
+function stopDriverHeartbeat(){
+  if(hbTimer){
+    clearInterval(hbTimer);
+    hbTimer = null;
+  }
+}
+
+/* Sayfa kapanırken durdur */
+window.addEventListener("beforeunload", stopDriverHeartbeat);
 </script>
 
 </body>
