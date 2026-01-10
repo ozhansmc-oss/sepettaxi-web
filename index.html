@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi</title>
-<meta name="theme-color" content="#f5c400" />
+<meta name="theme-color" content="#f5c400">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,119 +12,54 @@
 <style>
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;background:#050506;color:#fff;overflow:hidden}
-:root{
---y:#f5c400;--bg:#050506;--panel:#0f0f10;--card:#141416;
---line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.65);--mut2:rgba(255,255,255,.42)
-}
+:root{--y:#f5c400}
 
-/* TOPBAR */
-.topbar{
-position:fixed;left:0;right:0;top:0;height:56px;
-display:flex;align-items:center;justify-content:space-between;
-padding:0 12px;z-index:50;
-background:linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.10));
-backdrop-filter: blur(10px);
-border-bottom:1px solid rgba(255,255,255,.06);
-}
-.brand{display:flex;align-items:center;gap:10px;font-weight:900}
-.logo{
-width:28px;height:28px;border-radius:10px;
-background:radial-gradient(circle at 30% 30%, #ffe27a, #f5c400 55%, #b78d00 100%);
-}
+.topbar{position:fixed;left:0;right:0;top:0;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;z-index:50;background:rgba(0,0,0,.65);backdrop-filter:blur(10px)}
+.logo{width:28px;height:28px;border-radius:10px;background:#f5c400}
 .actions{display:flex;gap:10px}
-.iconbtn{
-width:40px;height:40px;border-radius:14px;
-border:1px solid rgba(255,255,255,.10);
-background:rgba(20,20,22,.55);color:#fff
-}
+.iconbtn{width:40px;height:40px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#141416;color:#fff}
 .hamb{display:flex;flex-direction:column;gap:4px}
 .hamb span{width:18px;height:2px;background:#fff;border-radius:2px}
 
-/* LAYOUT */
 .wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
-#map{flex:1 1 50%}
-.sheet{
-flex:1 1 50%;
-background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,12,.98));
-border-top:1px solid rgba(255,255,255,.08);
-padding:12px
-}
+#map{flex:1}
 
-/* UI */
+.sheet{background:#0f0f10;padding:12px}
 .row{display:flex;gap:10px}
-.pill{
-flex:1;border:1px solid rgba(255,255,255,.10);
-background:rgba(255,255,255,.04);
-border-radius:16px;padding:10px 12px;
-display:flex;gap:10px;align-items:center
-}
-.tag{font-size:12px;color:rgba(255,255,255,.62)}
-.val{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{flex:1;padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#141416}
+.tag{font-size:11px;color:#aaa}
+.val{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.serviceTabs{margin-top:10px;display:flex;gap:10px}
-.tab{
-flex:1;border-radius:18px;padding:12px;
-border:1px solid rgba(255,255,255,.10);
-background:rgba(255,255,255,.04);
-font-weight:900;text-align:center
-}
-.tab.active{
-border-color:rgba(245,196,0,.45);
-background:rgba(245,196,0,.10)
-}
+.tabs{display:flex;gap:10px;margin-top:10px}
+.tab{flex:1;text-align:center;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#141416;font-weight:900}
+.tab.active{background:rgba(245,196,0,.2);border-color:#f5c400}
 
 .metrics{display:flex;gap:10px;margin-top:10px}
-.metric{
-flex:1;background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.10);
-border-radius:18px;padding:12px
-}
-.metric .k{font-size:12px;color:rgba(255,255,255,.55)}
-.metric .v{font-size:18px;font-weight:950}
+.metric{flex:1;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#141416}
+.metric .k{font-size:11px;color:#aaa}
+.metric .v{font-size:18px;font-weight:900}
 
-.btn{
-margin-top:10px;width:100%;
-border:0;border-radius:18px;padding:14px;
-font-weight:950;
-background:linear-gradient(135deg, #f5c400, #ffd34d);
-color:#1a1400
-}
-.btn[disabled]{opacity:.45}
+.btn{width:100%;margin-top:10px;padding:14px;border-radius:16px;border:0;font-weight:900;background:#f5c400;color:#000}
+.btn[disabled]{opacity:.4}
 
-/* OVERLAY */
-.overlay{
-position:fixed;inset:0;z-index:80;
-display:none;align-items:center;justify-content:center;
-background:rgba(0,0,0,.45);backdrop-filter:blur(10px)
-}
-.ovCard{
-background:rgba(20,20,22,.9);
-border-radius:26px;padding:18px;
-border:1px solid rgba(255,255,255,.12)
-}
+.drawer{position:fixed;top:56px;right:0;bottom:0;width:280px;background:#0f0f10;transform:translateX(100%);transition:.25s;z-index:80;padding:14px}
+.drawer.open{transform:translateX(0)}
+.drawer a{display:block;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.15);margin-bottom:10px;color:#fff;text-decoration:none}
 
-/* MODAL */
-.modal{
-position:fixed;inset:0;z-index:90;
-display:none;align-items:center;justify-content:center;
-background:rgba(0,0,0,.55)
-}
-.mCard{
-background:rgba(20,20,22,.92);
-border-radius:26px;padding:16px;width:90%
-}
-.inp{
-width:100%;padding:12px;border-radius:16px;
-border:1px solid rgba(255,255,255,.10);
-background:rgba(255,255,255,.04);color:#fff
-}
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:90}
+.card{background:#141416;padding:18px;border-radius:18px;border:1px solid rgba(255,255,255,.15);width:90%}
+
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:100}
+.modal input{width:100%;margin-bottom:10px;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:#050506;color:#fff}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
-  <div class="brand"><div class="logo"></div>SepetTaxi</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="logo"></div><b>SepetTaxi</b>
+  </div>
   <div class="actions">
     <button class="iconbtn" id="menuBtn">
       <div class="hamb"><span></span><span></span><span></span></div>
@@ -134,14 +69,13 @@ background:rgba(255,255,255,.04);color:#fff
 
 <div class="wrap">
   <div id="map"></div>
-
   <div class="sheet">
     <div class="row">
-      <div class="pill"><span class="tag">Nereden</span><span class="val" id="fromTxt">Haritadan seç</span></div>
-      <div class="pill"><span class="tag">Nereye</span><span class="val" id="toTxt">Haritadan seç</span></div>
+      <div class="pill"><div class="tag">Nereden</div><div class="val" id="fromTxt">Konum alınıyor…</div></div>
+      <div class="pill"><div class="tag">Nereye</div><div class="val" id="toTxt">Haritadan seç</div></div>
     </div>
 
-    <div class="serviceTabs">
+    <div class="tabs">
       <div class="tab active" id="tabTaxi">Taksi</div>
       <div class="tab" id="tabCourier">Kurye</div>
     </div>
@@ -151,115 +85,116 @@ background:rgba(255,255,255,.04);color:#fff
       <div class="metric"><div class="k">Ücret</div><div class="v" id="priceTxt">—</div></div>
     </div>
 
-    <button class="btn" id="callBtn" disabled>Taksi Çağır</button>
+    <button class="btn" id="callBtn" disabled>Çağır</button>
   </div>
 </div>
 
-<div class="overlay" id="overlay">
-  <div class="ovCard">
-    <b>Sürücü aranıyor</b>
-    <div>Yakındaki sürücüler eşleştiriliyor…</div>
-  </div>
+<div class="drawer" id="drawer">
+  <a href="driver.html">Sürücü girişi</a>
+  <a href="admin.html">Admin</a>
+</div>
+
+<div class="overlay" id="searching">
+  <div class="card">Sürücü aranıyor…</div>
 </div>
 
 <div class="modal" id="regModal">
-  <div class="mCard">
-    <input class="inp" id="cFirst" placeholder="Ad">
-    <input class="inp" id="cLast" placeholder="Soyad">
-    <input class="inp" id="cPhone" placeholder="Telefon">
+  <div class="card">
+    <h3>Zorunlu Kayıt</h3>
+    <input id="cFirst" placeholder="Ad">
+    <input id="cLast" placeholder="Soyad">
+    <input id="cPhone" placeholder="Telefon">
     <button class="btn" id="regOk">Kaydet</button>
   </div>
 </div>
 
 <script>
-/* ========= CONFIG ========= */
 const API = "https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec";
 
-/* ========= STATE ========= */
-let map, from=null, to=null;
-let serviceType="taxi", lastDistanceKm=0, lastPrice=0;
-
-/* ========= HELPERS ========= */
+let map, from=null, to=null, serviceType="taxi", dist=0, price=0;
 const $=i=>document.getElementById(i);
-function overlay(on){$("overlay").style.display=on?"flex":"none"}
+
 function saveCustomer(o){localStorage.setItem("sepettaxi_customer",JSON.stringify(o))}
 function loadCustomer(){try{return JSON.parse(localStorage.getItem("sepettaxi_customer"))}catch(_){return null}}
 
-/* ========= MAP ========= */
 function initMap(){
-  map=L.map("map",{zoomControl:false}).setView([40.195,29.060],13);
+  map=L.map("map").setView([40.195,29.060],13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  map.on("click",e=>{
-    if(!from){from={lat:e.latlng.lat,lng:e.latlng.lng};}
-    else{to={lat:e.latlng.lat,lng:e.latlng.lng}; compute();}
+
+  navigator.geolocation?.getCurrentPosition(p=>{
+    map.setView([p.coords.latitude,p.coords.longitude],15);
+    reverse(p.coords.latitude,p.coords.longitude).then(a=>{
+      from={lat:p.coords.latitude,lng:p.coords.longitude,addr:a};
+      $("fromTxt").textContent=a;
+    });
+  });
+
+  map.on("click",async e=>{
+    const a=await reverse(e.latlng.lat,e.latlng.lng);
+    if(!from){from={lat:e.latlng.lat,lng:e.latlng.lng,addr:a};$("fromTxt").textContent=a}
+    else{to={lat:e.latlng.lat,lng:e.latlng.lng,addr:a};$("toTxt").textContent=a;calc()}
     updateUI();
   });
 }
 
-/* ========= CALC ========= */
-function hav(a,b,c,d){
-  const R=6371,t=x=>x*Math.PI/180;
-  const dLat=t(c-a),dLng=t(d-b);
-  return 2*R*Math.asin(Math.sqrt(Math.sin(dLat/2)**2+
-    Math.cos(t(a))*Math.cos(t(c))*Math.sin(dLng/2)**2));
-}
-function compute(){
-  lastDistanceKm=hav(from.lat,from.lng,to.lat,to.lng);
-  lastPrice=serviceType==="courier"?Math.max(70,40+lastDistanceKm*18):Math.max(90,50+lastDistanceKm*22);
+async function reverse(lat,lng){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+    const j=await r.json();return j.display_name||"";
+  }catch(_){return ""}
 }
 
-/* ========= UI ========= */
+function hav(a,b,c,d){
+  const R=6371,t=x=>x*Math.PI/180;
+  return 2*R*Math.asin(Math.sqrt(Math.sin(t(c-a)/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(t(d-b)/2)**2));
+}
+function calc(){dist=hav(from.lat,from.lng,to.lat,to.lng);price=serviceType==="courier"?Math.max(70,40+dist*18):Math.max(90,50+dist*22)}
+
 function updateUI(){
-  $("fromTxt").textContent=from?"Seçildi":"Haritadan seç";
-  $("toTxt").textContent=to?"Seçildi":"Haritadan seç";
-  $("kmTxt").textContent=from&&to?lastDistanceKm.toFixed(2)+" km":"—";
-  $("priceTxt").textContent=from&&to?Math.round(lastPrice)+" ₺":"—";
+  $("kmTxt").textContent=dist?dist.toFixed(2)+" km":"—";
+  $("priceTxt").textContent=price?Math.round(price)+" ₺":"—";
   $("callBtn").disabled=!(from&&to);
 }
 
-/* ========= API ========= */
 function postForm(d){
-  const b=Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&");
-  return fetch(API,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:b}).then(r=>r.json());
+  return fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&")
+  }).then(r=>r.json());
 }
 
-/* ========= CREATE JOB ========= */
 async function createJob(){
   const c=loadCustomer();
-  if(!c){$("regModal").style.display="flex";return;}
-  overlay(true);
+  if(!c){$("regModal").style.display="flex";return}
+  $("searching").style.display="flex";
   const r=await postForm({
     action:"createJob",
     service_type:serviceType,
     customer_first:c.customer_first,
     customer_last:c.customer_last,
     customer_phone:c.customer_phone,
+    from_address:from.addr,
+    to_address:to.addr,
     pickup_lat:from.lat,
     pickup_lng:from.lng,
     dropoff_lat:to.lat,
     dropoff_lng:to.lng,
-    distance_km:lastDistanceKm,
-    price:lastPrice
+    distance_km:dist,
+    price:price
   });
-  if(r.ok) location.href="track.html?job_id="+r.job_id;
-  else overlay(false);
+  if(r.ok)location.href="track.html?job_id="+r.job_id;
+  else $("searching").style.display="none";
 }
 
-/* ========= EVENTS ========= */
-document.addEventListener("DOMContentLoaded",()=>{
-  initMap();
-  $("callBtn").onclick=createJob;
-  $("tabTaxi").onclick=()=>{serviceType="taxi";$("callBtn").textContent="Taksi Çağır";}
-  $("tabCourier").onclick=()=>{serviceType="courier";$("callBtn").textContent="Kurye Çağır";}
-  $("regOk").onclick=()=>{
-    saveCustomer({
-      customer_first:$("cFirst").value,
-      customer_last:$("cLast").value,
-      customer_phone:$("cPhone").value
-    });
-    $("regModal").style.display="none";
-  };
-});
+$("menuBtn").onclick=()=>$("drawer").classList.toggle("open");
+$("callBtn").onclick=createJob;
+$("tabTaxi").onclick=()=>{serviceType="taxi";$("tabTaxi").classList.add("active");$("tabCourier").classList.remove("active")};
+$("tabCourier").onclick=()=>{serviceType="courier";$("tabCourier").classList.add("active");$("tabTaxi").classList.remove("active")};
+$("regOk").onclick=()=>{saveCustomer({customer_first:$("cFirst").value,customer_last:$("cLast").value,customer_phone:$("cPhone").value});$("regModal").style.display="none"};
+
+initMap();
 </script>
+
 </body>
 </html>
