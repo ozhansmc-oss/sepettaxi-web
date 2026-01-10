@@ -1,226 +1,477 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Admin</title>
-<meta name="theme-color" content="#f5c400" />
+<meta name="theme-color" content="#f5c400">
 
 <style>
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;overflow:hidden}
-  :root{--y:#f5c400;--line:rgba(255,255,255,.10);--mut:rgba(255,255,255,.65)}
-  .top{
-    position:fixed;left:0;right:0;top:0;height:56px;
-    display:flex;align-items:center;justify-content:space-between;
-    padding:0 12px;z-index:10;
-    background:linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.10));
-    backdrop-filter: blur(10px);
-    border-bottom:1px solid rgba(255,255,255,.06);
-  }
-  .title{font-weight:900}
-  .wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
-  .panel{
-    padding:12px;
-    border-bottom:1px solid rgba(255,255,255,.08);
-    background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,12,.98));
-  }
-  .card{
-    border:1px solid rgba(255,255,255,.10);
-    background:rgba(255,255,255,.04);
-    border-radius:18px;
-    padding:12px;
-  }
-  .inp{
-    width:100%;
-    border-radius:16px;
-    border:1px solid rgba(255,255,255,.10);
-    background:rgba(255,255,255,.04);
-    color:#fff;
-    padding:12px;
-    font-weight:800;
-    outline:none;
-    margin-top:8px;
-  }
-  .btn{
-    width:100%;
-    border:0;border-radius:16px;
-    padding:12px;font-weight:900;
-    margin-top:10px;
-    background:linear-gradient(135deg,#f5c400,#ffd34d);
-    color:#1a1400;
-  }
-  .btn2{
-    border-radius:14px;
-    padding:10px 12px;font-weight:900;
-    border:1px solid rgba(255,255,255,.12);
-    background:rgba(255,255,255,.06);
-    color:#fff;
-  }
-  .tabs{display:flex;gap:10px;margin-top:10px}
-  .tab{flex:1;text-align:center;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);font-weight:900}
-  .tab.active{border-color:rgba(245,196,0,.45);background:rgba(245,196,0,.10)}
-  .list{flex:1;overflow:auto;padding:12px}
-  .item{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:18px;padding:12px;margin-bottom:10px}
-  .mut{color:rgba(255,255,255,.62);font-size:12px;margin-top:6px;line-height:1.35}
-  .row{display:flex;gap:10px;align-items:center;margin-top:10px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;overflow:hidden}
+:root{--y:#f5c400;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.62)}
+
+.topbar{
+position:fixed;left:0;right:0;top:0;height:56px;z-index:50;
+display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+background:linear-gradient(180deg, rgba(0,0,0,.78), rgba(0,0,0,.18));
+backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.06)
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:950}
+.logo{
+width:28px;height:28px;border-radius:10px;
+background:radial-gradient(circle at 30% 30%, #ffe27a, #f5c400 55%, #b78d00 100%);
+box-shadow:0 8px 18px rgba(245,196,0,.18);
+}
+.iconbtn{
+width:40px;height:40px;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+background:rgba(20,20,22,.55);color:#fff;font-weight:900
+}
+.iconbtn:active{transform:scale(.98)}
+
+.wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
+.container{padding:14px;max-width:920px;margin:0 auto;width:100%;overflow:auto}
+
+.card{
+background:rgba(20,20,22,.92);
+border:1px solid rgba(255,255,255,.12);
+border-radius:22px;
+padding:14px;
+margin-bottom:12px
+}
+.h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.h b{font-size:15px}
+
+.tabs{display:flex;gap:10px;margin-top:12px}
+.tab{
+flex:1;text-align:center;padding:12px;border-radius:16px;
+border:1px solid rgba(255,255,255,.10);
+background:rgba(255,255,255,.04);font-weight:950;cursor:pointer
+}
+.tab.active{border-color:rgba(245,196,0,.45);background:rgba(245,196,0,.12)}
+
+.grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+@media(min-width:860px){.grid{grid-template-columns:1fr 1fr}}
+
+.item{
+border:1px solid rgba(255,255,255,.12);
+background:rgba(255,255,255,.04);
+border-radius:18px;padding:12px
+}
+.small{font-size:12px;color:var(--mut);line-height:1.45}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.badge{
+display:inline-flex;align-items:center;gap:8px;
+padding:7px 10px;border-radius:999px;
+border:1px solid rgba(245,196,0,.35);
+background:rgba(245,196,0,.12);
+font-weight:950;font-size:12px;color:#fff
+}
+
+.inp{
+width:100%;padding:12px;border-radius:14px;
+border:1px solid rgba(255,255,255,.12);
+background:rgba(255,255,255,.04);
+color:#fff;font-weight:800;outline:none
+}
+.btn{
+padding:12px 14px;border-radius:14px;border:0;
+font-weight:950;background:linear-gradient(135deg,#f5c400,#ffd34d);
+color:#1a1400;cursor:pointer
+}
+.btn.sec{
+background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.12)
+}
+.btn:active{transform:scale(.99)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+.hr{height:1px;background:rgba(255,255,255,.10);margin:10px 0}
+.note{font-size:12px;color:rgba(255,255,255,.55)}
+.err{color:#ff5a6a}
+.ok{color:#3ddc84}
+
+.modal{
+position:fixed;inset:0;z-index:95;display:none;
+background:rgba(0,0,0,.60);backdrop-filter:blur(10px);
+align-items:center;justify-content:center;padding:16px
+}
+.mCard{
+width:min(420px,94vw);
+background:rgba(20,20,22,.94);
+border:1px solid rgba(255,255,255,.12);
+border-radius:26px;padding:16px
+}
+.mHead{display:flex;align-items:center;justify-content:space-between}
+.mHead b{font-size:15px;font-weight:950}
+.xbtn{border:0;background:transparent;color:#fff;font-size:22px;line-height:1;cursor:pointer}
 </style>
 </head>
+
 <body>
 
-<div class="top">
-  <div class="title">Admin</div>
-  <button class="btn2" id="logoutBtn">Çıkış</button>
+<div class="topbar">
+  <div class="brand"><div class="logo"></div><div>SepetTaxi Admin</div></div>
+  <button class="iconbtn" id="logoutBtn" title="Çıkış">⎋</button>
 </div>
 
 <div class="wrap">
-  <div class="panel" id="loginPanel">
-    <div class="card">
-      <div><b>Admin PIN</b></div>
-      <input class="inp" id="pin" placeholder="PIN" inputmode="numeric" />
-      <button class="btn" id="loginBtn">Giriş</button>
-      <div class="mut" id="loginHint">PIN, Apps Script properties içindeki ADMIN_PIN ile eşleşmelidir.</div>
-    </div>
-  </div>
+  <div class="container">
 
-  <div class="panel" id="mainPanel" style="display:none">
-    <div class="tabs">
-      <div class="tab active" id="tJobs">Jobs</div>
-      <div class="tab" id="tDrivers">Drivers</div>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <button class="btn2" id="refreshBtn" style="flex:1">Yenile</button>
-      <button class="btn2" id="clearBtn" style="flex:1">Token Sil</button>
-    </div>
-  </div>
+    <!-- LOGIN CARD -->
+    <div class="card" id="loginCard" style="display:none">
+      <div class="h">
+        <b>Admin Giriş</b>
+        <span class="badge">PIN zorunlu</span>
+      </div>
 
-  <div class="list" id="list"></div>
+      <div class="hr"></div>
+
+      <div class="small">PIN’i gir. Doğrulanmadan panel açılmaz.</div>
+
+      <div style="margin-top:10px">
+        <input class="inp" id="pinInp" placeholder="PIN" inputmode="numeric" autocomplete="one-time-code">
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="loginBtn">Giriş Yap</button>
+        <button class="btn sec" id="goIndexBtn">Ana Sayfa</button>
+      </div>
+
+      <div class="note" id="loginMsg" style="margin-top:10px"></div>
+    </div>
+
+    <!-- PANEL -->
+    <div class="card" id="panelCard" style="display:none">
+      <div class="h">
+        <b>Kontrol Paneli</b>
+        <div class="row" style="margin:0">
+          <span class="badge" id="tokenBadge">Yetkili</span>
+          <button class="btn sec" id="refreshBtn">Yenile</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" id="tabJobs">Jobs</div>
+        <div class="tab" id="tabDrivers">Drivers</div>
+      </div>
+
+      <div class="grid">
+        <div class="card" style="margin:0">
+          <b id="listTitle">Jobs</b>
+          <div class="note" id="listHint" style="margin-top:6px">Son işler listelenir. Status güncelleyebilirsin.</div>
+          <div id="listBox" style="margin-top:12px"></div>
+        </div>
+
+        <div class="card" style="margin:0">
+          <b>Hızlı İşlemler</b>
+          <div class="note" style="margin-top:6px">Basit ve kilitli admin aksiyonları.</div>
+
+          <div class="hr"></div>
+
+          <div class="small">Job ID ile status güncelle</div>
+          <div class="row" style="margin-top:8px">
+            <input class="inp" id="jobIdInp" placeholder="job_id" style="flex:1;min-width:220px">
+            <select class="inp" id="jobStatusSel" style="flex:1;min-width:180px">
+              <option value="searching">searching</option>
+              <option value="assigned">assigned</option>
+              <option value="onroute">onroute</option>
+              <option value="completed">completed</option>
+              <option value="cancelled">cancelled</option>
+            </select>
+            <button class="btn" id="jobStatusBtn">Uygula</button>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="small">Driver ID ile onayla (aktif et)</div>
+          <div class="row" style="margin-top:8px">
+            <input class="inp" id="driverIdInp" placeholder="driver_id" style="flex:1;min-width:220px">
+            <button class="btn" id="approveBtn">Onayla</button>
+          </div>
+
+          <div class="note" id="actMsg" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
-const API = "https://sepettaxi-api.vercel.app/api";
-const $ = id => document.getElementById(id);
+/* ================= CONFIG ================= */
+const API = "https://script.google.com/macros/s/AKfycbxxvr6OPG5R-emW8WlquzZ1psFEn6Lbvt4dDHpdN8XWO494N7uCv3s4DhLreIhO59b-/exec";
+const TOKEN_KEY = "sepettaxi_admin_token";
 
-function saveAdminToken(t){ localStorage.setItem("sepettaxi_admin_token", t); }
-function loadAdminToken(){ return localStorage.getItem("sepettaxi_admin_token") || ""; }
-function clearAdminToken(){ localStorage.removeItem("sepettaxi_admin_token"); }
+/* ================= HELPERS ================= */
+const $ = i => document.getElementById(i);
 
-async function apiPost(payload){
-  const r = await fetch(API, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
-  return await r.json();
-}
-async function apiGet(params){
-  const u = new URL(API);
-  Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
-  const r = await fetch(u.toString());
-  return await r.json();
+function postForm(d){
+  return fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&")
+  }).then(r=>r.json());
 }
 
-let tab = "jobs";
-
-function setUI(logged){
-  $("loginPanel").style.display = logged ? "none":"block";
-  $("mainPanel").style.display = logged ? "block":"none";
-  $("list").innerHTML = "";
-}
-
-function setTab(name){
-  tab = name;
-  $("tJobs").classList.toggle("active", tab==="jobs");
-  $("tDrivers").classList.toggle("active", tab==="drivers");
-  refresh();
-}
-
-$("tJobs").onclick = ()=> setTab("jobs");
-$("tDrivers").onclick = ()=> setTab("drivers");
-
-function renderJobs(items){
-  const el = $("list");
-  el.innerHTML = "";
-  items.slice(0,200).forEach(j=>{
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <div><b>${(j.service_type||"").toUpperCase()} • ${j.job_id}</b></div>
-      <div class="mut">
-        <div><b>Durum:</b> ${j.status}</div>
-        <div><b>Driver:</b> ${j.driver_id||"-"}</div>
-        <div><b>Nereden:</b> ${j.from_address||"-"}</div>
-        <div><b>Nereye:</b> ${j.to_address||"-"}</div>
-        <div><b>Mesafe:</b> ${Number(j.distance_km||0).toFixed(2)} km • <b>Ücret:</b> ${(j.final_price||j.price||"-")} ₺</div>
-        <div><b>Oluşturma:</b> ${j.created_at||"-"}</div>
-      </div>
-    `;
-    el.appendChild(div);
-  });
-}
-
-function renderDrivers(items){
-  const el = $("list");
-  el.innerHTML = "";
-  items.slice(0,200).forEach(d=>{
-    const div = document.createElement("div");
-    div.className = "item";
-    const active = String(d.active).toUpperCase()==="TRUE";
-    div.innerHTML = `
-      <div><b>${d.driver_id} • ${String(d.vehicle_type||"").toUpperCase()}</b></div>
-      <div class="mut">
-        <div><b>Ad:</b> ${d.first||""} ${d.last||""}</div>
-        <div><b>Tel:</b> ${d.phone||"-"} • <b>Plaka:</b> ${d.plate||"-"}</div>
-        <div><b>Aktif:</b> ${active ? "TRUE":"FALSE"} • <b>Radius:</b> ${d.radius_km||5} km</div>
-        <div><b>Son konum:</b> ${d.last_lat||"-"}, ${d.last_lng||"-"}</div>
-        <div><b>Son seen:</b> ${d.last_seen_at||"-"}</div>
-      </div>
-      <div class="row">
-        <button class="btn2" data-act="on" style="flex:1">Aktif</button>
-        <button class="btn2" data-act="off" style="flex:1">Pasif</button>
-      </div>
-    `;
-    div.querySelector('[data-act="on"]').onclick = ()=> setActive(d.driver_id, true);
-    div.querySelector('[data-act="off"]').onclick = ()=> setActive(d.driver_id, false);
-    el.appendChild(div);
-  });
-}
-
-async function setActive(driver_id, active){
-  const token = loadAdminToken();
-  const res = await apiPost({ action:"adminSetDriverActive", token, driver_id, active: active ? "TRUE":"FALSE" });
-  if(!res.ok) return alert("İşlem başarısız: " + (res.error||""));
-  refresh();
-}
-
-async function refresh(){
-  const token = loadAdminToken();
-  if(!token) return;
-  if(tab==="jobs"){
-    const res = await apiGet({ action:"adminJobs", token });
-    if(!res.ok) return alert("Yetkisiz: " + (res.error||""));
-    renderJobs(res.jobs||[]);
+function setTab(which){
+  $("tabJobs").classList.toggle("active", which==="jobs");
+  $("tabDrivers").classList.toggle("active", which==="drivers");
+  if(which==="jobs"){
+    $("listTitle").textContent="Jobs";
+    $("listHint").textContent="Son işler listelenir. Status güncelleyebilirsin.";
+    loadJobs();
   }else{
-    const res = await apiGet({ action:"adminDrivers", token });
-    if(!res.ok) return alert("Yetkisiz: " + (res.error||""));
-    renderDrivers(res.drivers||[]);
+    $("listTitle").textContent="Drivers";
+    $("listHint").textContent="Sürücü adayları / sürücüler listelenir. Onaylayabilirsin.";
+    loadDrivers();
   }
 }
 
-$("loginBtn").onclick = async ()=>{
-  const pin = $("pin").value.trim();
-  const res = await apiPost({ action:"adminLogin", pin });
-  if(!res.ok) return alert("Giriş yok: " + (res.error||""));
-  saveAdminToken(res.token);
-  setUI(true);
-  refresh();
+function token(){
+  return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+function showLogin(msg="", kind=""){
+  $("panelCard").style.display="none";
+  $("loginCard").style.display="block";
+  $("loginMsg").textContent = msg || "";
+  $("loginMsg").className = "note " + (kind==="err" ? "err" : kind==="ok" ? "ok" : "");
+}
+
+function showPanel(){
+  $("loginCard").style.display="none";
+  $("panelCard").style.display="block";
+}
+
+/* ================= AUTH (PIN) ================= */
+async function login(){
+  const pin = $("pinInp").value.trim();
+  if(!pin){ showLogin("PIN gir", "err"); return; }
+
+  $("loginBtn").disabled=true;
+  showLogin("Doğrulanıyor…", "");
+
+  try{
+    const r = await postForm({ action:"adminLogin", pin });
+    if(!r || !r.ok){
+      localStorage.removeItem(TOKEN_KEY);
+      showLogin(r && r.error ? r.error : "PIN hatalı", "err");
+      $("loginBtn").disabled=false;
+      return;
+    }
+
+    localStorage.setItem(TOKEN_KEY, r.token || "ok");
+    showPanel();
+    setTab("jobs");
+  }catch(e){
+    showLogin("Bağlantı hatası", "err");
+  }finally{
+    $("loginBtn").disabled=false;
+  }
+}
+
+/* ================= LIST RENDER ================= */
+function renderJobs(list){
+  const box = $("listBox");
+  box.innerHTML = "";
+  if(!list.length){
+    box.innerHTML = `<div class="note">Job yok</div>`;
+    return;
+  }
+  list.forEach(j=>{
+    const d = document.createElement("div");
+    d.className = "item";
+    d.innerHTML = `
+      <div class="row" style="justify-content:space-between">
+        <b>${j.job_id || ""}</b>
+        <span class="badge">${j.status || "—"}</span>
+      </div>
+      <div class="small" style="margin-top:6px">${(j.service_type==="courier"?"Kurye":"Taksi")} · ${j.price||"—"} ₺ · ${(j.distance_km||"—")} km</div>
+      <div class="small" style="margin-top:6px">${j.from_address||""} → ${j.to_address||""}</div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sec" data-act="copy" data-id="${j.job_id||""}">Job ID al</button>
+        <button class="btn" data-act="setAssigned" data-id="${j.job_id||""}">assigned</button>
+        <button class="btn" data-act="setOnroute" data-id="${j.job_id||""}">onroute</button>
+        <button class="btn" data-act="setCompleted" data-id="${j.job_id||""}">completed</button>
+      </div>
+    `;
+    d.querySelectorAll("button").forEach(b=>{
+      b.onclick = ()=> handleJobAction(b.getAttribute("data-act"), b.getAttribute("data-id"));
+    });
+    box.appendChild(d);
+  });
+}
+
+function renderDrivers(list){
+  const box = $("listBox");
+  box.innerHTML = "";
+  if(!list.length){
+    box.innerHTML = `<div class="note">Driver yok</div>`;
+    return;
+  }
+  list.forEach(dr=>{
+    const d = document.createElement("div");
+    d.className = "item";
+    d.innerHTML = `
+      <div class="row" style="justify-content:space-between">
+        <b>${dr.driver_id || ""}</b>
+        <span class="badge">${(dr.active==="true"||dr.active===true) ? "active" : "pending"}</span>
+      </div>
+      <div class="small" style="margin-top:6px">${(dr.first||"")} ${(dr.last||"")} · ${dr.phone||""}</div>
+      <div class="small" style="margin-top:6px">Araç: ${dr.vehicle||"—"} · Şehir: ${dr.city||"—"} · Deneyim: ${dr.experience||"—"}</div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sec" data-act="copy" data-id="${dr.driver_id||""}">Driver ID al</button>
+        <button class="btn" data-act="approve" data-id="${dr.driver_id||""}">Onayla</button>
+      </div>
+    `;
+    d.querySelectorAll("button").forEach(b=>{
+      b.onclick = ()=> handleDriverAction(b.getAttribute("data-act"), b.getAttribute("data-id"));
+    });
+    box.appendChild(d);
+  });
+}
+
+/* ================= DATA LOAD ================= */
+async function loadJobs(){
+  const t = token();
+  if(!t){ showLogin("Oturum yok", "err"); return; }
+  $("listBox").innerHTML = `<div class="note">Yükleniyor…</div>`;
+  try{
+    const r = await postForm({ action:"adminListJobs", token:t });
+    if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Yetkisiz");
+    renderJobs(r.jobs || []);
+  }catch(e){
+    $("listBox").innerHTML = `<div class="note err">${(e && e.message) ? e.message : "Hata"}</div>`;
+  }
+}
+
+async function loadDrivers(){
+  const t = token();
+  if(!t){ showLogin("Oturum yok", "err"); return; }
+  $("listBox").innerHTML = `<div class="note">Yükleniyor…</div>`;
+  try{
+    const r = await postForm({ action:"adminListDrivers", token:t });
+    if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Yetkisiz");
+    renderDrivers(r.drivers || []);
+  }catch(e){
+    $("listBox").innerHTML = `<div class="note err">${(e && e.message) ? e.message : "Hata"}</div>`;
+  }
+}
+
+/* ================= ACTIONS ================= */
+async function handleJobAction(act, jobId){
+  if(!jobId) return;
+  if(act==="copy"){
+    navigator.clipboard?.writeText(jobId);
+    $("actMsg").textContent = "Kopyalandı: " + jobId;
+    $("actMsg").className = "note ok";
+    return;
+  }
+  const map = { setAssigned:"assigned", setOnroute:"onroute", setCompleted:"completed" };
+  const st = map[act];
+  if(!st) return;
+
+  $("jobIdInp").value = jobId;
+  $("jobStatusSel").value = st;
+  await setJobStatus(jobId, st);
+}
+
+async function handleDriverAction(act, driverId){
+  if(!driverId) return;
+  if(act==="copy"){
+    navigator.clipboard?.writeText(driverId);
+    $("actMsg").textContent = "Kopyalandı: " + driverId;
+    $("actMsg").className = "note ok";
+    return;
+  }
+  if(act==="approve"){
+    $("driverIdInp").value = driverId;
+    await approveDriver(driverId);
+  }
+}
+
+async function setJobStatus(jobId, status){
+  const t = token();
+  if(!t) return;
+
+  $("actMsg").textContent = "Uygulanıyor…";
+  $("actMsg").className = "note";
+
+  try{
+    const r = await postForm({
+      action:"adminUpdateJobStatus",
+      token:t,
+      job_id:jobId,
+      status
+    });
+    if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Hata");
+    $("actMsg").textContent = `Job güncellendi: ${jobId} → ${status}`;
+    $("actMsg").className = "note ok";
+    // aktif tab’a göre yenile
+    if($("tabJobs").classList.contains("active")) loadJobs();
+  }catch(e){
+    $("actMsg").textContent = (e && e.message) ? e.message : "Hata";
+    $("actMsg").className = "note err";
+  }
+}
+
+async function approveDriver(driverId){
+  const t = token();
+  if(!t) return;
+
+  $("actMsg").textContent = "Onaylanıyor…";
+  $("actMsg").className = "note";
+
+  try{
+    const r = await postForm({
+      action:"adminApproveDriver",
+      token:t,
+      driver_id:driverId
+    });
+    if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Hata");
+    $("actMsg").textContent = `Driver onaylandı: ${driverId}`;
+    $("actMsg").className = "note ok";
+    if($("tabDrivers").classList.contains("active")) loadDrivers();
+  }catch(e){
+    $("actMsg").textContent = (e && e.message) ? e.message : "Hata";
+    $("actMsg").className = "note err";
+  }
+}
+
+/* ================= EVENTS ================= */
+$("loginBtn").onclick = login;
+$("goIndexBtn").onclick = ()=> location.replace("index.html");
+$("logoutBtn").onclick = ()=>{
+  localStorage.removeItem(TOKEN_KEY);
+  showLogin("Çıkış yapıldı", "ok");
+};
+$("refreshBtn").onclick = ()=>{
+  if($("tabJobs").classList.contains("active")) loadJobs();
+  else loadDrivers();
+};
+$("tabJobs").onclick = ()=> setTab("jobs");
+$("tabDrivers").onclick = ()=> setTab("drivers");
+
+$("jobStatusBtn").onclick = ()=>{
+  const id = $("jobIdInp").value.trim();
+  const st = $("jobStatusSel").value;
+  if(!id) return;
+  setJobStatus(id, st);
+};
+$("approveBtn").onclick = ()=>{
+  const id = $("driverIdInp").value.trim();
+  if(!id) return;
+  approveDriver(id);
 };
 
-$("refreshBtn").onclick = refresh;
-$("clearBtn").onclick = ()=>{ clearAdminToken(); setUI(false); };
-$("logoutBtn").onclick = ()=>{ clearAdminToken(); setUI(false); };
-
-(function boot(){
-  const t = loadAdminToken();
-  if(t){ setUI(true); refresh(); }
-  else setUI(false);
-})();
+/* ================= BOOT ================= */
+if(token()){
+  showPanel();
+  setTab("jobs");
+}else{
+  showLogin("", "");
+}
 </script>
+
 </body>
 </html>
