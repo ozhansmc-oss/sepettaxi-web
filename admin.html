@@ -14,20 +14,38 @@ html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-
 .brand{font-weight:1000}
 .main{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
 .card{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:12px}
-.tabs{display:flex;gap:8px}
-.tab{flex:1;padding:10px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03);text-align:center;font-weight:1000;cursor:pointer}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{flex:1;min-width:130px;padding:10px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03);text-align:center;font-weight:1000;cursor:pointer;user-select:none}
 .tab.active{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.10)}
 .input,select{width:100%;padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;outline:none}
 .btn{width:100%;padding:12px;border-radius:16px;border:0;font-weight:1000;background:linear-gradient(135deg,#f5c400,#ffd34d);color:#1a1400;cursor:pointer}
 .btn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line);color:#fff}
+.btn.danger{background:rgba(255,80,80,.18);border:1px solid rgba(255,80,80,.45);color:#fff}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .small{font-size:12px;color:var(--mut)}
 .list{display:flex;flex-direction:column;gap:10px}
 .item{padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
-.row{display:flex;gap:10px}
+.row{display:flex;gap:10px;align-items:center}
 .hr{height:1px;background:var(--line);margin:10px 0}
 .badge{padding:6px 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;font-weight:1000;color:#fff}
 .badge.y{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.10)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:900px){ .grid2{grid-template-columns:1fr} }
+.dropzone{
+  border:1px dashed rgba(245,196,0,.55);
+  background:rgba(245,196,0,.06);
+  border-radius:16px;
+  padding:10px;
+}
+.dragJob{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.03);
+  border-radius:14px;
+  padding:10px;
+  cursor:grab;
+}
+.dragJob:active{cursor:grabbing}
+.kpi{font-size:22px;font-weight:1000;margin-top:6px}
 </style>
 </head>
 <body>
@@ -36,6 +54,13 @@ html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-
 const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
 function postForm(data){
   return fetch(API,{method:"POST",body:new URLSearchParams(data)}).then(r=>r.json());
+}
+function money(n){
+  const x = Number(n||0);
+  return x.toFixed(2).replace(".00","")+" ₺";
+}
+function esc(s){
+  return String(s??"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
 }
 </script>
 
@@ -55,10 +80,11 @@ function viewLogin(){
   main.innerHTML=`
     <div class="card">
       <div style="font-weight:1000">Admin PIN</div>
-      <input class="input" id="pin" placeholder="PIN" type="password" style="margin-top:10px">
-      <button class="btn" id="btn" style="margin-top:10px">Giriş</button>
+      <div style="margin-top:10px"><input class="input" id="pin" placeholder="PIN" type="password"></div>
+      <div style="margin-top:10px"><button class="btn" id="btn">Giriş</button></div>
       <div class="small" id="hint" style="margin-top:10px"></div>
-    </div>`;
+    </div>
+  `;
   btn.onclick=async ()=>{
     hint.textContent="Kontrol…";
     const r=await postForm({action:"adminLogin",pin:pin.value});
@@ -75,59 +101,330 @@ function viewHome(){
     <div class="card">
       <div class="tabs">
         <div class="tab active" id="tabCand">Başvurular</div>
+        <div class="tab" id="tabJobs">İşler</div>
+        <div class="tab" id="tabPerf">Performans</div>
+        <div class="tab" id="tabDash">Dashboard</div>
       </div>
       <div class="hr"></div>
       <div id="panel"></div>
     </div>
     <div class="card">
       <button class="btn secondary" id="logout">Çıkış</button>
-    </div>`;
-  logout.onclick=()=>{localStorage.clear();location.reload();}
-  tabCand.onclick=renderCandidates;
-  renderCandidates();
+    </div>
+  `;
+  logout.onclick=()=>{
+    localStorage.removeItem("sepettaxi_admin_token");
+    token=""; viewLogin();
+  };
+  tabCand.onclick=()=>setTab("cand");
+  tabJobs.onclick=()=>setTab("jobs");
+  tabPerf.onclick=()=>setTab("perf");
+  tabDash.onclick=()=>setTab("dash");
+  setTab("cand");
 }
 
+function setTab(t){
+  ["tabCand","tabJobs","tabPerf","tabDash"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  if(t==="cand"){ tabCand.classList.add("active"); renderCandidates(); }
+  if(t==="jobs"){ tabJobs.classList.add("active"); renderJobs(); }
+  if(t==="perf"){ tabPerf.classList.add("active"); renderPerf(); }
+  if(t==="dash"){ tabDash.classList.add("active"); renderDash(); }
+}
+
+/* ================= CANDIDATES ================= */
 async function renderCandidates(){
   panel.innerHTML=`<div class="small">Yükleniyor…</div>`;
   const r=await postForm({action:"adminListCandidates",token});
-  if(!r.ok){ panel.innerHTML=`<div class="small">${r.message}</div>`; return; }
+  if(!r.ok){ panel.innerHTML=`<div class="small">Hata: ${esc(r.message)}</div>`; return; }
+  const c=r.candidates||[];
+  if(!c.length){ panel.innerHTML=`<div class="small">Bekleyen başvuru yok.</div>`; return; }
 
-  panel.innerHTML = r.candidates.map(d=>`
+  panel.innerHTML=`
+    <div class="small">Bekleyen: ${c.length}</div>
+    <div class="list" id="lst" style="margin-top:10px"></div>
+  `;
+  lst.innerHTML=c.map(d=>`
     <div class="item">
-      <b>${d.first||""} ${d.last||""}</b>
-      <div class="small">${d.driver_id} · ${d.phone||""}</div>
-
-      <select class="input" id="role_${d.driver_id}" style="margin-top:10px">
-        <option value="">Rol seç</option>
-        <option value="taxi">Taksi</option>
-        <option value="courier">Kurye</option>
-      </select>
-
-      <button class="btn" style="margin-top:10px"
-        onclick="approve('${d.driver_id}')">Onayla</button>
+      <div style="font-weight:1000">${esc(d.first||"")} ${esc(d.last||"")}</div>
+      <div class="small">${esc(d.driver_id)} · ${esc(d.phone||"")}</div>
+      <div class="row" style="margin-top:10px">
+        <select class="input" id="veh_${esc(d.driver_id)}">
+          <option value="">Rol seç</option>
+          <option value="taxi">Taksi</option>
+          <option value="courier">Kurye</option>
+        </select>
+        <button class="btn danger" onclick="reject('${esc(d.driver_id)}')">Reddet</button>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn" onclick="approve('${esc(d.driver_id)}')">Onayla</button>
+      </div>
+      <div class="small" style="margin-top:10px">Not: Rol seçilmeden onaylanamaz.</div>
     </div>
   `).join("");
 }
 
 async function approve(driverId){
-  const sel=document.getElementById("role_"+driverId);
-  if(!sel.value){ alert("Rol seç"); return; }
+  const sel = document.getElementById("veh_"+driverId);
+  const vehicle = sel ? sel.value : "";
+  if(!vehicle){ alert("Rol seç"); return; }
 
-  const r=await postForm({
-    action:"adminApproveDriver",
-    token,
-    driver_id:driverId,
-    vehicle:sel.value
-  });
-
-  if(!r.ok){ alert(r.message); return; }
+  const r=await postForm({action:"adminApproveDriver",token,driver_id:driverId,vehicle});
+  if(!r.ok){ alert("Onaylanamadı: "+r.message); return; }
   renderCandidates();
 }
 
+async function reject(driverId){
+  const ok = confirm("Bu sürücüyü reddetmek istiyor musun?");
+  if(!ok) return;
+  const r=await postForm({action:"adminRejectDriver",token,driver_id:driverId});
+  if(!r.ok){ alert("Reddedilemedi: "+r.message); return; }
+  renderCandidates();
+}
+
+/* ================= JOBS + DRAG/DROP ASSIGN ================= */
+let _jobsCache = [];
+let _driversCache = [];
+
+async function renderJobs(){
+  panel.innerHTML=`<div class="small">Yükleniyor…</div>`;
+  const [jobsRes, drvRes] = await Promise.all([
+    postForm({action:"adminListJobs",token}),
+    postForm({action:"adminListDrivers",token})
+  ]);
+  if(!jobsRes.ok){ panel.innerHTML=`<div class="small">Hata: ${esc(jobsRes.message)}</div>`; return; }
+  if(!drvRes.ok){ panel.innerHTML=`<div class="small">Hata: ${esc(drvRes.message)}</div>`; return; }
+
+  const jobs=(jobsRes.jobs||[]);
+  const drivers=(drvRes.drivers||[]).filter(d=>String(d.active).toLowerCase()==="true");
+
+  _jobsCache = jobs;
+  _driversCache = drivers;
+
+  const pool = jobs.filter(j=>String(j.status||"")==="searching" && !String(j.driver_id||""));
+  panel.innerHTML=`
+    <div class="small">Havuz (searching): ${pool.length} · Aktif sürücü: ${drivers.length}</div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="card">
+        <div style="font-weight:1000">İş Havuzu (Sürükle)</div>
+        <div class="small" style="margin-top:6px">Bir işi sürücü kartının üstüne bırak.</div>
+        <div class="list" id="jobPool" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <div style="font-weight:1000">Sürücüler (Bırak)</div>
+        <div class="small" style="margin-top:6px">Drop alanı: her sürücü kartı</div>
+        <div class="list" id="driverPool" style="margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:1000">Son 50 İş (görüntüleme)</div>
+      <div class="list" id="jobsList" style="margin-top:10px"></div>
+    </div>
+  `;
+
+  jobPool.innerHTML = pool.slice().reverse().map(j=>{
+    const st = String(j.status||"");
+    const srv = String(j.service_type||"").toLowerCase();
+    return `
+      <div class="dragJob" draggable="true"
+           data-job="${esc(j.job_id)}"
+           data-srv="${esc(srv)}"
+           ondragstart="onDragJob(event)">
+        <div style="font-weight:1000">${esc(j.job_id)}</div>
+        <div class="small">${(srv||"").toUpperCase()} · ${money(j.price||0)} · <span class="badge y">${esc(st)}</span></div>
+        <div class="small" style="margin-top:6px">${esc(j.from_address||"")}</div>
+      </div>
+    `;
+  }).join("");
+
+  driverPool.innerHTML = drivers.map(d=>{
+    const role = String(d.vehicle||"").toLowerCase();
+    const name = (d.first||"")+" "+(d.last||"");
+    return `
+      <div class="item dropzone"
+           data-driver="${esc(d.driver_id)}"
+           data-role="${esc(role)}"
+           ondragover="onDragOver(event)"
+           ondrop="onDropAssign(event)">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div style="font-weight:1000">${esc(d.driver_id)} <span class="badge y">${esc(role||"—")}</span></div>
+            <div class="small">${esc(name.trim())} · ${esc(d.phone||"")}</div>
+          </div>
+          <div class="badge">${String(d.lat||"")&&String(d.lng||"")?"konum var":"konum yok"}</div>
+        </div>
+        <div class="small" style="margin-top:8px">Bu sürücünün üstüne işi bırak → manuel atama</div>
+      </div>
+    `;
+  }).join("");
+
+  // Son işler listesi (okuma + dropdown fallback)
+  jobsList.innerHTML = jobs.slice().reverse().slice(0,50).map(j=>{
+    const st=(j.status||"");
+    const drv=(j.driver_id||"");
+    const srv=(String(j.service_type||"").toLowerCase());
+
+    const options = drivers
+      .filter(d=>{
+        const r=(String(d.vehicle||"").toLowerCase());
+        if(!srv) return true;
+        if(!r) return true;
+        return r===srv;
+      })
+      .map(d=>`<option value="${esc(d.driver_id)}">${esc(d.driver_id)} · ${(esc(d.first||"")+" "+esc(d.last||"")).trim()}</option>`)
+      .join("");
+
+    return `
+      <div class="item">
+        <div style="font-weight:1000">${esc(j.job_id)}</div>
+        <div class="small">${(srv||"").toUpperCase()} · ${money(j.price||0)}</div>
+        <div class="small">Durum: <span class="badge y">${esc(st)}</span> · Sürücü: ${esc(drv||"—")}</div>
+
+        <div class="hr"></div>
+
+        <div class="small">Manuel atama (dropdown)</div>
+        <div class="row" style="margin-top:8px">
+          <select class="input" id="as_${esc(j.job_id)}">
+            <option value="">Sürücü seç</option>
+            ${options}
+          </select>
+          <button class="btn secondary" onclick="assign('${esc(j.job_id)}')">Ata</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function onDragJob(ev){
+  const el = ev.currentTarget;
+  ev.dataTransfer.setData("text/job_id", el.getAttribute("data-job"));
+  ev.dataTransfer.setData("text/service", el.getAttribute("data-srv")||"");
+}
+function onDragOver(ev){ ev.preventDefault(); }
+
+async function onDropAssign(ev){
+  ev.preventDefault();
+  const jobId = ev.dataTransfer.getData("text/job_id");
+  const jobSrv= (ev.dataTransfer.getData("text/service")||"").toLowerCase();
+
+  const box = ev.currentTarget;
+  const driverId = box.getAttribute("data-driver");
+  const driverRole = (box.getAttribute("data-role")||"").toLowerCase();
+
+  if(!jobId || !driverId){ alert("Drag/Drop veri hatası"); return; }
+  if(jobSrv && driverRole && jobSrv !== driverRole){
+    const ok = confirm(`Rol uyumsuz: İş=${jobSrv.toUpperCase()} / Sürücü=${driverRole.toUpperCase()}. Yine de ata?`);
+    if(!ok) return;
+  }
+
+  const r = await postForm({action:"adminAssignJob",token,job_id:jobId,driver_id:driverId});
+  if(!r.ok){ alert("Atanamadı: "+r.message); return; }
+
+  alert("Atandı: "+jobId+" → "+driverId);
+  renderJobs();
+}
+
+async function assign(jobId){
+  const sel=document.getElementById("as_"+jobId);
+  const driverId = sel ? sel.value : "";
+  if(!driverId){ alert("Sürücü seç"); return; }
+  const r=await postForm({action:"adminAssignJob",token,job_id:jobId,driver_id:driverId});
+  if(!r.ok){ alert("Atanamadı: "+r.message); return; }
+  renderJobs();
+}
+
+/* ================= PERFORMANCE / COMMISSION ================= */
+async function renderPerf(){
+  panel.innerHTML=`<div class="small">Yükleniyor…</div>`;
+  const r = await postForm({action:"adminDriverEarnings",token});
+  if(!r.ok){ panel.innerHTML=`<div class="small">Hata: ${esc(r.message)}</div>`; return; }
+  const list = r.drivers||[];
+  if(!list.length){ panel.innerHTML=`<div class="small">Henüz tamamlanan iş yok.</div>`; return; }
+
+  panel.innerHTML=`
+    <div class="small">Sürücü Performansı (tamamlanan işlerden)</div>
+    <div class="list" id="perfList" style="margin-top:10px"></div>
+  `;
+  perfList.innerHTML = list.map(d=>`
+    <div class="item">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <div style="font-weight:1000">${esc(d.driver_id)} <span class="badge y">${esc(d.driver_name||"")}</span></div>
+          <div class="small">Tamamlanan iş: ${Number(d.jobs_completed||0)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="small">Ciro</div>
+          <div style="font-weight:1000">${money(d.revenue||0)}</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <div class="small">Komisyon</div>
+          <div style="font-weight:1000">${money(d.commission||0)}</div>
+        </div>
+        <div>
+          <div class="small">Sürücü Net</div>
+          <div style="font-weight:1000">${money(d.net||0)}</div>
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ================= DASHBOARD ================= */
+async function renderDash(){
+  panel.innerHTML=`<div class="small">Yükleniyor…</div>`;
+  const r=await postForm({action:"adminStats",token});
+  if(!r.ok){ panel.innerHTML=`<div class="small">Hata: ${esc(r.message)}</div>`; return; }
+  const s=r.stats||{};
+  panel.innerHTML=`
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div class="card" style="flex:1;min-width:180px">
+        <div class="small">Searching</div>
+        <div class="kpi">${Number(s.searching||0)}</div>
+      </div>
+      <div class="card" style="flex:1;min-width:180px">
+        <div class="small">Assigned</div>
+        <div class="kpi">${Number(s.assigned||0)}</div>
+      </div>
+      <div class="card" style="flex:1;min-width:180px">
+        <div class="small">OnRoad</div>
+        <div class="kpi">${Number(s.onroad||0)}</div>
+      </div>
+      <div class="card" style="flex:1;min-width:180px">
+        <div class="small">Completed</div>
+        <div class="kpi">${Number(s.completed||0)}</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div class="card" style="flex:1;min-width:220px">
+        <div class="small">Toplam Ciro</div>
+        <div class="kpi">${money(s.total_revenue||0)}</div>
+      </div>
+      <div class="card" style="flex:1;min-width:220px">
+        <div class="small">Toplam Komisyon</div>
+        <div class="kpi">${money(s.total_commission||0)}</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="small">Not: Ciro/komisyon yalnızca <b>completed</b> işler üzerinden hesaplanır.</div>
+  `;
+}
+
+/* BOOT */
 (async function(){
   if(!token){ viewLogin(); return; }
-  const t=await postForm({action:"adminStats",token});
-  if(!t.ok){ localStorage.clear(); viewLogin(); return; }
+  const test = await postForm({action:"adminStats",token});
+  if(!test.ok){
+    token=""; localStorage.removeItem("sepettaxi_admin_token");
+    viewLogin(); return;
+  }
   viewHome();
 })();
 </script>
