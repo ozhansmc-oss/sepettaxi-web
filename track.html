@@ -130,9 +130,12 @@ async function pollJob(){
       driverMarker = L.marker([j.driver_lat,j.driver_lng]).addTo(map);
     }else{
       driverMarker.setLatLng([j.driver_lat,j.driver_lng]);
-    }
+     map.panTo([j.driver_lat, j.driver_lng], {
+      animate: true,
+      duration: 0.6
+    });
   }
-
+}
   if(j.driver_lat && j.driver_lng && j.pickup_lat && j.pickup_lng){
     const km = haversineKm(j.driver_lat,j.driver_lng,j.pickup_lat,j.pickup_lng);
     if(km!==null) document.getElementById("distTxt").textContent = km.toFixed(2)+" km";
