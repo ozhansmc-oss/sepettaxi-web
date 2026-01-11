@@ -5,102 +5,148 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>SepetTaxi – Sürücü</title>
 <meta name="theme-color" content="#f5c400">
-
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto}
-:root{--y:#f5c400}
-
-.wrap{padding:16px;max-width:560px;margin:0 auto}
-h1{font-size:18px;margin:6px 0 12px}
-h2{font-size:15px;margin:0 0 8px}
-
-.card{
-background:#141416;
-border:1px solid rgba(255,255,255,.12);
-border-radius:20px;
-padding:16px;
-margin-bottom:12px
-}
-
-.job{
-border:1px solid rgba(255,255,255,.12);
-border-radius:16px;
-padding:12px;
-margin-bottom:10px
-}
-.job b{display:block;margin-bottom:4px}
-.small{font-size:12px;color:rgba(255,255,255,.6)}
-
-.btn{
-width:100%;padding:12px;border-radius:14px;
-border:0;font-weight:900;
-background:linear-gradient(135deg,#f5c400,#ffd34d);
-color:#1a1400;margin-top:8px
-}
-.btn.sec{
-background:#222;color:#fff;border:1px solid rgba(255,255,255,.15)
-}
-.badge{
-display:inline-block;padding:6px 10px;border-radius:999px;
-font-size:11px;font-weight:900;
-background:rgba(245,196,0,.15);border:1px solid rgba(245,196,0,.35)
-}
+html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;overflow:hidden}
+:root{--y:#f5c400;--card:#141416;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.65)}
+.wrap{height:100%;display:flex;flex-direction:column}
+.top{padding:14px 14px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.brand{font-weight:1000}
+.pill{padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;font-weight:900;font-size:12px}
+.main{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:12px}
+.h{font-size:12px;color:var(--mut);font-weight:900}
+.v{font-size:14px;font-weight:1000;margin-top:6px}
+.tabs{display:flex;gap:8px}
+.tab{flex:1;padding:10px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03);text-align:center;font-weight:1000;cursor:pointer}
+.tab.active{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.10)}
+.btn{width:100%;padding:12px;border-radius:16px;border:0;font-weight:1000;background:linear-gradient(135deg,#f5c400,#ffd34d);color:#1a1400;cursor:pointer}
+.btn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line);color:#fff}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.input,select{width:100%;padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;outline:none}
+.row{display:flex;gap:10px}
+.small{font-size:12px;color:var(--mut)}
+.list{display:flex;flex-direction:column;gap:10px}
+.item{padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.itemTop{display:flex;justify-content:space-between;gap:10px}
+.badge{padding:6px 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;font-weight:1000;color:#fff}
+.badge.y{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.10)}
+.hr{height:1px;background:var(--line);margin:10px 0}
 </style>
 </head>
-
 <body>
+<script>
+/* ===== CONFIG ===== */
+const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
+
+/* ===== HELPERS ===== */
+function postForm(data){
+  const body = new URLSearchParams(data);
+  return fetch(API,{method:"POST",body}).then(r=>r.json());
+}
+function money(n){ return (Number(n)||0).toFixed(2).replace(".00","") + " ₺"; }
+</script>
 
 <div class="wrap">
-  <h1>Sürücü Paneli</h1>
-
-  <!-- ACTIVE JOB -->
-  <div class="card" id="activeCard" style="display:none">
-    <h2>Aktif İş</h2>
-    <div id="activeJob">—</div>
-    <button class="btn sec" id="finishBtn">İşi Bitir</button>
+  <div class="top">
+    <div class="brand">SepetTaxi · Sürücü</div>
+    <div class="pill" id="rolePill">—</div>
   </div>
 
-  <!-- JOB LIST -->
-  <div class="card" id="jobsCard">
-    <h2>Uygun İşler</h2>
-    <div id="jobs"></div>
-  </div>
+  <div class="main" id="main"></div>
 </div>
 
 <script>
-/* ================= KİLİTLİ KURAL ================= */
-const DRIVER_ID = localStorage.getItem("sepettaxi_driver");
-if(!DRIVER_ID){
-  window.location.replace("driver-register.html");
-}
-
-/* ================= CONFIG ================= */
-const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
-
-/* ================= STATE ================= */
-let driverId = DRIVER_ID;
-let activeJobId = null;
+/* ===== STATE ===== */
+let driver = null;
+let driverId = localStorage.getItem("sepettaxi_driver_id") || "";
+let role = localStorage.getItem("sepettaxi_driver_role") || "";
 let heartbeatTimer = null;
 
-/* ================= HELPERS ================= */
-const $ = i => document.getElementById(i);
-
-function postForm(d){
-  return fetch(API,{
-    method:"POST",
-    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
-    body:Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&")
-  }).then(r=>r.json());
+function viewLogin(){
+  document.getElementById("rolePill").textContent = "Giriş";
+  main.innerHTML = `
+    <div class="card">
+      <div class="h">Sürücü ID ile giriş</div>
+      <div class="small" style="margin-top:6px">Admin onayı sonrası size verilen <b>DRV_...</b> ID ile giriş yapın.</div>
+      <div style="margin-top:10px">
+        <input class="input" id="drvId" placeholder="Örn: DRV_1700000000000" value="${driverId||""}">
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn" id="btnLogin">Giriş Yap</button>
+      </div>
+      <div class="small" id="loginHint" style="margin-top:10px"></div>
+    </div>
+  `;
+  btnLogin.onclick = async ()=>{
+    const id = drvId.value.trim();
+    loginHint.textContent = "Kontrol ediliyor…";
+    const res = await postForm({action:"driverLogin", driver_id:id});
+    if(!res.ok){
+      loginHint.textContent =
+        res.message==="pending" ? "Başvurunuz onay bekliyor."
+        : res.message==="rejected" ? ("Başvurunuz reddedildi: "+(res.reason||""))
+        : ("Giriş başarısız: "+res.message);
+      return;
+    }
+    driver = res.driver;
+    driverId = driver.driver_id;
+    role = driver.role || "taxi";
+    localStorage.setItem("sepettaxi_driver_id", driverId);
+    localStorage.setItem("sepettaxi_driver_role", role);
+    viewHome();
+  };
 }
 
-/* ================= HEARTBEAT (TEK VE DOĞRU) ================= */
+function viewHome(){
+  document.getElementById("rolePill").textContent = (role==="courier"?"Kurye":"Taksi");
+  main.innerHTML = `
+    <div class="card">
+      <div class="h">Profil</div>
+      <div class="v">${driver.first||""} ${driver.last||""}</div>
+      <div class="small">${driverId} · ${driver.phone||""}</div>
+      <div class="hr"></div>
+      <div class="tabs">
+        <div class="tab active" id="tabPool">İş Havuzu</div>
+        <div class="tab" id="tabActive">Aktif İş</div>
+        <div class="tab" id="tabEarn">Kazanç</div>
+      </div>
+      <div class="hr"></div>
+      <div id="panel"></div>
+    </div>
+    <div class="card">
+      <button class="btn secondary" id="btnLogout">Çıkış</button>
+    </div>
+  `;
+
+  btnLogout.onclick=()=>{
+    stopDriverHeartbeat();
+    localStorage.removeItem("sepettaxi_driver_id");
+    localStorage.removeItem("sepettaxi_driver_role");
+    driver=null; driverId=""; role="";
+    viewLogin();
+  };
+
+  tabPool.onclick = ()=>{ setTab("pool"); };
+  tabActive.onclick = ()=>{ setTab("active"); };
+  tabEarn.onclick = ()=>{ setTab("earn"); };
+
+  setTab("pool");
+}
+
+function setTab(name){
+  ["tabPool","tabActive","tabEarn"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  if(name==="pool"){ tabPool.classList.add("active"); renderPool(); }
+  if(name==="active"){ tabActive.classList.add("active"); renderActive(); }
+  if(name==="earn"){ tabEarn.classList.add("active"); renderEarnings(); }
+}
+
+/* ===== HEARTBEAT (tek ve doğru) ===== */
 function startDriverHeartbeat(){
   if(heartbeatTimer) return;
 
   heartbeatTimer = setInterval(()=>{
     if(!navigator.geolocation) return;
-
     navigator.geolocation.getCurrentPosition(pos=>{
       postForm({
         action:"driverHeartbeat",
@@ -109,160 +155,184 @@ function startDriverHeartbeat(){
         lng:pos.coords.longitude
       }).catch(()=>{});
     });
-
-  }, 3000);
+  }, 6000); // 6 sn (kilitli)
+}
+function stopDriverHeartbeat(){
+  if(heartbeatTimer){
+    clearInterval(heartbeatTimer);
+    heartbeatTimer=null;
+  }
 }
 
-window.addEventListener("beforeunload", ()=>{
-  if(heartbeatTimer) clearInterval(heartbeatTimer);
-});
+/* ===== POOL ===== */
+async function renderPool(){
+  panel.innerHTML = `<div class="small">Yükleniyor…</div>`;
+  const res = await postForm({action:"listAvailableJobs", service_type:role});
+  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
 
-/* ================= JOB LIST ================= */
-async function loadJobs(){
-  if(!driverId) return;
-
-  const r = await postForm({
-    action:"listAvailableJobs",
-    driver_id:driverId
-  });
-
-  renderJobs(r.jobs || []);
-  setTimeout(loadJobs, 7000);
-}
-
-function renderJobs(list){
-  const box = $("jobs");
-  box.innerHTML = "";
-
-  if(!list.length){
-    box.innerHTML = `<div class="small">Uygun iş yok</div>`;
+  const jobs = res.jobs || [];
+  if(!jobs.length){
+    panel.innerHTML = `<div class="small">Şu an havuzda iş yok.</div>`;
     return;
   }
 
-  list.forEach(j=>{
-    const d = document.createElement("div");
-    d.className = "job";
-    d.innerHTML = `
-      <b>${j.service_type==="courier"?"Kurye":"Taksi"} · ${j.price||"—"} ₺</b>
-      <div class="small">${j.from_address||""} → ${j.to_address||""}</div>
-      <button class="btn sec">Kabul Et</button>
-    `;
-    d.querySelector("button").onclick = ()=> acceptJob(j.job_id);
-    box.appendChild(d);
-  });
+  panel.innerHTML = `
+    <div class="small">Havuz: ${jobs.length} iş</div>
+    <div class="list" id="poolList" style="margin-top:10px"></div>
+  `;
+
+  poolList.innerHTML = jobs.map(j=>`
+    <div class="item">
+      <div class="itemTop">
+        <div>
+          <div style="font-weight:1000">${(j.service_type||"").toUpperCase()} · ${money(j.price)}</div>
+          <div class="small">${(j.from_address||"—")}</div>
+          <div class="small">${(j.to_address||"—")}</div>
+        </div>
+        <div class="badge y">${j.status}</div>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn" onclick="accept('${j.job_id}')">İşi Kabul Et</button>
+      </div>
+    </div>
+  `).join("");
 }
 
-/* ================= ACCEPT ================= */
-async function acceptJob(jobId){
-  const r = await postForm({
-    action:"acceptJob",
-    driver_id:driverId,
-    job_id:jobId
+async function accept(jobId){
+  const res = await postForm({action:"acceptJob", job_id:jobId, driver_id:driverId});
+  if(!res.ok){ alert("Kabul edilemedi: "+res.message); return; }
+  startDriverHeartbeat();
+  setTab("active");
+}
+
+/* ===== ACTIVE JOB ===== */
+async function renderActive(){
+  panel.innerHTML = `<div class="small">Aktif iş aranıyor…</div>`;
+
+  const res = await postForm({action:"listDriverJobs", driver_id:driverId});
+  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
+
+  const jobs = (res.jobs||[]).slice().reverse();
+  const active = jobs.find(j=>{
+    const st = String(j.status||"").toLowerCase();
+    return st!=="completed" && st!=="cancelled" && st!=="";
   });
 
-  if(r && r.ok){
-    activeJobId = jobId;
-    showActiveJob();
-  }else{
-    alert("İş alınamadı");
+  if(!active){
+    panel.innerHTML = `<div class="small">Aktif iş yok.</div>`;
+    stopDriverHeartbeat();
+    return;
   }
+
+  const st = String(active.status||"").toLowerCase();
+  panel.innerHTML = `
+    <div class="item">
+      <div class="itemTop">
+        <div>
+          <div style="font-weight:1000">${active.job_id}</div>
+          <div class="small">${(active.from_address||"—")}</div>
+          <div class="small">${(active.to_address||"—")}</div>
+        </div>
+        <div class="badge y">${active.status}</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <div class="card" style="padding:10px">
+          <div class="h">Ücret</div>
+          <div class="v">${money(active.price)}</div>
+        </div>
+        <div class="card" style="padding:10px">
+          <div class="h">Komisyon</div>
+          <div class="v">${active.commission_amount?money(active.commission_amount):"—"}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="row">
+        <button class="btn secondary" onclick="setStatus('${active.job_id}','pickup')" ${st==="pickup"||st==="onroad"||st==="completed"?"disabled":""}>Alıma Gidiyorum</button>
+        <button class="btn secondary" onclick="setStatus('${active.job_id}','onroad')" ${st==="onroad"||st==="completed"?"disabled":""}>Yoldayım</button>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn" onclick="setStatus('${active.job_id}','completed')">Tamamlandı</button>
+      </div>
+      <div class="small" style="margin-top:10px">Not: Konum güncelleme aktif. Track ekranı sürücüyü canlı takip eder.</div>
+    </div>
+  `;
+
+  startDriverHeartbeat();
 }
 
-/* ================= ACTIVE JOB ================= */
-function showActiveJob(){
-  $("jobsCard").style.display="none";
-  $("activeCard").style.display="block";
-  $("activeJob").innerHTML = `
-    <div class="badge">Aktif</div>
-    <div class="small" style="margin-top:6px">İş ID: ${activeJobId}</div>
+async function setStatus(jobId,status){
+  const res = await postForm({action:"driverUpdateStatus", job_id:jobId, status});
+  if(!res.ok){ alert("Durum güncellenemedi: "+res.message); return; }
+  renderActive();
+}
+
+/* ===== EARNINGS ===== */
+async function renderEarnings(){
+  panel.innerHTML = `<div class="small">Yükleniyor…</div>`;
+  const res = await postForm({action:"listDriverJobs", driver_id:driverId});
+  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
+
+  const jobs = (res.jobs||[]);
+  const done = jobs.filter(j=>String(j.status||"").toLowerCase()==="completed");
+
+  let total=0, comm=0, net=0;
+  done.forEach(j=>{
+    total += Number(j.price)||0;
+    comm  += Number(j.commission_amount)||0;
+    net   += Number(j.driver_net)||0;
+  });
+
+  panel.innerHTML = `
+    <div class="row">
+      <div class="metric card">
+        <div class="h">Toplam</div>
+        <div class="v">${money(total)}</div>
+      </div>
+      <div class="metric card">
+        <div class="h">Komisyon</div>
+        <div class="v">${money(comm)}</div>
+      </div>
+      <div class="metric card">
+        <div class="h">Net</div>
+        <div class="v">${money(net)}</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="small">Tamamlanan işler: ${done.length}</div>
+    <div class="list" style="margin-top:10px">
+      ${done.slice().reverse().slice(0,30).map(j=>`
+        <div class="item">
+          <div class="itemTop">
+            <div>
+              <div style="font-weight:1000">${(j.service_type||"").toUpperCase()} · ${money(j.price)}</div>
+              <div class="small">Komisyon: ${money(j.commission_amount)} · Net: ${money(j.driver_net)}</div>
+            </div>
+            <div class="badge">${j.status}</div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
   `;
 }
 
-$("finishBtn").onclick = async ()=>{
-  if(!activeJobId) return;
-
-  await postForm({
-    action:"driverUpdateStatus",
-    driver_id:driverId,
-    job_id:activeJobId,
-    status:"completed"
-  });
-
-  activeJobId = null;
-  $("activeCard").style.display="none";
-  $("jobsCard").style.display="block";
-};
-
-/* ================= INIT ================= */
-startDriverHeartbeat();
-loadJobs();
-<script>
-/* ======================================================
-   SepetTaxi – DRIVER HEARTBEAT (ADIM D)
-   API URL dosyadan okunur – çakışma yok
-   ====================================================== */
-
-(function(){
-  // ⚠️ API driver.html içinde zaten tanımlı olmalı
-  if(typeof API === "undefined"){
-    console.warn("SepetTaxi: API tanımlı değil, heartbeat iptal");
-    return;
+/* ===== BOOT ===== */
+(async function boot(){
+  if(!driverId){
+    viewLogin(); return;
   }
-
-  // ⚠️ driverId de driver.html içinde olmalı
-  if(typeof driverId === "undefined"){
-    console.warn("SepetTaxi: driverId yok, heartbeat iptal");
-    return;
+  const res = await postForm({action:"driverLogin", driver_id:driverId});
+  if(!res.ok){
+    viewLogin(); return;
   }
-
-  const HEARTBEAT_INTERVAL = 6000; // 6 sn
-  let hbTimer = null;
-
-  function post(action, data){
-    const body = new URLSearchParams(Object.assign({ action }, data));
-    return fetch(API, { method:"POST", body })
-      .then(r=>r.json())
-      .catch(()=>null);
-  }
-
-  function startHeartbeat(){
-    if(hbTimer) return;
-
-    hbTimer = setInterval(()=>{
-      if(!navigator.geolocation) return;
-
-      navigator.geolocation.getCurrentPosition(pos=>{
-        post("driverHeartbeat",{
-          driver_id: driverId,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
-        });
-      });
-    }, HEARTBEAT_INTERVAL);
-
-    console.log("SepetTaxi: heartbeat başladı");
-  }
-
-  function stopHeartbeat(){
-    if(hbTimer){
-      clearInterval(hbTimer);
-      hbTimer = null;
-      console.log("SepetTaxi: heartbeat durdu");
-    }
-  }
-
-  /* === ÇALIŞMA STRATEJİSİ ===
-     driver panel açıkken heartbeat çalışır
-     iş biterse durdurmak istersek event bağlarız
-  */
-
-  startHeartbeat();
-
-  // İleride istersek:
-  // document.addEventListener("jobCompleted", stopHeartbeat);
-
+  driver = res.driver;
+  role = (driver.role||localStorage.getItem("sepettaxi_driver_role")||"taxi");
+  localStorage.setItem("sepettaxi_driver_role", role);
+  viewHome();
 })();
 </script>
-
 </body>
 </html>
