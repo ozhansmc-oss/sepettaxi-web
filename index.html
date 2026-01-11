@@ -3,336 +3,261 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SepetTaxi – Sürücü</title>
+<title>SepetTaxi</title>
 <meta name="theme-color" content="#f5c400">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;overflow:hidden}
-:root{--y:#f5c400;--card:#141416;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.65)}
-.wrap{height:100%;display:flex;flex-direction:column}
-.top{padding:14px 14px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
-.brand{font-weight:1000}
-.pill{padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;font-weight:900;font-size:12px}
-.main{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.card{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:12px}
-.h{font-size:12px;color:var(--mut);font-weight:900}
-.v{font-size:14px;font-weight:1000;margin-top:6px}
-.tabs{display:flex;gap:8px}
-.tab{flex:1;padding:10px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03);text-align:center;font-weight:1000;cursor:pointer}
-.tab.active{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.10)}
-.btn{width:100%;padding:12px;border-radius:16px;border:0;font-weight:1000;background:linear-gradient(135deg,#f5c400,#ffd34d);color:#1a1400;cursor:pointer}
-.btn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line);color:#fff}
-.btn[disabled]{opacity:.45;cursor:not-allowed}
-.input,select{width:100%;padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;outline:none}
+:root{--y:#f5c400;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.6)}
+
+.topbar{
+position:fixed;left:0;right:0;top:0;height:56px;z-index:50;
+display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.15));
+backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.06)
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:950}
+.logo{
+width:28px;height:28px;border-radius:10px;
+background:radial-gradient(circle at 30% 30%, #ffe27a, #f5c400 55%, #b78d00 100%);
+}
+.iconbtn{
+width:40px;height:40px;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+background:rgba(20,20,22,.55);color:#fff;font-weight:900
+}
+
+.wrap{position:fixed;inset:56px 0 0 0;display:flex;flex-direction:column}
+#map{flex:1}
+
+.sheet{
+background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(10,10,12,.98));
+border-top:1px solid rgba(255,255,255,.08);
+padding:12px 14px
+}
+
 .row{display:flex;gap:10px}
-.small{font-size:12px;color:var(--mut)}
-.list{display:flex;flex-direction:column;gap:10px}
-.item{padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
-.itemTop{display:flex;justify-content:space-between;gap:10px}
-.badge{padding:6px 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;font-weight:1000;color:#fff}
-.badge.y{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.10)}
-.hr{height:1px;background:var(--line);margin:10px 0}
+.pill{
+flex:1;padding:10px 12px;border-radius:16px;
+border:1px solid rgba(255,255,255,.10);
+background:rgba(255,255,255,.04)
+}
+.tag{font-size:11px;color:rgba(255,255,255,.6)}
+.val{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.tabs{display:flex;gap:10px;margin-top:10px}
+.tab{
+flex:1;text-align:center;padding:12px;border-radius:16px;
+border:1px solid rgba(255,255,255,.10);
+background:rgba(255,255,255,.04);font-weight:900
+}
+.tab.active{border-color:rgba(245,196,0,.45);background:rgba(245,196,0,.12)}
+
+.metrics{display:flex;gap:10px;margin-top:10px}
+.metric{
+flex:1;padding:12px;border-radius:16px;
+border:1px solid rgba(255,255,255,.10);
+background:rgba(255,255,255,.04)
+}
+.metric .k{font-size:11px;color:rgba(255,255,255,.55)}
+.metric .v{font-size:18px;font-weight:950;margin-top:4px}
+
+.btn{
+width:100%;margin-top:10px;padding:14px;border-radius:18px;
+border:0;font-weight:950;background:linear-gradient(135deg,#f5c400,#ffd34d);
+color:#1a1400
+}
+.btn[disabled]{opacity:.45}
+
+.driverBox{
+margin-top:10px;padding:12px;border-radius:18px;
+border:1px dashed rgba(245,196,0,.45);
+background:rgba(245,196,0,.08);
+display:flex;align-items:center;justify-content:space-between
+}
+.driverBox b{font-size:14px}
+.driverBox a{color:#fff;font-weight:900;text-decoration:none}
+
+.drawer{
+position:fixed;top:56px;right:0;bottom:0;width:300px;
+background:rgba(15,15,16,.95);backdrop-filter:blur(14px);
+border-left:1px solid rgba(255,255,255,.10);
+transform:translateX(110%);transition:.25s;z-index:90;padding:14px
+}
+.drawer.open{transform:translateX(0)}
+.drawer a{
+display:block;padding:12px;border-radius:16px;
+border:1px solid rgba(255,255,255,.10);
+background:rgba(255,255,255,.04);
+margin-bottom:10px;color:#fff;text-decoration:none;font-weight:900
+}
+
+.modal{
+position:fixed;inset:0;z-index:95;display:none;
+background:rgba(0,0,0,.55);backdrop-filter:blur(10px);
+align-items:center;justify-content:center;padding:16px
+}
+.mCard{
+width:min(420px,94vw);
+background:rgba(20,20,22,.92);
+border:1px solid rgba(255,255,255,.12);
+border-radius:26px;padding:16px
+}
+.inp{
+width:100%;padding:12px;border-radius:14px;
+border:1px solid rgba(255,255,255,.12);
+background:rgba(255,255,255,.04);color:#fff;font-weight:800;margin-bottom:10px
+}
 </style>
 </head>
-<body>
-<script>
-/* ===== CONFIG ===== */
-const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
 
-/* ===== HELPERS ===== */
-function postForm(data){
-  const body = new URLSearchParams(data);
-  return fetch(API,{method:"POST",body}).then(r=>r.json());
-}
-function money(n){ return (Number(n)||0).toFixed(2).replace(".00","") + " ₺"; }
-</script>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo"></div>SepetTaxi</div>
+  <button class="iconbtn" id="menuBtn">≡</button>
+</div>
 
 <div class="wrap">
-  <div class="top">
-    <div class="brand">SepetTaxi · Sürücü</div>
-    <div class="pill" id="rolePill">—</div>
-  </div>
+  <div id="map"></div>
 
-  <div class="main" id="main"></div>
+  <div class="sheet">
+    <div class="row">
+      <div class="pill"><div class="tag">Nereden</div><div class="val" id="fromTxt">Konum alınıyor…</div></div>
+      <div class="pill"><div class="tag">Nereye</div><div class="val" id="toTxt">Haritadan seç</div></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" id="tabTaxi">Taksi</div>
+      <div class="tab" id="tabCourier">Kurye</div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="k">Mesafe</div><div class="v" id="kmTxt">—</div></div>
+      <div class="metric"><div class="k">Ücret</div><div class="v" id="priceTxt">—</div></div>
+    </div>
+
+    <button class="btn" id="callBtn" disabled>Çağır</button>
+
+    <div class="driverBox">
+      <b>Sürücü müsün?</b>
+      <a href="driver-register.html">Sürücü Ol →</a>
+    </div>
+  </div>
+</div>
+
+<div class="drawer" id="drawer">
+  <a href="#">Geçmiş Hizmetler</a>
+  <a href="#">Sözleşmeler</a>
+  <a href="#">KVKK</a>
+  <a href="#">Hakkımızda</a>
+  <a href="#">Destek</a>
+</div>
+
+<div class="modal" id="regModal">
+  <div class="mCard">
+    <h3>Zorunlu Kayıt</h3>
+    <input class="inp" id="cFirst" placeholder="Ad">
+    <input class="inp" id="cLast" placeholder="Soyad">
+    <input class="inp" id="cPhone" placeholder="Telefon">
+    <button class="btn" id="regOk">Kaydet</button>
+  </div>
 </div>
 
 <script>
-/* ===== STATE ===== */
-let driver = null;
-let driverId = localStorage.getItem("sepettaxi_driver_id") || "";
-let role = localStorage.getItem("sepettaxi_driver_role") || "";
-let heartbeatTimer = null;
+const API="https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
+let map,from=null,to=null,service="taxi",dist=0,price=0;
+const $=i=>document.getElementById(i);
 
-function viewLogin(){
-  document.getElementById("rolePill").textContent = "Giriş";
-  main.innerHTML = `
-    <div class="card">
-      <div class="h">Sürücü ID ile giriş</div>
-      <div class="small" style="margin-top:6px">Admin onayı sonrası size verilen <b>DRV_...</b> ID ile giriş yapın.</div>
-      <div style="margin-top:10px">
-        <input class="input" id="drvId" placeholder="Örn: DRV_1700000000000" value="${driverId||""}">
-      </div>
-      <div style="margin-top:10px">
-        <button class="btn" id="btnLogin">Giriş Yap</button>
-      </div>
-      <div class="small" id="loginHint" style="margin-top:10px"></div>
-    </div>
-  `;
-  btnLogin.onclick = async ()=>{
-    const id = drvId.value.trim();
-    loginHint.textContent = "Kontrol ediliyor…";
-    const res = await postForm({action:"driverLogin", driver_id:id});
-    if(!res.ok){
-      loginHint.textContent =
-        res.message==="pending" ? "Başvurunuz onay bekliyor."
-        : res.message==="rejected" ? ("Başvurunuz reddedildi: "+(res.reason||""))
-        : ("Giriş başarısız: "+res.message);
-      return;
-    }
-    driver = res.driver;
-    driverId = driver.driver_id;
-    role = driver.role || "taxi";
-    localStorage.setItem("sepettaxi_driver_id", driverId);
-    localStorage.setItem("sepettaxi_driver_role", role);
-    viewHome();
-  };
-}
+function saveCustomer(o){localStorage.setItem("sepettaxi_customer",JSON.stringify(o))}
+function loadCustomer(){try{return JSON.parse(localStorage.getItem("sepettaxi_customer"))}catch(_){return null}}
 
-function viewHome(){
-  document.getElementById("rolePill").textContent = (role==="courier"?"Kurye":"Taksi");
-  main.innerHTML = `
-    <div class="card">
-      <div class="h">Profil</div>
-      <div class="v">${driver.first||""} ${driver.last||""}</div>
-      <div class="small">${driverId} · ${driver.phone||""}</div>
-      <div class="hr"></div>
-      <div class="tabs">
-        <div class="tab active" id="tabPool">İş Havuzu</div>
-        <div class="tab" id="tabActive">Aktif İş</div>
-        <div class="tab" id="tabEarn">Kazanç</div>
-      </div>
-      <div class="hr"></div>
-      <div id="panel"></div>
-    </div>
-    <div class="card">
-      <button class="btn secondary" id="btnLogout">Çıkış</button>
-    </div>
-  `;
+function initMap(){
+  map=L.map("map").setView([40.195,29.060],13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-  btnLogout.onclick=()=>{
-    stopDriverHeartbeat();
-    localStorage.removeItem("sepettaxi_driver_id");
-    localStorage.removeItem("sepettaxi_driver_role");
-    driver=null; driverId=""; role="";
-    viewLogin();
-  };
-
-  tabPool.onclick = ()=>{ setTab("pool"); };
-  tabActive.onclick = ()=>{ setTab("active"); };
-  tabEarn.onclick = ()=>{ setTab("earn"); };
-
-  setTab("pool");
-}
-
-function setTab(name){
-  ["tabPool","tabActive","tabEarn"].forEach(id=>document.getElementById(id).classList.remove("active"));
-  if(name==="pool"){ tabPool.classList.add("active"); renderPool(); }
-  if(name==="active"){ tabActive.classList.add("active"); renderActive(); }
-  if(name==="earn"){ tabEarn.classList.add("active"); renderEarnings(); }
-}
-
-/* ===== HEARTBEAT (tek ve doğru) ===== */
-function startDriverHeartbeat(){
-  if(heartbeatTimer) return;
-
-  heartbeatTimer = setInterval(()=>{
-    if(!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(pos=>{
-      postForm({
-        action:"driverHeartbeat",
-        driver_id:driverId,
-        lat:pos.coords.latitude,
-        lng:pos.coords.longitude
-      }).catch(()=>{});
+  navigator.geolocation?.getCurrentPosition(p=>{
+    map.setView([p.coords.latitude,p.coords.longitude],15);
+    rev(p.coords.latitude,p.coords.longitude).then(a=>{
+      from={lat:p.coords.latitude,lng:p.coords.longitude,addr:a};
+      $("fromTxt").textContent=a;
     });
-  }, 6000); // 6 sn (kilitli)
-}
-function stopDriverHeartbeat(){
-  if(heartbeatTimer){
-    clearInterval(heartbeatTimer);
-    heartbeatTimer=null;
-  }
-}
-
-/* ===== POOL ===== */
-async function renderPool(){
-  panel.innerHTML = `<div class="small">Yükleniyor…</div>`;
-  const res = await postForm({action:"listAvailableJobs", service_type:role});
-  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
-
-  const jobs = res.jobs || [];
-  if(!jobs.length){
-    panel.innerHTML = `<div class="small">Şu an havuzda iş yok.</div>`;
-    return;
-  }
-
-  panel.innerHTML = `
-    <div class="small">Havuz: ${jobs.length} iş</div>
-    <div class="list" id="poolList" style="margin-top:10px"></div>
-  `;
-
-  poolList.innerHTML = jobs.map(j=>`
-    <div class="item">
-      <div class="itemTop">
-        <div>
-          <div style="font-weight:1000">${(j.service_type||"").toUpperCase()} · ${money(j.price)}</div>
-          <div class="small">${(j.from_address||"—")}</div>
-          <div class="small">${(j.to_address||"—")}</div>
-        </div>
-        <div class="badge y">${j.status}</div>
-      </div>
-      <div style="margin-top:10px">
-        <button class="btn" onclick="accept('${j.job_id}')">İşi Kabul Et</button>
-      </div>
-    </div>
-  `).join("");
-}
-
-async function accept(jobId){
-  const res = await postForm({action:"acceptJob", job_id:jobId, driver_id:driverId});
-  if(!res.ok){ alert("Kabul edilemedi: "+res.message); return; }
-  startDriverHeartbeat();
-  setTab("active");
-}
-
-/* ===== ACTIVE JOB ===== */
-async function renderActive(){
-  panel.innerHTML = `<div class="small">Aktif iş aranıyor…</div>`;
-
-  const res = await postForm({action:"listDriverJobs", driver_id:driverId});
-  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
-
-  const jobs = (res.jobs||[]).slice().reverse();
-  const active = jobs.find(j=>{
-    const st = String(j.status||"").toLowerCase();
-    return st!=="completed" && st!=="cancelled" && st!=="";
   });
 
-  if(!active){
-    panel.innerHTML = `<div class="small">Aktif iş yok.</div>`;
-    stopDriverHeartbeat();
-    return;
-  }
-
-  const st = String(active.status||"").toLowerCase();
-  panel.innerHTML = `
-    <div class="item">
-      <div class="itemTop">
-        <div>
-          <div style="font-weight:1000">${active.job_id}</div>
-          <div class="small">${(active.from_address||"—")}</div>
-          <div class="small">${(active.to_address||"—")}</div>
-        </div>
-        <div class="badge y">${active.status}</div>
-      </div>
-
-      <div class="hr"></div>
-
-      <div class="row">
-        <div class="card" style="padding:10px">
-          <div class="h">Ücret</div>
-          <div class="v">${money(active.price)}</div>
-        </div>
-        <div class="card" style="padding:10px">
-          <div class="h">Komisyon</div>
-          <div class="v">${active.commission_amount?money(active.commission_amount):"—"}</div>
-        </div>
-      </div>
-
-      <div style="margin-top:10px" class="row">
-        <button class="btn secondary" onclick="setStatus('${active.job_id}','pickup')" ${st==="pickup"||st==="onroad"||st==="completed"?"disabled":""}>Alıma Gidiyorum</button>
-        <button class="btn secondary" onclick="setStatus('${active.job_id}','onroad')" ${st==="onroad"||st==="completed"?"disabled":""}>Yoldayım</button>
-      </div>
-      <div style="margin-top:10px">
-        <button class="btn" onclick="setStatus('${active.job_id}','completed')">Tamamlandı</button>
-      </div>
-      <div class="small" style="margin-top:10px">Not: Konum güncelleme aktif. Track ekranı sürücüyü canlı takip eder.</div>
-    </div>
-  `;
-
-  startDriverHeartbeat();
-}
-
-async function setStatus(jobId,status){
-  const res = await postForm({action:"driverUpdateStatus", job_id:jobId, status});
-  if(!res.ok){ alert("Durum güncellenemedi: "+res.message); return; }
-  renderActive();
-}
-
-/* ===== EARNINGS ===== */
-async function renderEarnings(){
-  panel.innerHTML = `<div class="small">Yükleniyor…</div>`;
-  const res = await postForm({action:"listDriverJobs", driver_id:driverId});
-  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
-
-  const jobs = (res.jobs||[]);
-  const done = jobs.filter(j=>String(j.status||"").toLowerCase()==="completed");
-
-  let total=0, comm=0, net=0;
-  done.forEach(j=>{
-    total += Number(j.price)||0;
-    comm  += Number(j.commission_amount)||0;
-    net   += Number(j.driver_net)||0;
+  map.on("click",async e=>{
+    const a=await rev(e.latlng.lat,e.latlng.lng);
+    if(!from){from={lat:e.latlng.lat,lng:e.latlng.lng,addr:a};$("fromTxt").textContent=a}
+    else{to={lat:e.latlng.lat,lng:e.latlng.lng,addr:a};$("toTxt").textContent=a;calc()}
+    ui();
   });
-
-  panel.innerHTML = `
-    <div class="row">
-      <div class="metric card">
-        <div class="h">Toplam</div>
-        <div class="v">${money(total)}</div>
-      </div>
-      <div class="metric card">
-        <div class="h">Komisyon</div>
-        <div class="v">${money(comm)}</div>
-      </div>
-      <div class="metric card">
-        <div class="h">Net</div>
-        <div class="v">${money(net)}</div>
-      </div>
-    </div>
-
-    <div class="hr"></div>
-    <div class="small">Tamamlanan işler: ${done.length}</div>
-    <div class="list" style="margin-top:10px">
-      ${done.slice().reverse().slice(0,30).map(j=>`
-        <div class="item">
-          <div class="itemTop">
-            <div>
-              <div style="font-weight:1000">${(j.service_type||"").toUpperCase()} · ${money(j.price)}</div>
-              <div class="small">Komisyon: ${money(j.commission_amount)} · Net: ${money(j.driver_net)}</div>
-            </div>
-            <div class="badge">${j.status}</div>
-          </div>
-        </div>
-      `).join("")}
-    </div>
-  `;
 }
 
-/* ===== BOOT ===== */
-(async function boot(){
-  if(!driverId){
-    viewLogin(); return;
-  }
-  const res = await postForm({action:"driverLogin", driver_id:driverId});
-  if(!res.ok){
-    viewLogin(); return;
-  }
-  driver = res.driver;
-  role = (driver.role||localStorage.getItem("sepettaxi_driver_role")||"taxi");
-  localStorage.setItem("sepettaxi_driver_role", role);
-  viewHome();
-})();
+async function rev(lat,lng){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+    const j=await r.json();return j.display_name||"";
+  }catch(_){return ""}
+}
+
+function hav(a,b,c,d){
+  const R=6371,t=x=>x*Math.PI/180;
+  return 2*R*Math.asin(Math.sqrt(Math.sin(t(c-a)/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(t(d-b)/2)**2));
+}
+function calc(){dist=hav(from.lat,from.lng,to.lat,to.lng);price=service==="courier"?Math.max(70,40+dist*18):Math.max(90,50+dist*22)}
+
+function ui(){
+  $("kmTxt").textContent=dist?dist.toFixed(2)+" km":"—";
+  $("priceTxt").textContent=price?Math.round(price)+" ₺":"—";
+  $("callBtn").disabled=!(from&&to);
+}
+
+function postForm(d){
+  return fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:Object.keys(d).map(k=>k+"="+encodeURIComponent(d[k])).join("&")
+  }).then(r=>r.json());
+}
+
+$("menuBtn").onclick=()=>$("drawer").classList.toggle("open");
+$("tabTaxi").onclick=()=>{service="taxi";$("tabTaxi").classList.add("active");$("tabCourier").classList.remove("active");calc();ui()};
+$("tabCourier").onclick=()=>{service="courier";$("tabCourier").classList.add("active");$("tabTaxi").classList.remove("active");calc();ui()};
+
+$("callBtn").onclick=async ()=>{
+  const c=loadCustomer();
+  if(!c){$("regModal").style.display="flex";return}
+  const r=await postForm({
+    action:"createJob",
+    service_type:service,
+    customer_first:c.customer_first,
+    customer_last:c.customer_last,
+    customer_phone:c.customer_phone,
+    from_address:from.addr,
+    to_address:to.addr,
+    pickup_lat:from.lat,
+    pickup_lng:from.lng,
+    dropoff_lat:to.lat,
+    dropoff_lng:to.lng,
+    distance_km:dist,
+    price:price
+  });
+  if(r.ok)location.href="track.html?job_id="+r.job_id;
+};
+
+$("regOk").onclick=()=>{
+  saveCustomer({
+    customer_first:$("cFirst").value,
+    customer_last:$("cLast").value,
+    customer_phone:$("cPhone").value
+  });
+  $("regModal").style.display="none";
+};
+
+initMap();
 </script>
+
 </body>
 </html>
