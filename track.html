@@ -11,23 +11,41 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;overflow:hidden}
+html,body{
+  margin:0;height:100%;
+  background:#050506;color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+  overflow:hidden
+}
 #map{height:100%;width:100%}
 
 .liveStatus{
-  position:absolute;top:14px;left:50%;transform:translateX(-50%);
-  z-index:1000;background:rgba(15,15,18,.88);
+  position:absolute;
+  top:14px;left:50%;
+  transform:translateX(-50%);
+  z-index:1000;
+  background:rgba(15,15,18,.88);
   border:1px solid rgba(255,255,255,.15);
-  border-radius:999px;padding:8px 14px;
-  font-size:13px;font-weight:800;backdrop-filter:blur(10px)
+  border-radius:999px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:800;
+  backdrop-filter:blur(10px)
 }
 
 .infoBox{
-  position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
-  z-index:1000;background:rgba(15,15,18,.88);
+  position:absolute;
+  bottom:18px;left:50%;
+  transform:translateX(-50%);
+  z-index:1000;
+  background:rgba(15,15,18,.88);
   border:1px solid rgba(255,255,255,.15);
-  border-radius:14px;padding:10px 14px;
-  font-size:14px;font-weight:800;display:flex;gap:14px
+  border-radius:14px;
+  padding:10px 14px;
+  font-size:14px;
+  font-weight:800;
+  display:flex;
+  gap:14px
 }
 </style>
 </head>
@@ -51,12 +69,21 @@ if(!jobId){ alert("job_id yok"); }
 const map = L.map("map",{zoomControl:false}).setView([40.195,29.060],13);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
 
+/* 🔧 ZORUNLU: Harita boyut fix */
+setTimeout(() => {
+  map.invalidateSize();
+}, 300);
+
 /* ================= ICONS ================= */
 const taxiIcon = L.icon({
-  iconUrl:"icons/taxi.png", iconSize:[42,42], iconAnchor:[21,21]
+  iconUrl:"icons/taxi.png",
+  iconSize:[42,42],
+  iconAnchor:[21,21]
 });
 const courierIcon = L.icon({
-  iconUrl:"icons/courier.png", iconSize:[40,40], iconAnchor:[20,20]
+  iconUrl:"icons/courier.png",
+  iconSize:[40,40],
+  iconAnchor:[20,20]
 });
 
 /* ================= STATE ================= */
@@ -66,12 +93,21 @@ let lastDriverPos=null;
 
 /* ================= HELPERS ================= */
 function post(action,data){
-  return fetch(API,{method:"POST",body:new URLSearchParams({action,...data})})
-    .then(r=>r.json());
+  return fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({action,...data})
+  }).then(r=>r.json());
+}
+
+function validCoord(lat,lng){
+  return typeof lat==="number" && typeof lng==="number" &&
+         Math.abs(lat)<=90 && Math.abs(lng)<=180;
 }
 
 function haversineKm(a,b,c,d){
-  const R=6371, dLat=(c-a)*Math.PI/180, dLon=(d-b)*Math.PI/180;
+  const R=6371;
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
   const x=Math.sin(dLat/2)**2+
     Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
     Math.sin(dLon/2)**2;
@@ -91,24 +127,24 @@ async function loadJob(){
   if(!r.ok||!r.job) return;
   const j=r.job;
 
-  // status
+  /* status text */
   const st=document.getElementById("liveStatus");
   if(j.status==="searching") st.textContent="Sürücü aranıyor";
-  if(j.status==="assigned") st.textContent="Sürücü atandı, yola çıkıyor";
-  if(j.status==="onroad")   st.textContent="Sürücü yolda";
-  if(j.status==="completed")st.textContent="Yolculuk tamamlandı";
+  if(j.status==="assigned")  st.textContent="Sürücü atandı, yola çıkıyor";
+  if(j.status==="onroad")    st.textContent="Sürücü yolda";
+  if(j.status==="completed") st.textContent="Yolculuk tamamlandı";
 
-  // pickup / drop
-  if(!pickupMarker && j.pickup_lat){
+  /* pickup / drop */
+  if(!pickupMarker && validCoord(j.pickup_lat,j.pickup_lng)){
     pickupMarker=L.marker([j.pickup_lat,j.pickup_lng]).addTo(map);
     map.setView([j.pickup_lat,j.pickup_lng],15);
   }
-  if(!dropMarker && j.dropoff_lat){
+  if(!dropMarker && validCoord(j.dropoff_lat,j.dropoff_lng)){
     dropMarker=L.marker([j.dropoff_lat,j.dropoff_lng]).addTo(map);
   }
 
-  // driver
-  if(j.driver_lat){
+  /* driver */
+  if(validCoord(j.driver_lat,j.driver_lng)){
     const pos=[j.driver_lat,j.driver_lng];
     const icon=(j.service_type==="courier")?courierIcon:taxiIcon;
 
@@ -121,22 +157,28 @@ async function loadJob(){
       map.invalidateSize();
     }
 
-    // bearing (ikon yönü)
-    if(lastDriverPos){
-      const deg=bearing(lastDriverPos[0],lastDriverPos[1],pos[0],pos[1]);
-      driverMarker.getElement().style.transform += ` rotate(${deg}deg)`;
+    /* yön */
+    if(lastDriverPos && driverMarker.getElement()){
+      const deg=bearing(
+        lastDriverPos[0],lastDriverPos[1],
+        pos[0],pos[1]
+      );
+      driverMarker.getElement().style.transform =
+        `rotate(${deg}deg) translate(-50%,-50%)`;
     }
     lastDriverPos=pos;
 
-    // route line
-    if(j.pickup_lat){
+    /* rota + mesafe + ETA */
+    if(validCoord(j.pickup_lat,j.pickup_lng)){
       if(routeLine) map.removeLayer(routeLine);
       routeLine=L.polyline([pos,[j.pickup_lat,j.pickup_lng]],{
-        color:"#f5c400", weight:4, opacity:.85
+        color:"#f5c400",weight:4,opacity:.85
       }).addTo(map);
 
-      // distance + ETA
-      const km=haversineKm(pos[0],pos[1],j.pickup_lat,j.pickup_lng);
+      const km=haversineKm(
+        pos[0],pos[1],
+        j.pickup_lat,j.pickup_lng
+      );
       document.getElementById("distTxt").textContent=km.toFixed(2)+" km";
       const min=Math.max(1,Math.round((km/30)*60));
       document.getElementById("etaTxt").textContent="≈ "+min+" dk";
