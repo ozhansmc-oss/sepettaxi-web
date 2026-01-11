@@ -31,13 +31,12 @@ html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-
 </style>
 </head>
 <body>
+
 <script>
 const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
 function postForm(data){
-  const body=new URLSearchParams(data);
-  return fetch(API,{method:"POST",body}).then(r=>r.json());
+  return fetch(API,{method:"POST",body:new URLSearchParams(data)}).then(r=>r.json());
 }
-function money(n){ return (Number(n)||0).toFixed(2).replace(".00","")+" ₺"; }
 </script>
 
 <div class="wrap">
@@ -56,11 +55,10 @@ function viewLogin(){
   main.innerHTML=`
     <div class="card">
       <div style="font-weight:1000">Admin PIN</div>
-      <div style="margin-top:10px"><input class="input" id="pin" placeholder="PIN" type="password"></div>
-      <div style="margin-top:10px"><button class="btn" id="btn">Giriş</button></div>
+      <input class="input" id="pin" placeholder="PIN" type="password" style="margin-top:10px">
+      <button class="btn" id="btn" style="margin-top:10px">Giriş</button>
       <div class="small" id="hint" style="margin-top:10px"></div>
-    </div>
-  `;
+    </div>`;
   btn.onclick=async ()=>{
     hint.textContent="Kontrol…";
     const r=await postForm({action:"adminLogin",pin:pin.value});
@@ -77,181 +75,59 @@ function viewHome(){
     <div class="card">
       <div class="tabs">
         <div class="tab active" id="tabCand">Başvurular</div>
-        <div class="tab" id="tabJobs">İşler</div>
-        <div class="tab" id="tabDash">Dashboard</div>
       </div>
       <div class="hr"></div>
       <div id="panel"></div>
     </div>
     <div class="card">
       <button class="btn secondary" id="logout">Çıkış</button>
-    </div>
-  `;
-  logout.onclick=()=>{
-    localStorage.removeItem("sepettaxi_admin_token");
-    token=""; viewLogin();
-  };
-  tabCand.onclick=()=>setTab("cand");
-  tabJobs.onclick=()=>setTab("jobs");
-  tabDash.onclick=()=>setTab("dash");
-  setTab("cand");
-}
-
-function setTab(t){
-  ["tabCand","tabJobs","tabDash"].forEach(id=>document.getElementById(id).classList.remove("active"));
-  if(t==="cand"){ tabCand.classList.add("active"); renderCandidates(); }
-  if(t==="jobs"){ tabJobs.classList.add("active"); renderJobs(); }
-  if(t==="dash"){ tabDash.classList.add("active"); renderDash(); }
+    </div>`;
+  logout.onclick=()=>{localStorage.clear();location.reload();}
+  tabCand.onclick=renderCandidates;
+  renderCandidates();
 }
 
 async function renderCandidates(){
   panel.innerHTML=`<div class="small">Yükleniyor…</div>`;
   const r=await postForm({action:"adminListCandidates",token});
-  if(!r.ok){ panel.innerHTML=`<div class="small">Hata: ${r.message}</div>`; return; }
-  const c=r.candidates||[];
-  if(!c.length){ panel.innerHTML=`<div class="small">Bekleyen başvuru yok.</div>`; return; }
+  if(!r.ok){ panel.innerHTML=`<div class="small">${r.message}</div>`; return; }
 
-  panel.innerHTML=`
-    <div class="small">Bekleyen: ${c.length}</div>
-    <div class="list" id="lst" style="margin-top:10px"></div>
-  `;
-  lst.innerHTML=c.map(d=>`
+  panel.innerHTML = r.candidates.map(d=>`
     <div class="item">
-      <div style="font-weight:1000">${d.first||""} ${d.last||""}</div>
+      <b>${d.first||""} ${d.last||""}</b>
       <div class="small">${d.driver_id} · ${d.phone||""}</div>
-      <div class="small">Araç: ${d.vehicle||"—"} · Rol: ${(d.role||"—")}</div>
-      <div class="row" style="margin-top:10px">
-        <select class="input" id="role_${d.driver_id}">
-          <option value="">Rol seç</option>
-          <option value="taxi">Taksi</option>
-          <option value="courier">Kurye</option>
-        </select>
-        <button class="btn secondary" onclick="reject('${d.driver_id}')">Reddet</button>
-      </div>
-      <div style="margin-top:10px">
-        <button class="btn" onclick="approve('${d.driver_id}')">Onayla</button>
-      </div>
+
+      <select class="input" id="role_${d.driver_id}" style="margin-top:10px">
+        <option value="">Rol seç</option>
+        <option value="taxi">Taksi</option>
+        <option value="courier">Kurye</option>
+      </select>
+
+      <button class="btn" style="margin-top:10px"
+        onclick="approve('${d.driver_id}')">Onayla</button>
     </div>
   `).join("");
 }
 
 async function approve(driverId){
-  const roleSel = document.getElementById("role_"+driverId);
-  const role = (roleSel && roleSel.value) ? roleSel.value : "";
-  const r=await postForm({action:"adminApproveDriver",token,driver_id:driverId,role});
-  if(!r.ok){ alert("Onaylanamadı: "+r.message); return; }
+  const sel=document.getElementById("role_"+driverId);
+  if(!sel.value){ alert("Rol seç"); return; }
+
+  const r=await postForm({
+    action:"adminApproveDriver",
+    token,
+    driver_id:driverId,
+    vehicle:sel.value
+  });
+
+  if(!r.ok){ alert(r.message); return; }
   renderCandidates();
 }
 
-async function reject(driverId){
-  const reason = prompt("Red nedeni (opsiyonel):","Eksik evrak");
-  const r=await postForm({action:"adminRejectDriver",token,driver_id:driverId,reason:reason||""});
-  if(!r.ok){ alert("Reddedilemedi: "+r.message); return; }
-  renderCandidates();
-}
-
-async function renderJobs(){
-  panel.innerHTML=`<div class="small">Yükleniyor…</div>`;
-  const [jobsRes, drvRes] = await Promise.all([
-    postForm({action:"adminListJobs",token}),
-    postForm({action:"adminListDrivers",token})
-  ]);
-  if(!jobsRes.ok){ panel.innerHTML=`<div class="small">Hata: ${jobsRes.message}</div>`; return; }
-  if(!drvRes.ok){ panel.innerHTML=`<div class="small">Hata: ${drvRes.message}</div>`; return; }
-
-  const jobs=jobsRes.jobs||[];
-  const drivers=(drvRes.drivers||[]).filter(d=>String(d.active).toLowerCase()==="true" || String(d.status).toLowerCase()==="approved");
-
-  panel.innerHTML=`
-    <div class="small">Toplam iş: ${jobs.length}</div>
-    <div class="list" id="jobsList" style="margin-top:10px"></div>
-  `;
-
-  jobsList.innerHTML=jobs.slice().reverse().slice(0,50).map(j=>{
-    const st=(j.status||"");
-    const drv=(j.driver_id||"");
-    const options = drivers
-      .filter(d=>{
-        const r=(d.role||"").toLowerCase();
-        return !j.service_type ? true : (r===(j.service_type||"").toLowerCase() || r==="");
-      })
-      .map(d=>`<option value="${d.driver_id}">${d.driver_id} · ${d.first||""} ${d.last||""}</option>`)
-      .join("");
-
-    return `
-      <div class="item">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:1000">${j.job_id}</div>
-            <div class="small">${(j.service_type||"").toUpperCase()} · ${money(j.price)}</div>
-            <div class="small">Durum: <span class="badge y">${st}</span> · Sürücü: ${drv||"—"}</div>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="small">Manuel atama (opsiyonel)</div>
-        <div class="row" style="margin-top:8px">
-          <select class="input" id="as_${j.job_id}">
-            <option value="">Sürücü seç</option>
-            ${options}
-          </select>
-          <button class="btn secondary" onclick="assign('${j.job_id}')">Ata</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-async function assign(jobId){
-  const sel=document.getElementById("as_"+jobId);
-  const driverId = sel.value;
-  if(!driverId){ alert("Sürücü seç"); return; }
-  const r=await postForm({action:"adminAssignJob",token,job_id:jobId,driver_id:driverId});
-  if(!r.ok){ alert("Atanamadı: "+r.message); return; }
-  renderJobs();
-}
-
-async function renderDash(){
-  panel.innerHTML=`<div class="small">Yükleniyor…</div>`;
-  const r=await postForm({action:"adminStats",token});
-  if(!r.ok){ panel.innerHTML=`<div class="small">Hata: ${r.message}</div>`; return; }
-  const s=r.stats||{};
-  panel.innerHTML=`
-    <div class="row">
-      <div class="card" style="flex:1">
-        <div class="small">Searching</div>
-        <div style="font-size:22px;font-weight:1000;margin-top:6px">${s.searching||0}</div>
-      </div>
-      <div class="card" style="flex:1">
-        <div class="small">Active</div>
-        <div style="font-size:22px;font-weight:1000;margin-top:6px">${s.active||0}</div>
-      </div>
-      <div class="card" style="flex:1">
-        <div class="small">Completed</div>
-        <div style="font-size:22px;font-weight:1000;margin-top:6px">${s.completed||0}</div>
-      </div>
-    </div>
-    <div class="hr"></div>
-    <div class="row">
-      <div class="card" style="flex:1">
-        <div class="small">Toplam Ciro</div>
-        <div style="font-size:20px;font-weight:1000;margin-top:6px">${money(s.total_revenue||0)}</div>
-      </div>
-      <div class="card" style="flex:1">
-        <div class="small">Toplam Komisyon</div>
-        <div style="font-size:20px;font-weight:1000;margin-top:6px">${money(s.total_commission||0)}</div>
-      </div>
-    </div>
-  `;
-}
-
-/* BOOT */
 (async function(){
   if(!token){ viewLogin(); return; }
-  // token var ama doğru mu bilmiyoruz; basitçe home'a girip çağrı hatasında login'e düşürüyoruz.
-  const test = await postForm({action:"adminStats",token});
-  if(!test.ok){ token=""; localStorage.removeItem("sepettaxi_admin_token"); viewLogin(); return; }
+  const t=await postForm({action:"adminStats",token});
+  if(!t.ok){ localStorage.clear(); viewLogin(); return; }
   viewHome();
 })();
 </script>
