@@ -3,804 +3,336 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SepetTaxi</title>
+<title>SepetTaxi – Sürücü</title>
 <meta name="theme-color" content="#f5c400">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#050506;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;overflow:hidden}
-:root{
-  --y:#f5c400;
-  --panel:#0f0f10;
-  --card:#141416;
-  --line:rgba(255,255,255,.12);
-  --mut:rgba(255,255,255,.65);
-  --mut2:rgba(255,255,255,.42);
-  --shadow:0 18px 60px rgba(0,0,0,.55);
-}
-
-/* ====== TOPBAR ====== */
-.topbar{
-  position:fixed;top:10px;left:10px;right:10px;z-index:50;
-  height:54px;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 12px;
-  background:rgba(12,12,14,.72);
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:18px;
-  backdrop-filter:blur(12px);
-  box-shadow:0 10px 30px rgba(0,0,0,.35);
-}
-.brand{display:flex;align-items:center;gap:10px;font-weight:950;letter-spacing:.2px}
-.logo{
-  width:30px;height:30px;border-radius:10px;
-  background:linear-gradient(135deg,#f5c400,#ffd34d);
-  box-shadow:0 10px 28px rgba(245,196,0,.22);
-  position:relative;overflow:hidden;
-}
-.logo:after{
-  content:"";position:absolute;inset:-40%;
-  background:linear-gradient(120deg,rgba(255,255,255,.0),rgba(255,255,255,.25),rgba(255,255,255,.0));
-  transform:rotate(25deg);
-  animation:shine 3.6s linear infinite;
-}
-@keyframes shine{0%{transform:translateX(-60%) rotate(25deg)}100%{transform:translateX(60%) rotate(25deg)}}
-
-.iconbtn{
-  width:42px;height:42px;border-radius:14px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
-  color:#fff;font-size:18px;font-weight:900;
-  display:flex;align-items:center;justify-content:center;
-}
-.iconbtn:active{transform:scale(.98)}
-
-/* ====== MAP ====== */
-#map{position:fixed;inset:0;z-index:1}
-.leaflet-control-container{display:none} /* zoom +/- kapalı */
-
-/* ====== DRAWER MENU ====== */
-.drawerMask{
-  position:fixed;inset:0;z-index:80;
-  background:rgba(0,0,0,.55);
-  opacity:0;pointer-events:none;
-  transition:opacity .18s ease;
-}
-.drawer{
-  position:fixed;top:10px;right:10px;z-index:90;
-  width:min(360px,calc(100vw - 20px));
-  border-radius:22px;
-  background:rgba(18,18,20,.90);
-  border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(14px);
-  box-shadow:var(--shadow);
-  transform:translateY(-6px) scale(.98);
-  opacity:0;pointer-events:none;
-  transition:transform .18s ease, opacity .18s ease;
-  overflow:hidden;
-}
-.drawerHead{
-  padding:14px 14px 10px;
-  display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid rgba(255,255,255,.10);
-}
-.drawerHead .t{font-weight:950}
-.drawerBody{padding:10px}
-.drawerItem{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:10px;
-  padding:12px 12px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.04);
-  margin-bottom:10px;
-  color:#fff;text-decoration:none;
-}
-.drawerItem small{color:var(--mut2);font-weight:700}
-.drawerItem:active{transform:scale(.99)}
-.drawerSep{margin:10px 0 12px;color:var(--mut2);font-size:12px;font-weight:800}
-
-.drawerOpen .drawerMask{opacity:1;pointer-events:auto}
-.drawerOpen .drawer{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
-
-/* ====== BOTTOM SHEET ====== */
-.sheet{
-  position:fixed;left:0;right:0;bottom:0;z-index:60;
-  height:86vh; /* expanded high watermark */
-  transform:translateY(var(--sheetY, 36vh)); /* default HALF */
-  transition:transform .18s ease;
-  will-change:transform;
-}
-.sheetInner{
-  height:100%;
-  background:linear-gradient(180deg, rgba(20,20,22,.92), rgba(9,9,11,.98));
-  border-top:1px solid rgba(255,255,255,.10);
-  border-top-left-radius:24px;
-  border-top-right-radius:24px;
-  box-shadow:0 -18px 50px rgba(0,0,0,.55);
-  backdrop-filter:blur(12px);
-  display:flex;flex-direction:column;
-  overflow:hidden;
-}
-.handleWrap{padding:10px 14px 8px;cursor:grab;touch-action:none}
-.handle{
-  width:46px;height:5px;border-radius:99px;margin:0 auto;
-  background:rgba(255,255,255,.18);
-}
-.sheetContent{
-  padding:10px 14px 14px;
-  overflow:hidden;
-  display:flex;flex-direction:column;gap:10px;
-}
-
-/* compact cards */
+:root{--y:#f5c400;--card:#141416;--line:rgba(255,255,255,.12);--mut:rgba(255,255,255,.65)}
+.wrap{height:100%;display:flex;flex-direction:column}
+.top{padding:14px 14px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.brand{font-weight:1000}
+.pill{padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;font-weight:900;font-size:12px}
+.main{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:12px}
+.h{font-size:12px;color:var(--mut);font-weight:900}
+.v{font-size:14px;font-weight:1000;margin-top:6px}
+.tabs{display:flex;gap:8px}
+.tab{flex:1;padding:10px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03);text-align:center;font-weight:1000;cursor:pointer}
+.tab.active{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.10)}
+.btn{width:100%;padding:12px;border-radius:16px;border:0;font-weight:1000;background:linear-gradient(135deg,#f5c400,#ffd34d);color:#1a1400;cursor:pointer}
+.btn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line);color:#fff}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.input,select{width:100%;padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;outline:none}
 .row{display:flex;gap:10px}
-.pill{
-  flex:1;
-  padding:10px 12px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
-  min-width:0;
-}
-.tag{font-size:11px;color:var(--mut2);font-weight:800}
-.val{font-weight:950;font-size:13px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-.tabs{display:flex;gap:10px}
-.tab{
-  flex:1;text-align:center;
-  padding:12px 12px;border-radius:16px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04);
-  font-weight:950;
-  user-select:none;
-}
-.tab.active{
-  background:rgba(245,196,0,.14);
-  border-color:rgba(245,196,0,.45);
-  color:#fff;
-}
-.metrics{display:flex;gap:10px}
-.metric{
-  flex:1;
-  padding:12px 12px;border-radius:16px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.04)
-}
-.metric .k{font-size:11px;color:var(--mut2);font-weight:850}
-.metric .v{font-size:18px;font-weight:1000;margin-top:4px;letter-spacing:.2px}
-.muted{color:var(--mut);font-size:12px;line-height:1.35}
-.warn{color:#ffd34d;font-weight:900}
-
-.btn{
-  width:100%;padding:14px;border-radius:18px;
-  border:0;font-weight:1000;
-  background:linear-gradient(135deg,#f5c400,#ffd34d);
-  color:#1a1400;
-}
-.btn[disabled]{opacity:.45}
-
-/* ====== REG MODAL ====== */
-.modalMask{
-  position:fixed;inset:0;z-index:120;
-  background:rgba(0,0,0,.62);
-  display:none;align-items:center;justify-content:center;
-  padding:18px;
-}
-.modal{
-  width:min(420px,100%);
-  border-radius:22px;
-  background:rgba(18,18,20,.92);
-  border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(14px);
-  box-shadow:var(--shadow);
-  overflow:hidden;
-}
-.modalHead{
-  padding:14px 14px 10px;
-  border-bottom:1px solid rgba(255,255,255,.10);
-  display:flex;align-items:center;justify-content:space-between;
-}
-.modalHead .t{font-weight:1000}
-.modalBody{padding:14px;display:flex;flex-direction:column;gap:10px}
-.inp{
-  width:100%;padding:12px 12px;border-radius:16px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.04);
-  color:#fff;outline:none;
-}
-.modalFoot{padding:0 14px 14px}
-
-/* ====== SEARCHING OVERLAY ====== */
-.overlay{
-  position:fixed;inset:0;z-index:140;
-  display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.52);
-  backdrop-filter:blur(10px);
-}
-.ovCard{
-  width:min(520px,calc(100vw - 30px));
-  border-radius:26px;
-  border:1px solid rgba(255,255,255,.14);
-  background:linear-gradient(180deg, rgba(18,18,20,.88), rgba(10,10,12,.94));
-  box-shadow:var(--shadow);
-  padding:18px;
-}
-.badge{
-  display:inline-flex;align-items:center;gap:10px;
-  padding:10px 12px;border-radius:999px;
-  border:1px solid rgba(245,196,0,.38);
-  background:rgba(245,196,0,.12);
-  font-weight:1000;
-}
-.pulseDot{
-  width:10px;height:10px;border-radius:50%;
-  background:var(--y);
-  box-shadow:0 0 0 rgba(245,196,0,.55);
-  animation:pulse 1.2s ease-in-out infinite;
-}
-@keyframes pulse{
-  0%{box-shadow:0 0 0 0 rgba(245,196,0,.55); transform:scale(.98)}
-  70%{box-shadow:0 0 0 18px rgba(245,196,0,0); transform:scale(1)}
-  100%{box-shadow:0 0 0 0 rgba(245,196,0,0); transform:scale(.98)}
-}
-.ovTitle{font-size:18px;font-weight:1000;margin:12px 0 6px}
-.ovSub{color:var(--mut);font-size:13px;line-height:1.4}
-.ovLine{
-  margin-top:14px;
-  height:10px;border-radius:999px;
-  background:rgba(255,255,255,.06);
-  overflow:hidden;
-}
-.ovLine > i{
-  display:block;height:100%;width:38%;
-  background:linear-gradient(90deg,rgba(245,196,0,.0),rgba(245,196,0,.7),rgba(245,196,0,.0));
-  animation:shimmer 1.1s linear infinite;
-}
-@keyframes shimmer{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
-
-.smallhint{margin-top:10px;color:var(--mut2);font-size:12px;font-weight:800}
-
-/* ====== MAP MARKERS ====== */
-.pin{
-  width:34px;height:34px;border-radius:12px;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(20,20,22,.90);
-  border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(6px);
-  box-shadow:0 12px 26px rgba(0,0,0,.40);
-  font-size:18px;
-}
-.pin.pick{border-color:rgba(245,196,0,.45)}
-.pin.drop{border-color:rgba(255,255,255,.18)}
-.pin .ring{
-  position:absolute;inset:-14px;border-radius:999px;
-  border:1px solid rgba(245,196,0,.18);
-  animation:ring 1.8s ease-out infinite;
-}
-@keyframes ring{
-  0%{transform:scale(.55);opacity:.0}
-  25%{opacity:.65}
-  100%{transform:scale(1.2);opacity:0}
-}
+.small{font-size:12px;color:var(--mut)}
+.list{display:flex;flex-direction:column;gap:10px}
+.item{padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.itemTop{display:flex;justify-content:space-between;gap:10px}
+.badge{padding:6px 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;font-weight:1000;color:#fff}
+.badge.y{border-color:rgba(245,196,0,.55);background:rgba(245,196,0,.10)}
+.hr{height:1px;background:var(--line);margin:10px 0}
 </style>
 </head>
-
 <body>
+<script>
+/* ===== CONFIG ===== */
+const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
 
-<div class="topbar">
-  <div class="brand"><div class="logo"></div>SepetTaxi</div>
-  <button class="iconbtn" id="menuBtn" aria-label="Menü">≡</button>
-</div>
+/* ===== HELPERS ===== */
+function postForm(data){
+  const body = new URLSearchParams(data);
+  return fetch(API,{method:"POST",body}).then(r=>r.json());
+}
+function money(n){ return (Number(n)||0).toFixed(2).replace(".00","") + " ₺"; }
+</script>
 
-<div id="map" aria-label="Harita"></div>
-
-<!-- Drawer -->
-<div class="drawerMask" id="drawerMask"></div>
-<div class="drawer" id="drawer">
-  <div class="drawerHead">
-    <div class="t">Menü</div>
-    <button class="iconbtn" id="drawerClose" aria-label="Kapat">✕</button>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">SepetTaxi · Sürücü</div>
+    <div class="pill" id="rolePill">—</div>
   </div>
-  <div class="drawerBody">
-    <a class="drawerItem" href="driver.html"><div><strong>Sürücü Girişi</strong><br><small>İş havuzunu gör, kabul et</small></div><div>›</div></a>
-    <a class="drawerItem" href="driver-register.html"><div><strong>Sürücü Ol</strong><br><small>Başvuru formu</small></div><div>›</div></a>
-    <a class="drawerItem" href="admin.html"><div><strong>Admin</strong><br><small>PIN ile giriş</small></div><div>›</div></a>
 
-    <div class="drawerSep">Bilgilendirme</div>
-    <a class="drawerItem" href="legal/hakkimizda.htm"><div><strong>Hakkımızda</strong><br><small>Şirket ve hizmet</small></div><div>›</div></a>
-    <a class="drawerItem" href="legal/kvkk.html"><div><strong>KVKK</strong><br><small>Aydınlatma metni</small></div><div>›</div></a>
-    <a class="drawerItem" href="legal/musteri-sozlesmesi.html"><div><strong>Müşteri Sözleşmesi</strong><br><small>Kullanım şartları</small></div><div>›</div></a>
-    <a class="drawerItem" href="legal/surucu-sozlesmesi.html"><div><strong>Sürücü Sözleşmesi</strong><br><small>Çalışma şartları</small></div><div>›</div></a>
-
-    <div class="drawerSep">Destek</div>
-    <a class="drawerItem" id="waLink" href="#"><div><strong>WhatsApp</strong><br><small>Hızlı destek</small></div><div>›</div></a>
-    <a class="drawerItem" id="mailLink" href="#"><div><strong>E-posta</strong><br><small>support@…</small></div><div>›</div></a>
-  </div>
-</div>
-
-<!-- Bottom sheet -->
-<div class="sheet" id="sheet">
-  <div class="sheetInner">
-    <div class="handleWrap" id="handleWrap"><div class="handle"></div></div>
-
-    <div class="sheetContent">
-      <div class="row">
-        <div class="pill" id="fromPill">
-          <div class="tag">Nereden</div>
-          <div class="val" id="fromTxt">Konum alınıyor…</div>
-        </div>
-        <div class="pill" id="toPill">
-          <div class="tag">Nereye</div>
-          <div class="val" id="toTxt">Haritadan seç</div>
-        </div>
-      </div>
-
-      <div class="tabs" role="tablist" aria-label="Hizmet">
-        <div class="tab active" id="tabTaxi" role="tab" aria-selected="true">Taksi</div>
-         <div class="tab" id="tabCourier" onclick="goCourier()">Kurye</div>
-      </div>
-
-      <div class="metrics">
-        <div class="metric">
-          <div class="k">Mesafe</div>
-          <div class="v" id="distTxt">—</div>
-        </div>
-        <div class="metric">
-          <div class="k">Ücret</div>
-          <div class="v" id="priceTxt">—</div>
-        </div>
-      </div>
-
-      <div class="muted" id="hint">
-        Haritada bir noktaya dokunarak <span class="warn">“Nereye”</span> seç. Konum otomatik alınır.
-      </div>
-
-      <button class="btn" id="callBtn" disabled>Çağır</button>
-
-      <div class="muted" style="margin-top:2px">
-        Not: Ücret bilgisi kayıt tamamlandıktan sonra görünür. İş oluşturma anında sistem hesaplamayı arka planda yapar.
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Register modal -->
-<div class="modalMask" id="regMask">
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Kayıt">
-    <div class="modalHead">
-      <div class="t">Kayıt</div>
-      <button class="iconbtn" id="regClose" aria-label="Kapat">✕</button>
-    </div>
-    <div class="modalBody">
-      <input class="inp" id="cFirst" placeholder="Ad">
-      <input class="inp" id="cLast" placeholder="Soyad">
-      <input class="inp" id="cPhone" placeholder="Telefon">
-      <div class="muted">Bilgileriniz sadece hizmeti sunmak için kullanılır.</div>
-    </div>
-    <div class="modalFoot">
-      <button class="btn" id="regOk">Kaydet</button>
-    </div>
-  </div>
-</div>
-
-<!-- Searching overlay -->
-<div class="overlay" id="overlay">
-  <div class="ovCard">
-    <div class="badge"><span class="pulseDot"></span> Sürücü aranıyor</div>
-    <div class="ovTitle" id="ovTitle">Eşleşme yapılıyor…</div>
-    <div class="ovSub" id="ovSub">Yakındaki uygun sürücüler kontrol ediliyor. Lütfen bekleyin.</div>
-    <div class="ovLine"><i></i></div>
-    <div class="smallhint" id="ovHint">İpucu: Harita canlı takibe otomatik geçeceğiz.</div>
-  </div>
+  <div class="main" id="main"></div>
 </div>
 
 <script>
-/* ================== CONFIG ================== */
-const API = "https://script.google.com/macros/s/AKfycbzXbm934CXIjTSL9RxmL8kkCjGERoeiQPDfY-OUk2Lexqqr_UvppoJ2yT0t562aJZdxRg/exec";
-const SUPPORT_WHATSAPP = "905555555555"; // kendi numaranla değiştir
-const SUPPORT_EMAIL = "support@sepettaxi.com"; // kendi mailinle değiştir
+/* ===== STATE ===== */
+let driver = null;
+let driverId = localStorage.getItem("sepettaxi_driver_id") || "";
+let role = localStorage.getItem("sepettaxi_driver_role") || "";
+let heartbeatTimer = null;
 
-/* ================== STATE ================== */
-let map;
-let service = "taxi"; // taxi | courier
-let from = null; // {lat,lng, address}
-let to = null;   // {lat,lng, address}
-let distKm = 0;
-let price = 0;
-
-let pickMarker = null;
-let dropMarker = null;
-
-let sheetState = "half"; // collapsed | half | expanded
-let pendingCallAfterRegister = false;
-
-const $ = (id)=>document.getElementById(id);
-
-/* ================== STORAGE ================== */
-function saveCustomer(o){ localStorage.setItem("sepettaxi_customer", JSON.stringify(o)); }
-function loadCustomer(){
-  try{
-    const s = localStorage.getItem("sepettaxi_customer");
-    return s ? JSON.parse(s) : null;
-  }catch(_){ return null; }
-}
-function hasCustomer(){
-  const c = loadCustomer();
-  return !!(c && c.first && c.last && c.phone);
-}
-
-/* ================== UI HELPERS ================== */
-function setText(id, t){ $(id).textContent = t; }
-function openReg(){
-  $("regMask").style.display = "flex";
-  setTimeout(()=>{ $("cFirst").focus(); }, 50);
-}
-function closeReg(){ $("regMask").style.display = "none"; }
-function openOverlay(){
-  $("overlay").style.display = "flex";
-}
-function closeOverlay(){
-  $("overlay").style.display = "none";
-}
-
-function setService(next){
-  service = next;
-  $("tabTaxi").classList.toggle("active", service==="taxi");
-  $("tabCourier").classList.toggle("active", service==="courier");
-  $("tabTaxi").setAttribute("aria-selected", service==="taxi" ? "true":"false");
-  $("tabCourier").setAttribute("aria-selected", service==="courier" ? "true":"false");
-  updateEstimate();
-}
-
-function updateHint(){
-  if(!from){
-    $("hint").innerHTML = 'Konum alınıyor… Konum izni vermezsen <span class="warn">“Nereden”</span> haritada merkeze alınır.';
-    return;
-  }
-  if(!to){
-    $("hint").innerHTML = 'Haritada bir noktaya dokunarak <span class="warn">“Nereye”</span> seç.';
-    return;
-  }
-  if(!hasCustomer()){
-    $("hint").innerHTML = 'Hazır. <span class="warn">Çağır</span> dediğinde kısa kayıt alacağız.';
-    return;
-  }
-  $("hint").textContent = "Hazır. Çağır diyebilirsin.";
-}
-  function goCourier(){
-  window.location.href = "courier.html";
-}
-/* ================== DIST / PRICE ================== */
-function haversineKm(a,b){
-  const R = 6371;
-  const dLat = (b.lat-a.lat)*Math.PI/180;
-  const dLng = (b.lng-a.lng)*Math.PI/180;
-  const s1 = Math.sin(dLat/2);
-  const s2 = Math.sin(dLng/2);
-  const q = s1*s1 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*s2*s2;
-  return 2*R*Math.asin(Math.min(1, Math.sqrt(q)));
-}
-function computePrice(km, svc){
-  // Basit MVP fiyat modeli (backend'e numeric gerek)
-  // Taksi: açılış 60 + 18/km
-  // Kurye: açılış 50 + 14/km
-  const base = (svc==="taxi") ? 60 : 50;
-  const perKm = (svc==="taxi") ? 18 : 14;
-  const raw = base + perKm * Math.max(0.5, km);
-  return Math.round(raw);
-}
-function updateEstimate(){
-  if(from && to){
-    distKm = haversineKm(from,to);
-    price = computePrice(distKm, service);
-
-    setText("distTxt", distKm.toFixed(1) + " km");
-
-    if(hasCustomer()){
-      setText("priceTxt", price + " ₺");
-    }else{
-      setText("priceTxt", "Kayıt sonrası");
+function viewLogin(){
+  document.getElementById("rolePill").textContent = "Giriş";
+  main.innerHTML = `
+    <div class="card">
+      <div class="h">Sürücü ID ile giriş</div>
+      <div class="small" style="margin-top:6px">Admin onayı sonrası size verilen <b>DRV_...</b> ID ile giriş yapın.</div>
+      <div style="margin-top:10px">
+        <input class="input" id="drvId" placeholder="Örn: DRV_1700000000000" value="${driverId||""}">
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn" id="btnLogin">Giriş Yap</button>
+      </div>
+      <div class="small" id="loginHint" style="margin-top:10px"></div>
+    </div>
+  `;
+  btnLogin.onclick = async ()=>{
+    const id = drvId.value.trim();
+    loginHint.textContent = "Kontrol ediliyor…";
+    const res = await postForm({action:"driverLogin", driver_id:id});
+    if(!res.ok){
+      loginHint.textContent =
+        res.message==="pending" ? "Başvurunuz onay bekliyor."
+        : res.message==="rejected" ? ("Başvurunuz reddedildi: "+(res.reason||""))
+        : ("Giriş başarısız: "+res.message);
+      return;
     }
-
-    $("callBtn").disabled = false;
-  }else{
-    distKm = 0; price = 0;
-    setText("distTxt","—");
-    setText("priceTxt","—");
-    $("callBtn").disabled = true;
-  }
-  updateHint();
+    driver = res.driver;
+    driverId = driver.driver_id;
+    role = driver.role || "taxi";
+    localStorage.setItem("sepettaxi_driver_id", driverId);
+    localStorage.setItem("sepettaxi_driver_role", role);
+    viewHome();
+  };
 }
 
-/* ================== MAP ================== */
-function makeIcon(type){
-  const el = document.createElement("div");
-  el.className = "pin " + type;
-  el.style.position = "relative";
-  if(type==="pick"){
-    el.innerHTML = '<span class="ring"></span><span>📍</span>';
-  }else{
-    el.innerHTML = '<span>🎯</span>';
-  }
-  return L.divIcon({ className:"", html: el.outerHTML, iconSize:[34,34], iconAnchor:[17,17] });
-}
+function viewHome(){
+  document.getElementById("rolePill").textContent = (role==="courier"?"Kurye":"Taksi");
+  main.innerHTML = `
+    <div class="card">
+      <div class="h">Profil</div>
+      <div class="v">${driver.first||""} ${driver.last||""}</div>
+      <div class="small">${driverId} · ${driver.phone||""}</div>
+      <div class="hr"></div>
+      <div class="tabs">
+        <div class="tab active" id="tabPool">İş Havuzu</div>
+        <div class="tab" id="tabActive">Aktif İş</div>
+        <div class="tab" id="tabEarn">Kazanç</div>
+      </div>
+      <div class="hr"></div>
+      <div id="panel"></div>
+    </div>
+    <div class="card">
+      <button class="btn secondary" id="btnLogout">Çıkış</button>
+    </div>
+  `;
 
-async function reverseGeocode(lat,lng){
-  // Nominatim (MVP). Bazı cihazlarda rate-limit olabilir; fallback hazır.
-  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
-  try{
-    const r = await fetch(url, { method:"GET" });
-    const j = await r.json();
-    const name = (j && (j.display_name || (j.name))) ? (j.display_name || j.name) : "";
-    if(name) return name;
-  }catch(_){}
-  return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-}
-
-function setPickup(lat,lng,address){
-  from = {lat:+lat, lng:+lng, address: address || "Konum"};
-  setText("fromTxt", from.address);
-
-  if(pickMarker) pickMarker.remove();
-  pickMarker = L.marker([from.lat, from.lng], {icon: makeIcon("pick")}).addTo(map);
-
-  updateEstimate();
-}
-
-async function setDrop(lat,lng){
-  const addr = await reverseGeocode(lat,lng);
-  to = {lat:+lat, lng:+lng, address: addr};
-  setText("toTxt", to.address);
-
-  if(dropMarker) dropMarker.remove();
-  dropMarker = L.marker([to.lat, to.lng], {icon: makeIcon("drop")}).addTo(map);
-
-  updateEstimate();
-}
-
-function initMap(){
-  map = L.map("map", { zoomControl:false, attributionControl:false });
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19
-  }).addTo(map);
-
-  // Default view (Bursa fallback)
-  map.setView([40.195, 29.060], 13);
-
-  // Click to set destination
-  map.on("click", (ev)=>{
-    setSheetState("half");
-    setDrop(ev.latlng.lat, ev.latlng.lng);
-  });
-
-  // Try geolocation
-  if(navigator.geolocation){
-    const opt = { enableHighAccuracy:true, timeout:8000, maximumAge:15000 };
-    navigator.geolocation.getCurrentPosition(async (pos)=>{
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      map.setView([lat,lng], 16);
-
-      const addr = await reverseGeocode(lat,lng);
-      setPickup(lat,lng,addr);
-    }, ()=>{
-      // Permission denied or error
-      setText("fromTxt","Konum izni yok");
-      updateHint();
-    }, opt);
-  }else{
-    setText("fromTxt","Konum desteklenmiyor");
-  }
-}
-
-/* ================== SHEET SWIPE (3 STATE) ================== */
-function yForState(st){
-  // translateY from bottom sheet base (vh)
-  // collapsed: mostly hidden (70vh)
-  // half: 36vh (map ~50% hissi)
-  // expanded: 6vh
-  if(st==="collapsed") return "64vh";
-  if(st==="expanded") return "6vh";
-  return "36vh";
-}
-
-function setSheetState(st){
-  sheetState = st;
-  document.documentElement.style.setProperty("--sheetY", yForState(st));
-  // Leaflet size fix
-  setTimeout(()=>{ try{ map && map.invalidateSize(); }catch(_){ } }, 220);
-}
-
-(function bindSheetDrag(){
-  const handle = $("handleWrap");
-  const sheet = $("sheet");
-
-  let startY = 0;
-  let startTranslatePx = 0;
-  let dragging = false;
-
-  function currentTranslatePx(){
-    const v = getComputedStyle(sheet).transform;
-    if(!v || v==="none") return 0;
-    const m = v.match(/matrix\(([^)]+)\)/);
-    if(!m) return 0;
-    const parts = m[1].split(",").map(s=>parseFloat(s.trim()));
-    // matrix(a,b,c,d,tx,ty) -> ty index 5
-    return parts[5] || 0;
-  }
-
-  function onDown(clientY){
-    dragging = true;
-    startY = clientY;
-    startTranslatePx = currentTranslatePx();
-    sheet.style.transition = "none";
-  }
-
-  function onMove(clientY){
-    if(!dragging) return;
-    const dy = clientY - startY;
-    let next = startTranslatePx + dy;
-
-    const max = window.innerHeight * 0.68; // collapsed clamp
-    const min = window.innerHeight * 0.06; // expanded clamp
-    next = Math.max(min, Math.min(max, next));
-    sheet.style.transform = `translateY(${next}px)`;
-  }
-
-  function snap(){
-    // decide nearest state
-    const ty = currentTranslatePx();
-    const vh = window.innerHeight;
-    const v = ty / vh;
-
-    // thresholds tuned
-    let st = "half";
-    if(v > 0.56) st = "collapsed";
-    else if(v < 0.20) st = "expanded";
-    else st = "half";
-
-    sheet.style.transition = "transform .18s ease";
-    setSheetState(st);
-    dragging = false;
-  }
-
-  function onUp(){
-    if(!dragging) return;
-    snap();
-  }
-
-  // Pointer events
-  handle.addEventListener("pointerdown",(e)=>{
-    handle.setPointerCapture(e.pointerId);
-    onDown(e.clientY);
-  });
-  handle.addEventListener("pointermove",(e)=>onMove(e.clientY));
-  handle.addEventListener("pointerup",onUp);
-  handle.addEventListener("pointercancel",onUp);
-
-  // tap handle cycles
-  handle.addEventListener("click", ()=>{
-    if(dragging) return;
-    if(sheetState==="half") setSheetState("expanded");
-    else if(sheetState==="expanded") setSheetState("collapsed");
-    else setSheetState("half");
-  });
-})();
-
-/* ================== BACKEND CALL ================== */
-async function post(action, data){
-  const body = new URLSearchParams(Object.assign({ action }, data||{}));
-  const r = await fetch(API, { method:"POST", body });
-  const j = await r.json();
-  return j;
-}
-
-async function createJob(){
-  if(!from || !to){
-    updateHint();
-    return;
-  }
-
-  const c = loadCustomer();
-  const payload = {
-    service_type: service,
-    customer_first: c.first,
-    customer_last: c.last,
-    customer_phone: c.phone,
-    from_address: from.address,
-    to_address: to.address,
-    pickup_lat: from.lat,
-    pickup_lng: from.lng,
-    dropoff_lat: to.lat,
-    dropoff_lng: to.lng,
-    distance_km: distKm.toFixed(2),
-    price: String(price)
+  btnLogout.onclick=()=>{
+    stopDriverHeartbeat();
+    localStorage.removeItem("sepettaxi_driver_id");
+    localStorage.removeItem("sepettaxi_driver_role");
+    driver=null; driverId=""; role="";
+    viewLogin();
   };
 
-  openOverlay();
+  tabPool.onclick = ()=>{ setTab("pool"); };
+  tabActive.onclick = ()=>{ setTab("active"); };
+  tabEarn.onclick = ()=>{ setTab("earn"); };
 
-  try{
-    const res = await post("createJob", payload);
-    if(res && res.ok && res.job_id){
-      // short premium pause then redirect
-      setTimeout(()=>{ window.location.href = `track.html?job_id=${encodeURIComponent(res.job_id)}`; }, 850);
-      return;
-    }
-    closeOverlay();
-    alert("İş oluşturulamadı: " + (res && res.message ? res.message : "Bilinmeyen hata"));
-  }catch(err){
-    closeOverlay();
-    alert("Ağ hatası: " + String(err));
+  setTab("pool");
+}
+
+function setTab(name){
+  ["tabPool","tabActive","tabEarn"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  if(name==="pool"){ tabPool.classList.add("active"); renderPool(); }
+  if(name==="active"){ tabActive.classList.add("active"); renderActive(); }
+  if(name==="earn"){ tabEarn.classList.add("active"); renderEarnings(); }
+}
+
+/* ===== HEARTBEAT (tek ve doğru) ===== */
+function startDriverHeartbeat(){
+  if(heartbeatTimer) return;
+
+  heartbeatTimer = setInterval(()=>{
+    if(!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(pos=>{
+      postForm({
+        action:"driverHeartbeat",
+        driver_id:driverId,
+        lat:pos.coords.latitude,
+        lng:pos.coords.longitude
+      }).catch(()=>{});
+    });
+  }, 6000); // 6 sn (kilitli)
+}
+function stopDriverHeartbeat(){
+  if(heartbeatTimer){
+    clearInterval(heartbeatTimer);
+    heartbeatTimer=null;
   }
 }
 
-/* ================== MENU ================== */
-function openDrawer(){ document.body.classList.add("drawerOpen"); }
-function closeDrawer(){ document.body.classList.remove("drawerOpen"); }
+/* ===== POOL ===== */
+async function renderPool(){
+  panel.innerHTML = `<div class="small">Yükleniyor…</div>`;
+  const res = await postForm({action:"listAvailableJobs", service_type:role});
+  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
 
-/* ================== INIT ================== */
-function boot(){
-  // support links
-  $("waLink").href = `https://wa.me/${SUPPORT_WHATSAPP}`;
-  $("mailLink").href = `mailto:${SUPPORT_EMAIL}`;
-  $("mailLink").querySelector("small").textContent = SUPPORT_EMAIL;
+  const jobs = res.jobs || [];
+  if(!jobs.length){
+    panel.innerHTML = `<div class="small">Şu an havuzda iş yok.</div>`;
+    return;
+  }
 
-  // menu
-  $("menuBtn").addEventListener("click", openDrawer);
-  $("drawerClose").addEventListener("click", closeDrawer);
-  $("drawerMask").addEventListener("click", closeDrawer);
+  panel.innerHTML = `
+    <div class="small">Havuz: ${jobs.length} iş</div>
+    <div class="list" id="poolList" style="margin-top:10px"></div>
+  `;
 
-  // service tabs
-  $("tabTaxi").addEventListener("click", ()=>setService("taxi"));
-  $("tabCourier").addEventListener("click", ()=>setService("courier"));
-
-  // register
-  $("regClose").addEventListener("click", ()=>{
-    pendingCallAfterRegister = false;
-    closeReg();
-  });
-  $("regOk").addEventListener("click", ()=>{
-    const first = $("cFirst").value.trim();
-    const last = $("cLast").value.trim();
-    const phone = $("cPhone").value.trim();
-    if(!first || !last || !phone){
-      alert("Lütfen Ad / Soyad / Telefon gir.");
-      return;
-    }
-    saveCustomer({ first, last, phone });
-    closeReg();
-    updateEstimate();
-    if(pendingCallAfterRegister){
-      pendingCallAfterRegister = false;
-      createJob();
-    }
-  });
-
-  // call
-  $("callBtn").addEventListener("click", ()=>{
-    if(!from || !to) return;
-    // ensure map in correct state
-    setSheetState("half");
-
-    if(!hasCustomer()){
-      pendingCallAfterRegister = true;
-      openReg();
-      return;
-    }
-    createJob();
-  });
-
-  // initial sheet
-  setSheetState("half");
-  initMap();
-  updateEstimate();
+  poolList.innerHTML = jobs.map(j=>`
+    <div class="item">
+      <div class="itemTop">
+        <div>
+          <div style="font-weight:1000">${(j.service_type||"").toUpperCase()} · ${money(j.price)}</div>
+          <div class="small">${(j.from_address||"—")}</div>
+          <div class="small">${(j.to_address||"—")}</div>
+        </div>
+        <div class="badge y">${j.status}</div>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn" onclick="accept('${j.job_id}')">İşi Kabul Et</button>
+      </div>
+    </div>
+  `).join("");
 }
-boot();
+
+async function accept(jobId){
+  const res = await postForm({action:"acceptJob", job_id:jobId, driver_id:driverId});
+  if(!res.ok){ alert("Kabul edilemedi: "+res.message); return; }
+  startDriverHeartbeat();
+  setTab("active");
+}
+
+/* ===== ACTIVE JOB ===== */
+async function renderActive(){
+  panel.innerHTML = `<div class="small">Aktif iş aranıyor…</div>`;
+
+  const res = await postForm({action:"listDriverJobs", driver_id:driverId});
+  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
+
+  const jobs = (res.jobs||[]).slice().reverse();
+  const active = jobs.find(j=>{
+    const st = String(j.status||"").toLowerCase();
+    return st!=="completed" && st!=="cancelled" && st!=="";
+  });
+
+  if(!active){
+    panel.innerHTML = `<div class="small">Aktif iş yok.</div>`;
+    stopDriverHeartbeat();
+    return;
+  }
+
+  const st = String(active.status||"").toLowerCase();
+  panel.innerHTML = `
+    <div class="item">
+      <div class="itemTop">
+        <div>
+          <div style="font-weight:1000">${active.job_id}</div>
+          <div class="small">${(active.from_address||"—")}</div>
+          <div class="small">${(active.to_address||"—")}</div>
+        </div>
+        <div class="badge y">${active.status}</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <div class="card" style="padding:10px">
+          <div class="h">Ücret</div>
+          <div class="v">${money(active.price)}</div>
+        </div>
+        <div class="card" style="padding:10px">
+          <div class="h">Komisyon</div>
+          <div class="v">${active.commission_amount?money(active.commission_amount):"—"}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="row">
+        <button class="btn secondary" onclick="setStatus('${active.job_id}','pickup')" ${st==="pickup"||st==="onroad"||st==="completed"?"disabled":""}>Alıma Gidiyorum</button>
+        <button class="btn secondary" onclick="setStatus('${active.job_id}','onroad')" ${st==="onroad"||st==="completed"?"disabled":""}>Yoldayım</button>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn" onclick="setStatus('${active.job_id}','completed')">Tamamlandı</button>
+      </div>
+      <div class="small" style="margin-top:10px">Not: Konum güncelleme aktif. Track ekranı sürücüyü canlı takip eder.</div>
+    </div>
+  `;
+
+  startDriverHeartbeat();
+}
+
+async function setStatus(jobId,status){
+  const res = await postForm({action:"driverUpdateStatus", job_id:jobId, status});
+  if(!res.ok){ alert("Durum güncellenemedi: "+res.message); return; }
+  renderActive();
+}
+
+/* ===== EARNINGS ===== */
+async function renderEarnings(){
+  panel.innerHTML = `<div class="small">Yükleniyor…</div>`;
+  const res = await postForm({action:"listDriverJobs", driver_id:driverId});
+  if(!res.ok){ panel.innerHTML = `<div class="small">Hata: ${res.message}</div>`; return; }
+
+  const jobs = (res.jobs||[]);
+  const done = jobs.filter(j=>String(j.status||"").toLowerCase()==="completed");
+
+  let total=0, comm=0, net=0;
+  done.forEach(j=>{
+    total += Number(j.price)||0;
+    comm  += Number(j.commission_amount)||0;
+    net   += Number(j.driver_net)||0;
+  });
+
+  panel.innerHTML = `
+    <div class="row">
+      <div class="metric card">
+        <div class="h">Toplam</div>
+        <div class="v">${money(total)}</div>
+      </div>
+      <div class="metric card">
+        <div class="h">Komisyon</div>
+        <div class="v">${money(comm)}</div>
+      </div>
+      <div class="metric card">
+        <div class="h">Net</div>
+        <div class="v">${money(net)}</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="small">Tamamlanan işler: ${done.length}</div>
+    <div class="list" style="margin-top:10px">
+      ${done.slice().reverse().slice(0,30).map(j=>`
+        <div class="item">
+          <div class="itemTop">
+            <div>
+              <div style="font-weight:1000">${(j.service_type||"").toUpperCase()} · ${money(j.price)}</div>
+              <div class="small">Komisyon: ${money(j.commission_amount)} · Net: ${money(j.driver_net)}</div>
+            </div>
+            <div class="badge">${j.status}</div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+/* ===== BOOT ===== */
+(async function boot(){
+  if(!driverId){
+    viewLogin(); return;
+  }
+  const res = await postForm({action:"driverLogin", driver_id:driverId});
+  if(!res.ok){
+    viewLogin(); return;
+  }
+  driver = res.driver;
+  role = (driver.role||localStorage.getItem("sepettaxi_driver_role")||"taxi");
+  localStorage.setItem("sepettaxi_driver_role", role);
+  viewHome();
+})();
 </script>
 </body>
 </html>
